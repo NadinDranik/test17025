@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: gost17025
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+    disk:
+      name: gost17025-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
