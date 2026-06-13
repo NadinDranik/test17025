@@ -114,15 +114,20 @@ const UI = (function () {
     initBurger();
     renderUserProfileBar(user);
     mountThemeToggle(header);
-    showSyncNotice();
   }
 
   function showSyncNotice() {
-    if (document.getElementById('sync-notice') || App.isSyncEnabled()) return;
+    if (document.getElementById('sync-notice')) return;
     const notice = document.createElement('div');
     notice.id = 'sync-notice';
     notice.className = 'sync-notice';
-    notice.innerHTML = 'Данные только на этом устройстве. Чтобы сообщения с телефона были видны на компьютере, запустите сервер (<strong>npm start</strong>) и откройте один и тот же адрес на обоих устройствах.';
+    if (App.isSyncEnabled()) {
+      notice.classList.add('sync-notice--ok');
+      notice.textContent = 'Подключено к серверу — сообщения синхронизируются между телефоном и компьютером.';
+      setTimeout(() => notice.remove(), 5000);
+    } else {
+      notice.innerHTML = 'Синхронизация недоступна. Запустите сервер командой <strong>npm start</strong> и откройте сайт по адресу <strong>http://IP-вашего-ПК:3000</strong> на телефоне и на компьютере (не открывайте файлы напрямую).';
+    }
     document.querySelector('.header')?.insertAdjacentElement('afterend', notice);
   }
 
@@ -444,9 +449,14 @@ const UI = (function () {
   return {
     initHeader, initAuthForms, renderMessage, renderMessages, bindMessageActions,
     renderUserProfile, renderUserProfileBar, refreshUserProfile, initPasswordToggles,
-    updateNotificationBadge, escapeHtml, escapeAttr, applyTheme, mountThemeToggle, toggleTheme
+    updateNotificationBadge, escapeHtml, escapeAttr, applyTheme, mountThemeToggle, toggleTheme,
+    showSyncNotice
   };
 })();
+
+if (typeof App !== 'undefined' && App.ready) {
+  App.ready.then(() => UI.showSyncNotice());
+}
 
 (function bootTheme() {
   UI.applyTheme();
