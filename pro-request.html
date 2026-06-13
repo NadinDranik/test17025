@@ -30,6 +30,11 @@
   <main class="chat-layout">
     <div class="container chat-layout__inner">
       <aside class="chat-sidebar chat-sidebar--pro">
+        <nav class="chat-rail" aria-label="Чаты">
+          <a href="chat.html" class="chat-rail__tab">Общий</a>
+          <a href="pro-request.html" class="chat-rail__tab chat-rail__tab--active" aria-current="page">PRO</a>
+        </nav>
+        <div class="chat-sidebar__body">
         <h1 class="chat-sidebar__title">Оформление PRO</h1>
         <p class="chat-sidebar__desc">Чат с администратором для подключения PRO-доступа.</p>
         <div class="chat-sidebar__info" data-user-profile></div>
@@ -58,6 +63,7 @@
           </a>
         </div>
         <p class="chat-sidebar__note">После проверки оплаты администратор активирует ваш PRO-доступ.</p>
+        </div>
       </aside>
 
       <section class="chat-main">
@@ -84,7 +90,7 @@
             <button type="button" id="cancel-reply">&times;</button>
           </div>
           <form id="msg-form" class="chat-form">
-            <textarea class="form__input chat-form__input" id="msg-text" rows="3" placeholder="Напишите администратору или прикрепите чек об оплате…"></textarea>
+            <textarea class="form__input chat-form__input" id="msg-text" rows="4" placeholder="Напишите администратору или прикрепите чек об оплате…"></textarea>
             <div class="chat-form__row">
               <label class="file-upload">
                 <input type="file" id="msg-files" multiple accept="image/*,.pdf">
