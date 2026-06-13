@@ -53,15 +53,17 @@
             <button type="button" id="cancel-reply">&times;</button>
           </div>
           <form id="msg-form" class="chat-form">
-            <textarea class="form__input chat-form__input" id="msg-text" rows="3" placeholder="Напишите сообщение…" required></textarea>
+            <textarea class="form__input chat-form__input" id="msg-text" rows="3" placeholder="Текст сообщения (необязательно, если есть файлы)…"></textarea>
             <div class="chat-form__row">
               <label class="file-upload">
-                <input type="file" id="msg-files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.mp4">
-                <span class="btn btn--ghost btn--sm">📎 Прикрепить файл</span>
+                <input type="file" id="msg-files" multiple>
+                <span class="btn btn--ghost btn--sm">📎 Прикрепить файлы</span>
               </label>
               <span class="file-upload__hint" id="file-names"></span>
-              <button type="submit" class="btn btn--pro">Отправить</button>
+              <button type="submit" class="btn btn--pro" data-label="Отправить">Отправить</button>
             </div>
+            <p class="chat-form__hint">Можно отправить только текст, только файлы или оба. До 25 МБ на файл.</p>
+            <p class="form__error" id="send-error" hidden></p>
           </form>
         </div>
       </section>
@@ -70,12 +72,14 @@
 
   <script src="js/app.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/chat-send.js"></script>
   <script>
     let currentUser = App.requirePro();
     if (!currentUser) { /* redirect handled */ }
 
     let activeTopicId = null;
-    let replyToId = null;
+    const msgForm = document.getElementById('msg-form');
+    const sendError = document.getElementById('send-error');
 
     UI.initHeader('pro');
 
@@ -129,18 +133,11 @@
       renderMessages();
     }
 
-    function renderMessages() {
+    async function renderMessages() {
       if (!activeTopicId) return;
       const msgs = App.getMessages(activeTopicId);
-      const pinned = msgs.filter(m => m.pinned);
-      const regular = msgs.filter(m => !m.pinned);
-      const sorted = [...pinned, ...regular];
-
       document.getElementById('msg-count').textContent = msgs.length + ' сообщ.';
-      messagesEl.innerHTML = sorted.length
-        ? sorted.map(m => UI.renderMessage(m, currentUser, activeTopicId, msgs)).join('')
-        : '<p class="chat-empty">В этой теме пока нет сообщений.</p>';
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+      await UI.renderMessages(messagesEl, msgs, currentUser, activeTopicId, 'В этой теме пока нет сообщений.');
     }
 
     UI.bindMessageActions(messagesEl, () => activeTopicId, currentUser, () => {
@@ -148,40 +145,30 @@
     });
 
     messagesEl.addEventListener('reply-to', e => {
-      replyToId = e.detail.id;
+      msgForm._replyTo = e.detail.id;
       document.getElementById('reply-preview').hidden = false;
-      document.getElementById('reply-text').textContent = 'Ответ ' + e.detail.author + ': ' + e.detail.text.slice(0, 60);
+      document.getElementById('reply-text').textContent = 'Ответ ' + e.detail.author + ': ' + ChatSend.getReplyLabel(e.detail);
       document.getElementById('msg-text').focus();
     });
 
     document.getElementById('cancel-reply').addEventListener('click', () => {
-      replyToId = null;
+      msgForm._replyTo = null;
       document.getElementById('reply-preview').hidden = true;
     });
 
-    document.getElementById('msg-files').addEventListener('change', e => {
-      document.getElementById('file-names').textContent = Array.from(e.target.files).map(f => f.name).join(', ');
-    });
-
-    document.getElementById('msg-form').addEventListener('submit', async e => {
-      e.preventDefault();
-      if (!activeTopicId || !currentUser) return;
-      const text = document.getElementById('msg-text').value;
-      const fileInput = document.getElementById('msg-files');
-      let files = [];
-      try {
-        if (fileInput.files.length) files = await App.readFilesAsAttachments(fileInput.files);
-      } catch (err) {
-        alert(err.message);
-        return;
+    ChatSend.bindForm(
+      msgForm,
+      () => activeTopicId,
+      () => App.getCurrentUser(),
+      () => {
+        sendError.hidden = true;
+        renderMessages();
+      },
+      (msg) => {
+        sendError.textContent = msg;
+        sendError.hidden = false;
       }
-      App.addMessage(activeTopicId, currentUser.id, text, replyToId, files);
-      document.getElementById('msg-form').reset();
-      document.getElementById('file-names').textContent = '';
-      replyToId = null;
-      document.getElementById('reply-preview').hidden = true;
-      renderMessages();
-    });
+    );
 
     document.getElementById('search-btn').addEventListener('click', () => {
       const q = document.getElementById('search-input').value.trim();
@@ -200,7 +187,7 @@
       }
       if (msgResults.length) {
         html += '<p><strong>Сообщения:</strong></p>' + msgResults.map(r =>
-          `<div class="search-result">${r.authorEmail}: ${UI.escapeHtml(r.text.slice(0, 80))}</div>`
+          `<div class="search-result">${r.authorEmail}: ${UI.escapeHtml((r.text || r.files?.[0]?.name || '').slice(0, 80))}</div>`
         ).join('');
       }
       if (!html) html = '<p class="search-result--empty">Ничего не найдено</p>';
