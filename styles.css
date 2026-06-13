@@ -1110,6 +1110,18 @@ ul {
   white-space: nowrap;
 }
 
+.chat-form__hint {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.msg__file--missing {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
 .reply-preview {
   display: flex;
   align-items: center;
