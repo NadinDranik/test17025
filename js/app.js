@@ -113,6 +113,44 @@ const App = (function () {
     );
   }
 
+  function getProWelcomeText() {
+    return 'Здравствуйте! ' + PRO_PAYMENT_INFO.text +
+      ' Отправьте в этот чат чек или скриншот об оплате — после проверки вам откроют PRO-доступ.';
+  }
+
+  function ensureProRequestWelcomeMessage() {
+    ensureAdmin();
+    const data = load();
+    if (!data.messages[CHAT_ADMIN_SUPPORT]) data.messages[CHAT_ADMIN_SUPPORT] = [];
+    const welcomeText = getProWelcomeText();
+    const admin = data.users.find(u => u.role === 'admin');
+    if (!admin) return;
+
+    const existing = data.messages[CHAT_ADMIN_SUPPORT].find(m => m.systemType === 'pro_welcome');
+    if (existing) {
+      if (existing.text !== welcomeText) {
+        existing.text = welcomeText;
+        save(data);
+      }
+      return;
+    }
+
+    data.messages[CHAT_ADMIN_SUPPORT].unshift({
+      id: '__pro_welcome__',
+      userId: admin.id,
+      authorEmail: admin.email,
+      authorName: 'Администратор',
+      text: welcomeText,
+      replyTo: null,
+      files: [],
+      createdAt: new Date().toISOString(),
+      editedAt: null,
+      pinned: true,
+      systemType: 'pro_welcome'
+    });
+    save(data);
+  }
+
   function ensureAdminSupportChat() {
     const data = load();
     if (!data.messages[CHAT_ADMIN_SUPPORT]) {
@@ -124,6 +162,31 @@ const App = (function () {
       save(data);
     }
     migrateProRequestsFromChat();
+    ensureProRequestWelcomeMessage();
+  }
+
+  function notifyAdminNewMessage(chatId, user, msg) {
+    const admin = load().users.find(u => u.role === 'admin');
+    if (!admin) return;
+    if (chatId === CHAT_ADMIN_SUPPORT) {
+      addProRequest(user, msg);
+      addNotification(
+        admin.id,
+        '🔔 Новая заявка PRO: ' + getDisplayName(user) + ' (' + user.email + ')',
+        'pro_request',
+        msg.id
+      );
+    } else if (chatId === CHAT_FREE) {
+      const preview = msg.text
+        ? msg.text.slice(0, 80) + (msg.text.length > 80 ? '…' : '')
+        : (msg.files && msg.files.length ? '📎 ' + msg.files.map(f => f.name).join(', ') : 'новое сообщение');
+      addNotification(
+        admin.id,
+        '💬 ' + getDisplayName(user) + ' в общем чате: ' + preview,
+        'chat_message',
+        msg.id
+      );
+    }
   }
 
   function migrateProRequestsFromChat() {
@@ -512,10 +575,8 @@ const App = (function () {
       return Promise.resolve({ ok: false, error: 'Введите текст или прикрепите файл' });
     }
 
-    const data = load();
-    const user = data.users.find(u => u.id === userId);
+    const user = load().users.find(u => u.id === userId);
     if (!user) return Promise.resolve({ ok: false, error: 'Пользователь не найден' });
-    if (!data.messages[chatId]) data.messages[chatId] = [];
 
     const msgId = uid();
     const fileMeta = attachments.map(f => ({
@@ -532,6 +593,8 @@ const App = (function () {
     );
 
     return Promise.all(saveFiles).then(() => {
+      const data = load();
+      if (!data.messages[chatId]) data.messages[chatId] = [];
       const msg = {
         id: msgId,
         userId,
@@ -555,17 +618,8 @@ const App = (function () {
       ok: false,
       error: err.message || 'Ошибка при отправке'
     })).then(result => {
-      if (result.ok && chatId === CHAT_ADMIN_SUPPORT && user.role !== 'admin') {
-        const admin = load().users.find(u => u.role === 'admin');
-        if (admin) {
-          addProRequest(user, result.msg);
-          addNotification(
-            admin.id,
-            '🔔 Новая заявка PRO: ' + getDisplayName(user) + ' (' + user.email + ')',
-            'pro_request',
-            result.msg.id
-          );
-        }
+      if (result.ok && user.role !== 'admin') {
+        notifyAdminNewMessage(chatId, user, result.msg);
       }
       return result;
     });
@@ -881,7 +935,8 @@ const App = (function () {
 
   return {
     getData, getCurrentUser, getSession, login, logout, register,
-    ensureAdmin, ensureAdminSupportChat, migrateUsers, ADMIN_EMAIL, ADMIN_PASSWORD,
+    ensureAdmin, ensureAdminSupportChat, ensureProRequestWelcomeMessage, migrateUsers,
+    ADMIN_EMAIL, ADMIN_PASSWORD,
     CHAT_FREE, CHAT_ADMIN_SUPPORT, PRO_PAYMENT_INFO,
     getDisplayName, getStatusLabel, normalizeNickname, getLoginUrl, getRedirectAfterLogin,
     isProActive, getSubscriptionStatus, grantPro, extendPro, revokePro,
