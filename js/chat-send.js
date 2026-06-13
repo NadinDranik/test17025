@@ -3,12 +3,28 @@
  */
 const ChatSend = (function () {
   const FILE_ACCEPT = App.ALLOWED_EXT.map(e => '.' + e).join(',');
+  const SEND_ICON = '<svg class="chat-form__send-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+
+  function setSubmitState(btn, loading) {
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.innerHTML = loading ? '…' : SEND_ICON;
+  }
 
   function bindForm(form, getChatId, getUser, onSuccess, onError) {
     const textEl = form.querySelector('[id="msg-text"], .chat-form__input');
     const fileEl = form.querySelector('#msg-files, [type="file"]');
-    const fileNamesEl = form.querySelector('#file-names, .file-upload__hint');
+    const fileNamesEl = form.querySelector('#file-names, .file-upload__hint, .chat-form__files');
     const submitBtn = form.querySelector('[type="submit"]');
+
+    if (textEl) {
+      const resize = () => {
+        textEl.style.height = 'auto';
+        textEl.style.height = Math.min(textEl.scrollHeight, 128) + 'px';
+      };
+      textEl.addEventListener('input', resize);
+      resize();
+    }
 
     if (fileEl) {
       fileEl.setAttribute('accept', FILE_ACCEPT);
@@ -37,15 +53,9 @@ const ChatSend = (function () {
 
       let attachments = [];
       if (hasFiles) {
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.textContent = 'Загрузка…';
-        }
+        setSubmitState(submitBtn, true);
         const readResult = await App.readFilesAsAttachments(fileEl.files);
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = submitBtn.dataset.label || 'Отправить';
-        }
+        setSubmitState(submitBtn, false);
         if (!readResult.ok) {
           showError(onError, readResult.error);
           return;
@@ -56,17 +66,11 @@ const ChatSend = (function () {
         }
       }
 
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Отправка…';
-      }
+      setSubmitState(submitBtn, true);
 
       const result = await App.addMessage(chatId, user.id, text, form._replyTo || null, attachments);
 
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = submitBtn.dataset.label || 'Отправить';
-      }
+      setSubmitState(submitBtn, false);
 
       if (!result.ok) {
         showError(onError, result.error);
@@ -75,6 +79,9 @@ const ChatSend = (function () {
 
       form.reset();
       if (fileNamesEl) fileNamesEl.textContent = '';
+      if (textEl) {
+        textEl.style.height = 'auto';
+      }
       form._replyTo = null;
       const replyPreview = form.closest('.chat-compose')?.querySelector('#reply-preview, .reply-preview');
       if (replyPreview) replyPreview.hidden = true;
