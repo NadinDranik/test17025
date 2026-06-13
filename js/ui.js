@@ -21,12 +21,13 @@ const UI = (function () {
     }
 
     if (user && user.role === 'admin') {
-      navLinks.push({ href: 'admin.html', label: 'Админ-панель', id: 'admin' });
+      navLinks.push({ href: 'admin.html', label: 'Админ-панель', id: 'admin', badge: App.getPendingProRequestCount() });
     }
 
-    const navHtml = navLinks.map(l =>
-      `<a href="${l.href}" class="nav__link${activePage === l.id ? ' nav__link--active' : ''}">${l.label}</a>`
-    ).join('');
+    const navHtml = navLinks.map(l => {
+      const badge = l.badge > 0 ? `<span class="nav-badge">${l.badge}</span>` : '';
+      return `<a href="${l.href}" class="nav__link${activePage === l.id ? ' nav__link--active' : ''}">${l.label}${badge}</a>`;
+    }).join('');
 
     let actionsHtml;
     if (user) {
@@ -36,11 +37,15 @@ const UI = (function () {
         : status === 'expired'
           ? '<span class="user-badge user-badge--expired">PRO истёк</span>'
           : '<span class="user-badge">Free</span>';
+      const unread = App.getUnreadNotificationCount(user.id);
+      const notifBadge = unread > 0 ? `<span class="notif-badge">${unread}</span>` : '';
       actionsHtml = `
         <div class="user-menu">
           ${badge}
           <span class="user-menu__nick">${escapeAttr(App.getDisplayName(user))}</span>
-          <button type="button" class="btn btn--ghost btn--sm" id="btn-notifications" title="Уведомления">🔔</button>
+          <button type="button" class="btn btn--ghost btn--sm btn-notifications" id="btn-notifications" title="Уведомления">
+            🔔${notifBadge}
+          </button>
           <button type="button" class="btn btn--ghost btn--sm" id="btn-logout">Выйти</button>
         </div>`;
     } else {
@@ -141,14 +146,39 @@ const UI = (function () {
   function showNotifications() {
     const user = App.getCurrentUser();
     if (!user) return;
-    const notes = App.getNotifications(user.id);
-    if (!notes.length) {
+    const unread = App.getNotifications(user.id).filter(n => !n.read);
+    if (!unread.length) {
       alert('Нет новых уведомлений.');
       return;
     }
-    alert(notes.slice(0, 10).map(n =>
+    alert(unread.slice(0, 10).map(n =>
       App.formatDateTime(n.createdAt) + '\n' + n.text
     ).join('\n\n---\n\n'));
+    App.markNotificationsRead(user.id);
+    updateNotificationBadge(user.id);
+    if (user.role === 'admin' && unread.some(n => n.type === 'pro_request')) {
+      if (confirm('Перейти к заявкам PRO в админ-панели?')) {
+        window.location.href = 'admin.html#requests';
+      }
+    }
+  }
+
+  function updateNotificationBadge(userId) {
+    const btn = document.getElementById('btn-notifications');
+    if (!btn) return;
+    const unread = App.getUnreadNotificationCount(userId);
+    const existing = btn.querySelector('.notif-badge');
+    if (unread > 0) {
+      if (existing) existing.textContent = unread;
+      else {
+        const span = document.createElement('span');
+        span.className = 'notif-badge';
+        span.textContent = unread;
+        btn.appendChild(span);
+      }
+    } else if (existing) {
+      existing.remove();
+    }
   }
 
   function initAuthForms() {
@@ -358,6 +388,7 @@ const UI = (function () {
 
   return {
     initHeader, initAuthForms, renderMessage, renderMessages, bindMessageActions,
-    renderUserProfile, renderUserProfileBar, refreshUserProfile, initPasswordToggles, escapeHtml, escapeAttr
+    renderUserProfile, renderUserProfileBar, refreshUserProfile, initPasswordToggles,
+    updateNotificationBadge, escapeHtml, escapeAttr
   };
 })();
