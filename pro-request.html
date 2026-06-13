@@ -112,6 +112,7 @@
   <script src="js/ui.js"></script>
   <script src="js/chat-send.js"></script>
   <script>
+    App.ready.then(() => {
     const CHAT_ID = App.CHAT_ADMIN_SUPPORT;
     let currentUser = App.getCurrentUser();
 
@@ -166,6 +167,9 @@
     );
 
     renderMessages();
+
+    window.addEventListener('gost-data-synced', renderMessages);
+    });
   </script>
 </body>
 </html>
