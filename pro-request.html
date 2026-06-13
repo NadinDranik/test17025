@@ -28,7 +28,7 @@
   <div id="user-profile-bar" class="user-profile-bar" hidden></div>
 
   <main class="chat-layout">
-    <div class="container chat-layout__inner">
+    <div class="chat-layout__inner">
       <aside class="chat-sidebar chat-sidebar--pro">
         <nav class="chat-rail" aria-label="Чаты">
           <a href="chat.html" class="chat-rail__tab">Общий</a>
@@ -90,16 +90,15 @@
             <button type="button" id="cancel-reply">&times;</button>
           </div>
           <form id="msg-form" class="chat-form">
-            <textarea class="form__input chat-form__input" id="msg-text" rows="4" placeholder="Напишите администратору или прикрепите чек об оплате…"></textarea>
-            <div class="chat-form__row">
-              <label class="file-upload">
+            <div class="chat-form__bar">
+              <label class="chat-form__attach file-upload" title="Прикрепить чек">
                 <input type="file" id="msg-files" multiple accept="image/*,.pdf">
-                <span class="btn btn--ghost btn--sm">📎 Прикрепить чек / скрин</span>
+                <span class="chat-form__attach-icon" aria-hidden="true">📎</span>
               </label>
-              <span class="file-upload__hint" id="file-names"></span>
-              <button type="submit" class="btn btn--pro" data-label="Отправить">Отправить</button>
+              <textarea class="form__input chat-form__input" id="msg-text" rows="1" placeholder="Сообщение…"></textarea>
+              <button type="submit" class="chat-form__send btn btn--pro" data-label="Отправить" aria-label="Отправить"><svg class="chat-form__send-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
             </div>
-            <p class="chat-form__hint">Прикрепите скриншот или фото чека об оплате — так администратор быстрее активирует доступ.</p>
+            <p class="chat-form__files" id="file-names"></p>
             <p class="form__error" id="send-error" hidden></p>
           </form>
         </div>
