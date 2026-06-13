@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Общий чат — Гид PRO ГОСТ ISO/IEC 17025-2019</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+</head>
+<body class="page-chat">
+
+  <header class="header">
+    <div class="container header__inner">
+      <a href="index.html" class="logo">
+        <span class="logo__mark">17025</span>
+        <span class="logo__text">Гид PRO</span>
+      </a>
+      <nav class="nav" aria-label="Основная навигация"></nav>
+      <div class="header__actions"></div>
+      <button class="burger" aria-label="Открыть меню" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="chat-layout">
+    <div class="container chat-layout__inner">
+      <aside class="chat-sidebar">
+        <h1 class="chat-sidebar__title">Общий чат</h1>
+        <p class="chat-sidebar__desc">Бесплатное профессиональное общение участников сообщества.</p>
+        <div class="chat-sidebar__info" id="access-info"></div>
+        <div class="search-box">
+          <input type="search" class="form__input" id="search-input" placeholder="Поиск по сообщениям и файлам…">
+          <button type="button" class="btn btn--outline btn--sm btn--block" id="search-btn">Найти</button>
+        </div>
+        <div id="search-results" class="search-results"></div>
+      </aside>
+
+      <section class="chat-main">
+        <div class="chat-main__header">
+          <h2>Общий чат сообщества</h2>
+          <span class="chat-main__count" id="msg-count"></span>
+        </div>
+        <div class="chat-messages" id="messages"></div>
+        <div class="chat-compose" id="compose-area">
+          <div class="reply-preview" id="reply-preview" hidden>
+            <span id="reply-text"></span>
+            <button type="button" id="cancel-reply">&times;</button>
+          </div>
+          <form id="msg-form" class="chat-form">
+            <textarea class="form__input chat-form__input" id="msg-text" rows="3" placeholder="Напишите сообщение…" required></textarea>
+            <div class="chat-form__row">
+              <label class="file-upload">
+                <input type="file" id="msg-files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.mp4">
+                <span class="btn btn--ghost btn--sm">📎 Прикрепить файл</span>
+              </label>
+              <span class="file-upload__hint" id="file-names"></span>
+              <button type="submit" class="btn btn--primary">Отправить</button>
+            </div>
+          </form>
+        </div>
+        <div class="chat-guest-notice" id="guest-notice" hidden>
+          <p>Для отправки сообщений необходимо <a href="index.html#login">войти</a> или <a href="index.html#register">зарегистрироваться</a>.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    const CHAT_ID = 'free';
+    let currentUser = App.getCurrentUser();
+    let replyToId = null;
+
+    UI.initHeader('chat');
+
+    const messagesEl = document.getElementById('messages');
+    const composeArea = document.getElementById('compose-area');
+    const guestNotice = document.getElementById('guest-notice');
+    const accessInfo = document.getElementById('access-info');
+
+    function renderMessages() {
+      const msgs = App.getMessages(CHAT_ID);
+      const pinned = msgs.filter(m => m.pinned);
+      const regular = msgs.filter(m => !m.pinned);
+      const sorted = [...pinned, ...regular];
+
+      document.getElementById('msg-count').textContent = msgs.length + ' сообщ.';
+      messagesEl.innerHTML = sorted.length
+        ? sorted.map(m => UI.renderMessage(m, currentUser, CHAT_ID, msgs)).join('')
+        : '<p class="chat-empty">Пока нет сообщений. Будьте первым!</p>';
+    }
+
+    function updateAccessUI() {
+      currentUser = App.getCurrentUser();
+      if (currentUser) {
+        composeArea.hidden = false;
+        guestNotice.hidden = true;
+        const status = App.getSubscriptionStatus(currentUser);
+        accessInfo.innerHTML = `<p>Вы вошли как <strong>${currentUser.email}</strong></p>
+          <p>Статус: <strong>${status === 'pro' || status === 'admin' ? 'PRO активен' : status === 'expired' ? 'PRO истёк' : 'Free'}</strong></p>`;
+      } else {
+        composeArea.hidden = true;
+        guestNotice.hidden = false;
+        accessInfo.innerHTML = '<p>Гости могут читать сообщения. Для публикации — войдите в систему.</p>';
+      }
+    }
+
+    UI.bindMessageActions(messagesEl, CHAT_ID, currentUser, renderMessages);
+
+    messagesEl.addEventListener('reply-to', e => {
+      replyToId = e.detail.id;
+      document.getElementById('reply-preview').hidden = false;
+      document.getElementById('reply-text').textContent = 'Ответ ' + e.detail.author + ': ' + e.detail.text.slice(0, 60);
+      document.getElementById('msg-text').focus();
+    });
+
+    document.getElementById('cancel-reply').addEventListener('click', () => {
+      replyToId = null;
+      document.getElementById('reply-preview').hidden = true;
+    });
+
+    document.getElementById('msg-files').addEventListener('change', e => {
+      const names = Array.from(e.target.files).map(f => f.name).join(', ');
+      document.getElementById('file-names').textContent = names;
+    });
+
+    document.getElementById('msg-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!currentUser) return;
+      const text = document.getElementById('msg-text').value;
+      const fileInput = document.getElementById('msg-files');
+      let files = [];
+      try {
+        if (fileInput.files.length) {
+          files = await App.readFilesAsAttachments(fileInput.files);
+        }
+      } catch (err) {
+        alert(err.message);
+        return;
+      }
+      App.addMessage(CHAT_ID, currentUser.id, text, replyToId, files);
+      document.getElementById('msg-form').reset();
+      document.getElementById('file-names').textContent = '';
+      replyToId = null;
+      document.getElementById('reply-preview').hidden = true;
+      renderMessages();
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
+
+    document.getElementById('search-btn').addEventListener('click', () => {
+      const q = document.getElementById('search-input').value.trim();
+      const resultsEl = document.getElementById('search-results');
+      if (!q) { resultsEl.innerHTML = ''; return; }
+      const results = App.searchMessages(q, [CHAT_ID]);
+      resultsEl.innerHTML = results.length
+        ? results.map(r => `<div class="search-result"><strong>${r.authorEmail}</strong><br>${UI.escapeHtml(r.text.slice(0, 100))}</div>`).join('')
+        : '<p class="search-result search-result--empty">Ничего не найдено</p>';
+    });
+
+    updateAccessUI();
+    renderMessages();
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  </script>
+</body>
+</html>
