@@ -760,6 +760,39 @@ ul {
   box-shadow: 0 0 0 3px rgba(42, 82, 128, 0.15);
 }
 
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field .form__input {
+  width: 100%;
+  padding-right: 88px;
+}
+
+.password-field__toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-primary-light);
+  cursor: pointer;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.password-field__toggle:hover {
+  color: var(--color-primary);
+  background: var(--color-bg);
+}
+
 .form__checkboxes {
   border: none;
   display: flex;
