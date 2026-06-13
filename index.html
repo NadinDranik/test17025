@@ -25,8 +25,8 @@
         <a href="#free" class="nav__link">Тарифы</a>
       </nav>
       <div class="header__actions">
-        <a href="#login" class="btn btn--ghost">Войти</a>
-        <a href="#register" class="btn btn--primary">Зарегистрироваться</a>
+        <a href="login.html" class="btn btn--ghost">Войти</a>
+        <a href="login.html?tab=register" class="btn btn--primary">Зарегистрироваться</a>
       </div>
       <button class="burger" aria-label="Открыть меню" aria-expanded="false">
         <span></span>
@@ -35,6 +35,8 @@
       </button>
     </div>
   </header>
+
+  <div id="user-profile-bar" class="user-profile-bar" hidden></div>
 
   <main>
 
@@ -52,9 +54,9 @@
             подготовки к проверкам, несоответствий, корректирующих действий и практических вопросов лабораторной деятельности.
           </p>
           <div class="hero__buttons">
-            <a href="#register" class="btn btn--primary btn--lg">Зарегистрироваться</a>
-            <a href="#login" class="btn btn--outline btn--lg">Войти</a>
-            <a href="pro-request.html" class="btn btn--pro btn--lg">Получить PRO-доступ</a>
+            <a href="login.html?tab=register" class="btn btn--primary btn--lg">Зарегистрироваться</a>
+            <a href="login.html" class="btn btn--outline btn--lg">Войти</a>
+            <a href="login.html?next=pro-request.html" class="btn btn--pro btn--lg">Получить PRO-доступ</a>
           </div>
         </div>
         <aside class="hero__aside">
@@ -181,7 +183,7 @@
               <li>Доступ к дополнительным материалам участников</li>
               <li>Структурированное обсуждение вопросов аккредитации</li>
             </ul>
-            <a href="pro-request.html" class="btn btn--pro btn--block">Получить PRO-доступ</a>
+            <a href="login.html?next=pro-request.html" class="btn btn--pro btn--block">Получить PRO-доступ</a>
             <p class="pricing-card__note">Оплата осуществляется через администратора сообщества.</p>
           </div>
 
@@ -275,6 +277,10 @@
       <h2 class="modal__title">Регистрация</h2>
       <form class="form" action="#" method="post">
         <label class="form__label">
+          Ник (отображается в чате)
+          <input type="text" class="form__input" name="nickname" required placeholder="Например: LabExpert" minlength="2" maxlength="30">
+        </label>
+        <label class="form__label">
           Email
           <input type="email" class="form__input" name="email" required placeholder="example@mail.ru">
         </label>
@@ -327,19 +333,23 @@
     UI.initAuthForms();
     UI.initBurger();
 
-    (function updateHeaderForUser() {
+    (function initIndexHeader() {
       var user = App.getCurrentUser();
+      UI.renderUserProfileBar(user);
       if (!user) return;
       var actions = document.querySelector('.header__actions');
       if (!actions) return;
       var status = App.getSubscriptionStatus(user);
       var badge = (status === 'pro' || status === 'admin')
         ? '<span class="user-badge user-badge--pro">PRO</span>'
-        : '';
+        : status === 'expired'
+          ? '<span class="user-badge user-badge--expired">PRO истёк</span>'
+          : '<span class="user-badge">Free</span>';
       var adminLink = user.role === 'admin'
         ? '<a href="admin.html" class="btn btn--ghost btn--sm">Админ</a>'
         : '';
       actions.innerHTML = badge +
+        '<span class="user-menu__nick">' + App.getDisplayName(user) + '</span>' +
         '<a href="chat.html" class="btn btn--ghost btn--sm">Чат</a>' +
         (user.role === 'admin' || App.isProActive(user)
           ? '<a href="pro.html" class="btn btn--ghost btn--sm">PRO</a>'
