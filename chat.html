@@ -25,12 +25,14 @@
     </div>
   </header>
 
+  <div id="user-profile-bar" class="user-profile-bar" hidden></div>
+
   <main class="chat-layout">
     <div class="container chat-layout__inner">
       <aside class="chat-sidebar">
         <h1 class="chat-sidebar__title">Общий чат</h1>
         <p class="chat-sidebar__desc">Бесплатное профессиональное общение участников сообщества.</p>
-        <div class="chat-sidebar__info" id="access-info"></div>
+        <div class="chat-sidebar__info" id="access-info" data-user-profile></div>
         <div class="search-box">
           <input type="search" class="form__input" id="search-input" placeholder="Поиск по сообщениям и файлам…">
           <button type="button" class="btn btn--outline btn--sm btn--block" id="search-btn">Найти</button>
@@ -64,7 +66,7 @@
           </form>
         </div>
         <div class="chat-guest-notice" id="guest-notice" hidden>
-          <p>Для отправки сообщений необходимо <a href="index.html#login">войти</a> или <a href="index.html#register">зарегистрироваться</a>.</p>
+          <p>Для отправки сообщений необходимо <a href="login.html?next=chat.html">войти</a> или <a href="login.html?tab=register&next=chat.html">зарегистрироваться</a>.</p>
         </div>
       </section>
     </div>
@@ -95,12 +97,10 @@
 
     function updateAccessUI() {
       currentUser = App.getCurrentUser();
+      UI.refreshUserProfile();
       if (currentUser) {
         composeArea.hidden = false;
         guestNotice.hidden = true;
-        const status = App.getSubscriptionStatus(currentUser);
-        accessInfo.innerHTML = `<p>Вы вошли как <strong>${currentUser.email}</strong></p>
-          <p>Статус: <strong>${status === 'pro' || status === 'admin' ? 'PRO активен' : status === 'expired' ? 'PRO истёк' : 'Free'}</strong></p>`;
       } else {
         composeArea.hidden = true;
         guestNotice.hidden = false;
@@ -144,7 +144,7 @@
       if (!q) { resultsEl.innerHTML = ''; return; }
       const results = App.searchMessages(q, [CHAT_ID]);
       resultsEl.innerHTML = results.length
-        ? results.map(r => `<div class="search-result"><strong>${r.authorEmail}</strong><br>${UI.escapeHtml((r.text || r.files?.[0]?.name || '').slice(0, 100))}</div>`).join('')
+        ? results.map(r => `<div class="search-result"><strong>${r.authorName || r.authorEmail}</strong><br>${UI.escapeHtml((r.text || r.files?.[0]?.name || '').slice(0, 100))}</div>`).join('')
         : '<p class="search-result search-result--empty">Ничего не найдено</p>';
     });
 
