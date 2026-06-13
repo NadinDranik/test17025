@@ -81,6 +81,7 @@
   <script src="js/ui.js"></script>
   <script src="js/chat-send.js"></script>
   <script>
+    App.ready.then(() => {
     const CHAT_ID = 'free';
     let currentUser = App.getCurrentUser();
     let replyToId = null;
@@ -155,6 +156,12 @@
 
     updateAccessUI();
     renderMessages();
+
+    window.addEventListener('gost-data-synced', () => {
+      updateAccessUI();
+      renderMessages();
+    });
+    });
   </script>
 </body>
 </html>
