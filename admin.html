@@ -25,6 +25,8 @@
     </div>
   </header>
 
+  <div id="user-profile-bar" class="user-profile-bar" hidden></div>
+
   <main class="admin-layout">
     <!-- Форма входа (если не авторизован как админ) -->
     <div class="container" id="admin-login-wrap">
@@ -85,9 +87,11 @@
           <table class="admin-table" id="users-table">
             <thead>
               <tr>
+                <th>Ник</th>
                 <th>Email</th>
                 <th>Регистрация</th>
                 <th>Статус</th>
+                <th>Дата оплаты</th>
                 <th>PRO до</th>
                 <th>Активность</th>
                 <th>Действия</th>
@@ -215,6 +219,7 @@
       loginWrap.hidden = true;
       adminContent.hidden = false;
       UI.initHeader('admin');
+      UI.refreshUserProfile();
       initAdminPanel();
     }
 
@@ -320,9 +325,11 @@
 
       document.querySelector('#users-table tbody').innerHTML = users.map(u => `
         <tr>
+          <td><strong>${App.getDisplayName(u)}</strong></td>
           <td>${u.email}</td>
           <td>${App.formatDate(u.registeredAt)}</td>
           <td>${getStatusBadge(u)}</td>
+          <td>${App.formatDate(u.proPaidAt)}</td>
           <td>${App.formatDate(u.proExpiresAt)}</td>
           <td>${App.formatDate(u.lastActive)}</td>
           <td class="admin-actions">
@@ -335,7 +342,7 @@
               ? `<button type="button" class="btn btn--sm btn--primary" data-action="unblock" data-id="${u.id}">Разблок.</button>`
               : `<button type="button" class="btn btn--sm btn--danger" data-action="block" data-id="${u.id}">Блок</button>`}
           </td>
-        </tr>`).join('') || '<tr><td colspan="6" class="table-empty">Нет пользователей</td></tr>';
+        </tr>`).join('') || '<tr><td colspan="8" class="table-empty">Нет пользователей</td></tr>';
     }
 
     document.querySelector('#users-table tbody').addEventListener('click', e => {
@@ -431,7 +438,7 @@
             const grantBtn = (chatId === App.CHAT_ADMIN_SUPPORT && author)
               ? `<button type="button" class="btn btn--sm btn--pro" data-grant="${author.id}">Выдать PRO 30 дн.</button>` : '';
             return `<div class="mod-msg">
-              <div><strong>${m.authorEmail}</strong> · ${App.formatDateTime(m.createdAt)}</div>
+              <div><strong>${App.getDisplayName(author || { email: m.authorEmail, nickname: m.authorName })}</strong> · ${m.authorEmail} · ${App.formatDateTime(m.createdAt)}</div>
               <p>${UI.escapeHtml((m.text || '').slice(0, 200))}${!m.text && m.files?.length ? ' (прикреплён файл)' : ''}</p>
               ${filesInfo}
               <div class="admin-actions">
