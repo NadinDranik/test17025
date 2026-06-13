@@ -6,6 +6,15 @@ const App = (function () {
   const SESSION_KEY = 'gost17025_session';
   const ADMIN_EMAIL = 'admin@gost17025.pro';
   const ADMIN_PASSWORD = 'admin123';
+  const CHAT_FREE = 'free';
+  const CHAT_ADMIN_SUPPORT = 'admin-support';
+
+  const PRO_PAYMENT_INFO = {
+    phone: '89824586893',
+    bank: 'Альфа банк',
+    recipient: 'Надежда Николаевна Д.',
+    text: 'Для получения PRO-доступа необходимо оплатить по номеру телефона 89824586893 на Альфа банк, Надежда Николаевна Д. Пришлите чек или скрин об оплате — и вам предоставят доступ.'
+  };
 
   function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -15,7 +24,7 @@ const App = (function () {
     return {
       users: [createAdminUser()],
       proTopics: [],
-      messages: { free: [] },
+      messages: { free: [], [CHAT_ADMIN_SUPPORT]: [] },
       notifications: []
     };
   }
@@ -50,6 +59,14 @@ const App = (function () {
         registeredAt: admin.registeredAt || new Date().toISOString(),
         lastActive: admin.lastActive || new Date().toISOString()
       };
+      save(data);
+    }
+  }
+
+  function ensureAdminSupportChat() {
+    const data = load();
+    if (!data.messages[CHAT_ADMIN_SUPPORT]) {
+      data.messages[CHAT_ADMIN_SUPPORT] = [];
       save(data);
     }
   }
@@ -378,7 +395,15 @@ const App = (function () {
     }).catch(err => ({
       ok: false,
       error: err.message || 'Ошибка при отправке'
-    }));
+    })).then(result => {
+      if (result.ok && chatId === CHAT_ADMIN_SUPPORT && user.role !== 'admin') {
+        const admin = load().users.find(u => u.role === 'admin');
+        if (admin) {
+          addNotification(admin.id, 'Новая заявка на PRO от ' + user.email);
+        }
+      }
+      return result;
+    });
   }
 
   function editMessage(chatId, msgId, userId, newText) {
@@ -637,7 +662,7 @@ const App = (function () {
     if (!user) return null;
     if (!isProActive(user)) {
       alert('PRO-доступ недоступен. Обратитесь к администратору для оформления подписки.');
-      window.location.href = 'index.html#pro';
+      window.location.href = 'pro-request.html';
       return null;
     }
     return user;
@@ -645,10 +670,12 @@ const App = (function () {
 
   expireSubscriptions();
   ensureAdmin();
+  ensureAdminSupportChat();
 
   return {
     getData, getCurrentUser, getSession, login, logout, register,
-    ensureAdmin, ADMIN_EMAIL, ADMIN_PASSWORD,
+    ensureAdmin, ensureAdminSupportChat, ADMIN_EMAIL, ADMIN_PASSWORD,
+    CHAT_FREE, CHAT_ADMIN_SUPPORT, PRO_PAYMENT_INFO,
     isProActive, getSubscriptionStatus, grantPro, extendPro, revokePro,
     setProExpiry, blockUser, updateUser,
     getProTopics, createProTopic, updateProTopic, deleteProTopic,
