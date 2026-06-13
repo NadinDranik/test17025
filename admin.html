@@ -63,13 +63,31 @@
       <!-- Статистика -->
       <div class="admin-stats" id="stats"></div>
 
+      <!-- Оповещение о новых заявках -->
+      <div class="admin-alert" id="admin-alert-pro" hidden>
+        <div class="admin-alert__content">
+          <strong>🔔 Поступили новые заявки на PRO!</strong>
+          <span>Ожидают обработки: <strong id="admin-alert-count">0</strong></span>
+        </div>
+        <button type="button" class="btn btn--pro btn--sm" id="btn-go-requests">Открыть заявки</button>
+      </div>
+
       <!-- Вкладки -->
       <div class="admin-tabs">
+        <button type="button" class="admin-tab" data-tab="requests">
+          Заявки PRO <span class="tab-badge" id="pro-requests-badge" hidden>0</span>
+        </button>
         <button type="button" class="admin-tab admin-tab--active" data-tab="users">Пользователи</button>
         <button type="button" class="admin-tab" data-tab="pro">PRO-подписки</button>
         <button type="button" class="admin-tab" data-tab="topics">PRO-чаты</button>
         <button type="button" class="admin-tab" data-tab="moderation">Модерация</button>
       </div>
+
+      <!-- Заявки PRO -->
+      <section class="admin-panel" id="panel-requests" hidden>
+        <p class="admin-panel__desc">Здесь отображаются сообщения пользователей из чата оформления PRO — с текстом и прикреплёнными чеками.</p>
+        <div id="pro-requests-list" class="pro-requests-list"></div>
+      </section>
 
       <!-- Пользователи -->
       <section class="admin-panel" id="panel-users">
@@ -265,14 +283,23 @@
     const nonAdminUsers = data.users.filter(u => u.role !== 'admin');
 
     /* Tabs */
-    document.querySelectorAll('.admin-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('admin-tab--active'));
-        document.querySelectorAll('.admin-panel').forEach(p => p.hidden = true);
-        tab.classList.add('admin-tab--active');
-        document.getElementById('panel-' + tab.dataset.tab).hidden = false;
+    function switchTab(tabName) {
+      document.querySelectorAll('.admin-tab').forEach(t => {
+        t.classList.toggle('admin-tab--active', t.dataset.tab === tabName);
       });
+      document.querySelectorAll('.admin-panel').forEach(p => p.hidden = true);
+      document.getElementById('panel-' + tabName).hidden = false;
+    }
+
+    document.querySelectorAll('.admin-tab').forEach(tab => {
+      tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
+
+    document.getElementById('btn-go-requests')?.addEventListener('click', () => switchTab('requests'));
+
+    if (window.location.hash === '#requests') {
+      switchTab('requests');
+    }
 
     function getStatusBadge(user) {
       const s = App.getSubscriptionStatus(user);
@@ -290,14 +317,88 @@
       const users = App.getData().users.filter(u => u.role !== 'admin');
       const active = users.filter(u => App.isProActive(u));
       const expired = users.filter(u => u.proExpiresAt && !App.isProActive(u) && !u.blocked);
-      const free = users.filter(u => !u.proExpiresAt && !u.blocked);
+      const pending = App.getPendingProRequestCount();
       const topics = App.getProTopics(true);
 
       document.getElementById('stats').innerHTML = `
+        <div class="stat-card stat-card--alert${pending ? ' stat-card--pulse' : ''}" id="stat-pending" title="Открыть заявки PRO">
+          <span class="stat-card__num">${pending}</span><span class="stat-card__label">Новых заявок PRO</span>
+        </div>
         <div class="stat-card"><span class="stat-card__num">${users.length}</span><span class="stat-card__label">Пользователей</span></div>
         <div class="stat-card stat-card--pro"><span class="stat-card__num">${active.length}</span><span class="stat-card__label">Активных PRO</span></div>
         <div class="stat-card stat-card--warn"><span class="stat-card__num">${expired.length}</span><span class="stat-card__label">Истёк PRO</span></div>
         <div class="stat-card"><span class="stat-card__num">${topics.length}</span><span class="stat-card__label">PRO-чатов</span></div>`;
+
+      document.getElementById('stat-pending')?.addEventListener('click', () => switchTab('requests'));
+    }
+
+    function renderProRequests() {
+      const pending = App.getProRequests('pending');
+      const processed = App.getProRequests('processed').slice(0, 10);
+      const count = pending.length;
+
+      const badge = document.getElementById('pro-requests-badge');
+      if (badge) {
+        badge.textContent = count;
+        badge.hidden = count === 0;
+      }
+
+      const alert = document.getElementById('admin-alert-pro');
+      const alertCount = document.getElementById('admin-alert-count');
+      if (alert) alert.hidden = count === 0;
+      if (alertCount) alertCount.textContent = count;
+
+      const requestsTab = document.querySelector('.admin-tab[data-tab="requests"]');
+      if (requestsTab && count > 0) {
+        requestsTab.classList.add('admin-tab--has-new');
+      } else if (requestsTab) {
+        requestsTab.classList.remove('admin-tab--has-new');
+      }
+
+      const list = document.getElementById('pro-requests-list');
+      if (!list) return;
+
+      const renderItem = (req, isPending) => `
+        <article class="pro-request${isPending ? ' pro-request--new' : ''}">
+          <header class="pro-request__header">
+            <div>
+              <strong class="pro-request__nick">${req.userNickname}</strong>
+              <span class="pro-request__email">${req.userEmail}</span>
+            </div>
+            <time>${App.formatDateTime(req.createdAt)}</time>
+          </header>
+          ${req.text ? `<p class="pro-request__text">${UI.escapeHtml(req.text)}</p>` : ''}
+          ${req.files && req.files.length
+            ? `<p class="pro-request__files">📎 Файлы: ${req.files.map(f => f.name).join(', ')}</p>` : ''}
+          ${isPending ? `<div class="admin-actions">
+            <button type="button" class="btn btn--sm btn--pro" data-grant-req="${req.userId}" data-req-id="${req.id}">✓ Выдать PRO 30 дн.</button>
+            <button type="button" class="btn btn--sm btn--outline" data-done-req="${req.id}">Отметить обработанной</button>
+          </div>` : `<span class="badge badge--pro">Обработана ${App.formatDate(req.processedAt)}</span>`}
+        </article>`;
+
+      list.innerHTML = count
+        ? '<h3 class="admin-subtitle">Ожидают обработки</h3>' +
+          pending.map(r => renderItem(r, true)).join('') +
+          (processed.length ? '<h3 class="admin-subtitle">Недавно обработанные</h3>' +
+          processed.map(r => renderItem(r, false)).join('') : '')
+        : '<p class="table-empty">Нет новых заявок. Когда пользователь напишет в чат оформления PRO, заявка появится здесь.</p>';
+
+      list.querySelectorAll('[data-grant-req]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          App.grantPro(btn.dataset.grantReq, 30);
+          App.markProRequestProcessed(btn.dataset.reqId);
+          toast('PRO выдан на 30 дней');
+          refresh();
+        });
+      });
+
+      list.querySelectorAll('[data-done-req]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          App.markProRequestProcessed(btn.dataset.doneReq);
+          toast('Заявка отмечена как обработанная');
+          refresh();
+        });
+      });
     }
 
     function fillUserSelects() {
@@ -534,14 +635,20 @@
 
     function refresh() {
       renderStats();
+      renderProRequests();
       fillUserSelects();
       renderUsers();
       renderSubsLists();
       renderTopics();
       renderModeration();
+      const admin = App.getCurrentUser();
+      if (admin) UI.updateNotificationBadge(admin.id);
     }
 
     refresh();
+    if (App.getPendingProRequestCount() > 0 && window.location.hash !== '#requests') {
+      switchTab('requests');
+    }
     }
   </script>
 </body>
