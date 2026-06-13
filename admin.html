@@ -194,6 +194,9 @@
         </div>
         <h3 class="admin-subtitle">Последние сообщения (общий чат)</h3>
         <div id="mod-messages" class="mod-messages"></div>
+        <h3 class="admin-subtitle">Заявки на PRO — чат с администратором</h3>
+        <p class="admin-panel__desc">Сообщения пользователей с чеками об оплате. После проверки выдайте PRO во вкладке «PRO-подписки».</p>
+        <div id="mod-support-messages" class="mod-messages"></div>
       </section>
 
     </div>
@@ -416,23 +419,51 @@
       refresh();
     });
 
-    function renderModeration() {
-      const msgs = App.getMessages('free').slice(-20).reverse();
-      document.getElementById('mod-messages').innerHTML = msgs.length
-        ? msgs.map(m => `<div class="mod-msg">
-            <div><strong>${m.authorEmail}</strong> · ${App.formatDateTime(m.createdAt)}</div>
-            <p>${UI.escapeHtml(m.text.slice(0, 200))}</p>
-            <button type="button" class="btn btn--sm btn--danger" data-del-msg="${m.id}">Удалить</button>
-          </div>`).join('')
+    function renderModChatList(chatId, containerId, delPrefix) {
+      const msgs = App.getMessages(chatId).slice(-20).reverse();
+      const container = document.getElementById(containerId);
+      container.innerHTML = msgs.length
+        ? msgs.map(m => {
+            const users = App.getData().users.filter(u => u.role !== 'admin');
+            const author = users.find(u => u.email === m.authorEmail);
+            const filesInfo = (m.files && m.files.length)
+              ? `<p class="mod-msg__files">📎 ${m.files.map(f => f.name).join(', ')}</p>` : '';
+            const grantBtn = (chatId === App.CHAT_ADMIN_SUPPORT && author)
+              ? `<button type="button" class="btn btn--sm btn--pro" data-grant="${author.id}">Выдать PRO 30 дн.</button>` : '';
+            return `<div class="mod-msg">
+              <div><strong>${m.authorEmail}</strong> · ${App.formatDateTime(m.createdAt)}</div>
+              <p>${UI.escapeHtml((m.text || '').slice(0, 200))}${!m.text && m.files?.length ? ' (прикреплён файл)' : ''}</p>
+              ${filesInfo}
+              <div class="admin-actions">
+                ${grantBtn}
+                <button type="button" class="btn btn--sm btn--danger" data-del="${delPrefix}:${m.id}">Удалить</button>
+              </div>
+            </div>`;
+          }).join('')
         : '<p class="table-empty">Нет сообщений</p>';
 
-      document.querySelectorAll('[data-del-msg]').forEach(btn => {
+      container.querySelectorAll('[data-del]').forEach(btn => {
         btn.addEventListener('click', () => {
-          App.deleteMessage('free', btn.dataset.delMsg);
+          const [prefix, id] = btn.dataset.del.split(':');
+          const cid = prefix === 'support' ? App.CHAT_ADMIN_SUPPORT : 'free';
+          App.deleteMessage(cid, id);
           toast('Сообщение удалено');
           renderModeration();
         });
       });
+
+      container.querySelectorAll('[data-grant]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          App.grantPro(btn.dataset.grant, 30);
+          toast('PRO выдан на 30 дней');
+          refresh();
+        });
+      });
+    }
+
+    function renderModeration() {
+      renderModChatList('free', 'mod-messages', 'free');
+      renderModChatList(App.CHAT_ADMIN_SUPPORT, 'mod-support-messages', 'support');
     }
 
     document.getElementById('grant-form').addEventListener('submit', e => {
