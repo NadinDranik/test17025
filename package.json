@@ -2,7 +2,7 @@
   "name": "gost17025-community",
   "version": "1.0.0",
   "private": true,
-  "description": "Гид PRO ГОСТ ISO/IEC 17025-2019 — сервер с общим хранилищем",
+  "description": "Гид PRO ГОСТ ISO/IEC 17025-2019 — сервер с SQLite и WebSocket",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js"
@@ -11,6 +11,8 @@
     "node": ">=18"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "better-sqlite3": "^11.10.0",
+    "express": "^4.21.2",
+    "ws": "^8.18.3"
   }
 }
