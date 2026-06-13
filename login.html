@@ -75,7 +75,10 @@
   </main>
 
   <script src="js/app.js"></script>
+  <script src="js/ui.js"></script>
   <script>
+    UI.initPasswordToggles();
+
     const params = new URLSearchParams(window.location.search);
     const nextPage = params.get('next') || '';
     const tabParam = params.get('tab');
