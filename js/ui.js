@@ -126,7 +126,11 @@ const UI = (function () {
       notice.textContent = 'Подключено к серверу — сообщения синхронизируются между телефоном и компьютером.';
       setTimeout(() => notice.remove(), 5000);
     } else {
-      notice.innerHTML = 'Синхронизация недоступна. Запустите сервер командой <strong>npm start</strong> и откройте сайт по адресу <strong>http://IP-вашего-ПК:3000</strong> на телефоне и на компьютере (не открывайте файлы напрямую).';
+      const host = window.location.hostname || '';
+      const onGithubPages = host.endsWith('github.io');
+      notice.innerHTML = onGithubPages
+        ? '<strong>GitHub Pages не поддерживает чаты и подписчиков.</strong> Здесь только статическая витрина. Для работы сообщества нужен сервер с Node.js — разверните проект на Render, Railway или VPS и открывайте сайт по адресу этого сервера (не github.io).'
+        : 'Синхронизация недоступна. Запустите сервер командой <strong>npm start</strong> и откройте сайт по адресу <strong>http://IP-вашего-ПК:3000</strong> на телефоне и на компьютере (не открывайте файлы напрямую).';
     }
     document.querySelector('.header')?.insertAdjacentElement('afterend', notice);
   }
