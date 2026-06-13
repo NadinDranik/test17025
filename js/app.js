@@ -7,6 +7,9 @@ const App = (function () {
   let syncEnabled = false;
   let syncVersion = 0;
   let syncPollTimer = null;
+  let syncSocket = null;
+  let syncSocketTimer = null;
+  let lastPushPromise = Promise.resolve();
   const ADMIN_EMAIL = 'admin@gost17025.pro';
   const ADMIN_PASSWORD = 'admin123';
   const CHAT_FREE = 'free';
@@ -297,8 +300,12 @@ const App = (function () {
     const res = await fetch('/api/data', { cache: 'no-store' });
     if (!res.ok) throw new Error('API unavailable');
     const payload = await res.json();
-    syncVersion = payload.version || 0;
-    if (payload.data) {
+    if (payload.version !== syncVersion && payload.data) {
+      syncVersion = payload.version || 0;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload.data));
+      window.dispatchEvent(new CustomEvent('gost-data-synced'));
+    } else if (payload.data) {
+      syncVersion = payload.version || 0;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload.data));
     }
     return payload;
@@ -313,19 +320,60 @@ const App = (function () {
     }).then(res => (res.ok ? res.json() : null)).then(result => {
       if (result?.version) syncVersion = result.version;
     }).catch(err => console.warn('Sync push failed:', err));
+    lastPushPromise = task;
     if (wait) await task;
+  }
+
+  function awaitSync() {
+    return lastPushPromise;
+  }
+
+  function applyRemoteVersion(version) {
+    if (!version || version === syncVersion) return;
+    pullFromServer().catch(() => {});
+  }
+
+  function connectSyncSocket() {
+    if (!syncEnabled || typeof WebSocket === 'undefined') return;
+    if (syncSocket) {
+      try { syncSocket.close(); } catch { /* ignore */ }
+    }
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    syncSocket = new WebSocket(protocol + '//' + window.location.host + '/ws');
+
+    syncSocket.addEventListener('message', (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'data-updated') applyRemoteVersion(msg.version);
+        if (msg.type === 'connected' && msg.version) applyRemoteVersion(msg.version);
+      } catch { /* ignore */ }
+    });
+
+    syncSocket.addEventListener('close', () => {
+      if (!syncEnabled) return;
+      clearTimeout(syncSocketTimer);
+      syncSocketTimer = setTimeout(connectSyncSocket, 2000);
+    });
+
+    syncSocket.addEventListener('error', () => {
+      try { syncSocket.close(); } catch { /* ignore */ }
+    });
   }
 
   async function initSync() {
     if (typeof window === 'undefined' || window.location.protocol === 'file:') return;
     try {
+      const health = await fetch('/api/health', { cache: 'no-store' });
+      if (!health.ok) throw new Error('API unavailable');
       const payload = await pullFromServer();
       const localRaw = localStorage.getItem(STORAGE_KEY);
       const localData = localRaw ? JSON.parse(localRaw) : null;
       if (!hasStoredActivity(payload.data) && hasStoredActivity(localData)) {
         await pushToServer(localData, true);
+        await pullFromServer();
       }
       syncEnabled = true;
+      connectSyncSocket();
     } catch {
       syncEnabled = false;
     }
@@ -333,18 +381,9 @@ const App = (function () {
 
   function startSyncPolling() {
     if (!syncEnabled || syncPollTimer) return;
-    syncPollTimer = setInterval(async () => {
-      try {
-        const res = await fetch('/api/data', { cache: 'no-store' });
-        if (!res.ok) return;
-        const payload = await res.json();
-        if (payload.version !== syncVersion && payload.data) {
-          syncVersion = payload.version;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload.data));
-          window.dispatchEvent(new CustomEvent('gost-data-synced'));
-        }
-      } catch { /* offline */ }
-    }, 2500);
+    syncPollTimer = setInterval(() => {
+      pullFromServer().catch(() => {});
+    }, 30000);
   }
 
   function isSyncEnabled() {
@@ -689,7 +728,7 @@ const App = (function () {
       })
     );
 
-    return Promise.all(saveFiles).then(() => {
+    return Promise.all(saveFiles).then(async () => {
       const data = load();
       if (!data.messages[chatId]) data.messages[chatId] = [];
       const msg = {
@@ -709,6 +748,7 @@ const App = (function () {
         fileMeta.forEach(f => FileDB.remove(f.id));
         return { ok: false, error: 'Не удалось сохранить сообщение. Очистите старые данные браузера.' };
       }
+      await awaitSync();
       touchActivity(userId);
       return { ok: true, msg };
     }).catch(err => ({
