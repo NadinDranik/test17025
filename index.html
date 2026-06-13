@@ -21,7 +21,7 @@
       <nav class="nav" aria-label="Основная навигация">
         <a href="#about" class="nav__link">О проекте</a>
         <a href="chat.html" class="nav__link">Общий чат</a>
-        <a href="pro.html" class="nav__link">PRO-раздел</a>
+        <a href="pro-request.html" class="nav__link">PRO-доступ</a>
         <a href="#free" class="nav__link">Тарифы</a>
       </nav>
       <div class="header__actions">
@@ -54,7 +54,7 @@
           <div class="hero__buttons">
             <a href="#register" class="btn btn--primary btn--lg">Зарегистрироваться</a>
             <a href="#login" class="btn btn--outline btn--lg">Войти</a>
-            <a href="#pro" class="btn btn--pro btn--lg">Получить PRO-доступ</a>
+            <a href="pro-request.html" class="btn btn--pro btn--lg">Получить PRO-доступ</a>
           </div>
         </div>
         <aside class="hero__aside">
@@ -181,7 +181,7 @@
               <li>Доступ к дополнительным материалам участников</li>
               <li>Структурированное обсуждение вопросов аккредитации</li>
             </ul>
-            <a href="#register" class="btn btn--pro btn--block">Получить PRO-доступ</a>
+            <a href="pro-request.html" class="btn btn--pro btn--block">Получить PRO-доступ</a>
             <p class="pricing-card__note">Оплата осуществляется через администратора сообщества.</p>
           </div>
 
@@ -341,6 +341,9 @@
         : '';
       actions.innerHTML = badge +
         '<a href="chat.html" class="btn btn--ghost btn--sm">Чат</a>' +
+        (user.role === 'admin' || App.isProActive(user)
+          ? '<a href="pro.html" class="btn btn--ghost btn--sm">PRO</a>'
+          : '<a href="pro-request.html" class="btn btn--pro btn--sm">PRO</a>') +
         adminLink +
         '<button type="button" class="btn btn--ghost btn--sm" id="btn-logout">Выйти</button>';
       document.getElementById('btn-logout').addEventListener('click', function() {
