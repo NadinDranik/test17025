@@ -1229,6 +1229,22 @@ ul {
   font-weight: 600;
 }
 
+.sync-notice {
+  background: #fff8e6;
+  border-bottom: 1px solid #e6c96a;
+  color: #5c4a12;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  padding: 10px 16px;
+  text-align: center;
+}
+
+[data-theme="dark"] .sync-notice {
+  background: #2a2418;
+  border-bottom-color: rgba(200, 169, 81, 0.35);
+  color: #e8dcc0;
+}
+
 .btn--sm {
   padding: 6px 14px;
   font-size: 0.82rem;
