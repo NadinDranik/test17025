@@ -1,72 +1,38 @@
 /**
- * Локальный сервер с общим хранилищем для синхронизации между устройствами.
+ * Сервер с SQLite и WebSocket для синхронизации между устройствами.
  * Запуск: npm install && npm start
- * Открыть с телефона: http://<IP-компьютера>:3000
  */
 const express = require('express');
-const fs = require('fs');
+const http = require('http');
 const path = require('path');
+const { WebSocketServer } = require('ws');
+const db = require('./server/db');
 
 const app = express();
 const ROOT = __dirname;
-const DATA_DIR = path.join(ROOT, 'data');
-const STORE_FILE = path.join(DATA_DIR, 'store.json');
-const FILES_DIR = path.join(DATA_DIR, 'files');
 const PORT = process.env.PORT || 3000;
 
-const DEFAULT_DATA = {
-  users: [{
-    id: 'admin-1',
-    email: 'admin@gost17025.pro',
-    password: 'admin123',
-    nickname: 'Администратор',
-    role: 'admin',
-    registeredAt: new Date().toISOString(),
-    proPaidAt: null,
-    proExpiresAt: null,
-    blocked: false,
-    lastActive: new Date().toISOString()
-  }],
-  proTopics: [],
-  messages: { free: [], 'admin-support': [] },
-  notifications: [],
-  proRequests: []
-};
-
-function ensureDirs() {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.mkdirSync(FILES_DIR, { recursive: true });
-}
-
-function readStore() {
-  ensureDirs();
-  if (!fs.existsSync(STORE_FILE)) {
-    const initial = { version: 1, data: DEFAULT_DATA };
-    fs.writeFileSync(STORE_FILE, JSON.stringify(initial, null, 2), 'utf8');
-    return initial;
-  }
-  try {
-    return JSON.parse(fs.readFileSync(STORE_FILE, 'utf8'));
-  } catch {
-    const initial = { version: 1, data: DEFAULT_DATA };
-    fs.writeFileSync(STORE_FILE, JSON.stringify(initial, null, 2), 'utf8');
-    return initial;
-  }
-}
-
-function writeStore(store) {
-  ensureDirs();
-  fs.writeFileSync(STORE_FILE, JSON.stringify(store, null, 2), 'utf8');
-}
+db.initDb();
 
 function safeFileId(id) {
   return String(id || '').replace(/[^a-zA-Z0-9_-]/g, '');
 }
 
+function broadcast(message) {
+  const payload = JSON.stringify(message);
+  wss.clients.forEach(client => {
+    if (client.readyState === 1) client.send(payload);
+  });
+}
+
 app.use(express.json({ limit: '50mb' }));
 
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, storage: 'sqlite' });
+});
+
 app.get('/api/data', (req, res) => {
-  const store = readStore();
+  const store = db.getStore();
   res.json({ version: store.version, data: store.data });
 });
 
@@ -75,19 +41,17 @@ app.put('/api/data', (req, res) => {
   if (!data || typeof data !== 'object') {
     return res.status(400).json({ error: 'Некорректные данные' });
   }
-  const store = readStore();
-  store.version += 1;
-  store.data = data;
-  writeStore(store);
-  res.json({ ok: true, version: store.version });
+  const version = db.saveStore(data);
+  broadcast({ type: 'data-updated', version });
+  res.json({ ok: true, version });
 });
 
 app.get('/api/files/:id', (req, res) => {
   const id = safeFileId(req.params.id);
   if (!id) return res.status(400).json({ error: 'Некорректный id' });
-  const filePath = path.join(FILES_DIR, id);
-  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Файл не найден' });
-  res.json({ dataUrl: fs.readFileSync(filePath, 'utf8') });
+  const dataUrl = db.getFile(id);
+  if (!dataUrl) return res.status(404).json({ error: 'Файл не найден' });
+  res.json({ dataUrl });
 });
 
 app.put('/api/files/:id', (req, res) => {
@@ -96,27 +60,35 @@ app.put('/api/files/:id', (req, res) => {
   if (!id || !dataUrl || typeof dataUrl !== 'string') {
     return res.status(400).json({ error: 'Некорректный файл' });
   }
-  ensureDirs();
-  fs.writeFileSync(path.join(FILES_DIR, id), dataUrl, 'utf8');
+  db.saveFile(id, dataUrl);
   res.json({ ok: true });
 });
 
 app.delete('/api/files/:id', (req, res) => {
   const id = safeFileId(req.params.id);
   if (!id) return res.status(400).json({ error: 'Некорректный id' });
-  const filePath = path.join(FILES_DIR, id);
-  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  db.deleteFile(id);
   res.json({ ok: true });
 });
 
 app.use(express.static(ROOT));
 
-app.listen(PORT, '0.0.0.0', () => {
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server, path: '/ws' });
+
+wss.on('connection', (ws) => {
+  const store = db.getStore();
+  ws.send(JSON.stringify({ type: 'connected', version: store.version }));
+
+  ws.on('error', () => {});
+});
+
+server.listen(PORT, '0.0.0.0', () => {
   console.log('');
-  console.log('  Гид PRO — сервер запущен');
-  console.log('  На этом компьютере:  http://localhost:' + PORT);
-  console.log('  С телефона (Wi‑Fi):  http://<IP-этого-ПК>:' + PORT);
+  console.log('  Гид PRO — сервер с базой данных SQLite');
+  console.log('  Компьютер:  http://localhost:' + PORT);
+  console.log('  Телефон:    http://<IP-этого-ПК>:' + PORT);
   console.log('');
-  console.log('  Важно: и телефон, и ПК должны открывать сайт по этому адресу.');
+  console.log('  Откройте этот адрес на телефоне и на ПК — данные синхронизируются мгновенно.');
   console.log('');
 });
