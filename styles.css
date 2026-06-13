@@ -2017,6 +2017,18 @@ ul {
   color: var(--color-text);
 }
 
+.msg--welcome {
+  background: linear-gradient(135deg, #fdfaf3 0%, #f5edd8 100%);
+  border: 1px solid rgba(200, 169, 81, 0.45);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+
+[data-theme="dark"] .msg--welcome {
+  background: linear-gradient(135deg, #2a2418 0%, #1f1a12 100%);
+  border-color: rgba(200, 169, 81, 0.35);
+}
+
 .mod-msg__files {
   font-size: 0.82rem;
   color: var(--color-primary);
@@ -2764,6 +2776,39 @@ ul {
 
   .payment-banner {
     display: none;
+  }
+
+  .page-pro-request .chat-main {
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+  }
+
+  .page-pro-request .payment-banner {
+    display: flex;
+    grid-row: 2;
+    padding: 8px;
+    gap: 8px;
+    flex-shrink: 0;
+    max-height: 32vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page-pro-request .payment-banner__icon {
+    font-size: 1.1rem;
+  }
+
+  .page-pro-request .payment-banner__text {
+    font-size: 0.72rem;
+    line-height: 1.45;
+  }
+
+  .page-pro-request .chat-messages,
+  .page-pro-request .chat-empty {
+    grid-row: 3;
+  }
+
+  .page-pro-request .chat-compose {
+    grid-row: 4;
   }
 
   .chat-messages,
