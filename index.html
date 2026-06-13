@@ -340,6 +340,7 @@
   <script src="js/app.js"></script>
   <script src="js/ui.js"></script>
   <script>
+    App.ready.then(() => {
     UI.initAuthForms();
     UI.initBurger();
 
@@ -378,6 +379,7 @@
       var user = App.getCurrentUser();
       btn.href = user ? 'pro-request.html' : App.getLoginUrl('pro-request.html');
     })();
+    });
   </script>
 
 </body>
