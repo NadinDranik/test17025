@@ -25,7 +25,8 @@ const App = (function () {
       users: [createAdminUser()],
       proTopics: [],
       messages: { free: [], [CHAT_ADMIN_SUPPORT]: [] },
-      notifications: []
+      notifications: [],
+      proRequests: []
     };
   }
 
@@ -116,6 +117,90 @@ const App = (function () {
       data.messages[CHAT_ADMIN_SUPPORT] = [];
       save(data);
     }
+    if (!data.proRequests) {
+      data.proRequests = [];
+      save(data);
+    }
+    migrateProRequestsFromChat();
+  }
+
+  function migrateProRequestsFromChat() {
+    const data = load();
+    if (!data.proRequests) data.proRequests = [];
+    const msgs = data.messages[CHAT_ADMIN_SUPPORT] || [];
+    let changed = false;
+    msgs.forEach(msg => {
+      const user = data.users.find(u => u.id === msg.userId);
+      if (!user || user.role === 'admin') return;
+      if (data.proRequests.some(r => r.messageId === msg.id)) return;
+      data.proRequests.push({
+        id: uid(),
+        userId: user.id,
+        userEmail: user.email,
+        userNickname: msg.authorName || getDisplayName(user),
+        messageId: msg.id,
+        text: msg.text || '',
+        files: msg.files || [],
+        createdAt: msg.createdAt,
+        status: isProActive(user) ? 'processed' : 'pending',
+        processedAt: isProActive(user) ? new Date().toISOString() : null
+      });
+      changed = true;
+    });
+    if (changed) save(data);
+  }
+
+  function addProRequest(user, msg) {
+    const data = load();
+    if (!data.proRequests) data.proRequests = [];
+    data.proRequests.unshift({
+      id: uid(),
+      userId: user.id,
+      userEmail: user.email,
+      userNickname: getDisplayName(user),
+      messageId: msg.id,
+      text: msg.text || '',
+      files: msg.files || [],
+      createdAt: msg.createdAt,
+      status: 'pending',
+      processedAt: null
+    });
+    save(data);
+  }
+
+  function getProRequests(status) {
+    const list = (load().proRequests || []).slice();
+    if (status) return list.filter(r => r.status === status)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  function getPendingProRequestCount() {
+    return getProRequests('pending').length;
+  }
+
+  function markProRequestProcessed(requestId) {
+    const data = load();
+    const req = data.proRequests?.find(r => r.id === requestId);
+    if (req && req.status === 'pending') {
+      req.status = 'processed';
+      req.processedAt = new Date().toISOString();
+      save(data);
+    }
+    return req;
+  }
+
+  function markProRequestsProcessedByUser(userId) {
+    const data = load();
+    let changed = false;
+    data.proRequests?.forEach(r => {
+      if (r.userId === userId && r.status === 'pending') {
+        r.status = 'processed';
+        r.processedAt = new Date().toISOString();
+        changed = true;
+      }
+    });
+    if (changed) save(data);
   }
 
   function load() {
@@ -322,6 +407,7 @@ const App = (function () {
       proPaidAt: now,
       proExpiresAt: new Date(Date.now() + days * 86400000).toISOString()
     });
+    markProRequestsProcessedByUser(userId);
     addNotification(userId, 'PRO-доступ активирован до ' + formatDate(user.proExpiresAt));
     return user;
   }
@@ -470,7 +556,13 @@ const App = (function () {
       if (result.ok && chatId === CHAT_ADMIN_SUPPORT && user.role !== 'admin') {
         const admin = load().users.find(u => u.role === 'admin');
         if (admin) {
-          addNotification(admin.id, 'Новая заявка на PRO от ' + user.email);
+          addProRequest(user, result.msg);
+          addNotification(
+            admin.id,
+            '🔔 Новая заявка PRO: ' + getDisplayName(user) + ' (' + user.email + ')',
+            'pro_request',
+            result.msg.id
+          );
         }
       }
       return result;
@@ -529,12 +621,14 @@ const App = (function () {
   }
 
   /* Notifications */
-  function addNotification(userId, text) {
+  function addNotification(userId, text, type, refId) {
     const data = load();
     data.notifications.unshift({
       id: uid(),
       userId,
       text,
+      type: type || 'info',
+      refId: refId || null,
       read: false,
       createdAt: new Date().toISOString()
     });
@@ -544,6 +638,22 @@ const App = (function () {
 
   function getNotifications(userId) {
     return load().notifications.filter(n => n.userId === userId);
+  }
+
+  function getUnreadNotificationCount(userId) {
+    return getNotifications(userId).filter(n => !n.read).length;
+  }
+
+  function markNotificationsRead(userId) {
+    const data = load();
+    let changed = false;
+    data.notifications.forEach(n => {
+      if (n.userId === userId && !n.read) {
+        n.read = true;
+        changed = true;
+      }
+    });
+    if (changed) save(data);
   }
 
   function checkSubscriptionWarnings() {
@@ -776,7 +886,9 @@ const App = (function () {
     setProExpiry, blockUser, updateUser,
     getProTopics, createProTopic, updateProTopic, deleteProTopic,
     getMessages, addMessage, editMessage, deleteMessage, pinMessage,
-    searchMessages, getNotifications, checkSubscriptionWarnings,
+    searchMessages, getNotifications, getUnreadNotificationCount, markNotificationsRead,
+    checkSubscriptionWarnings,
+    getProRequests, getPendingProRequestCount, markProRequestProcessed, markProRequestsProcessedByUser,
     formatDate, formatDateTime, formatFileSize, readFilesAsAttachments,
     hydrateMessageFiles, isImageExt, isVideoExt, getFileExt, ALLOWED_EXT, MAX_FILE_SIZE,
     requireAuth, requireAdmin, requirePro, isAllowedFile
