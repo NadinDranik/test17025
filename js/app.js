@@ -34,8 +34,10 @@ const App = (function () {
       id: 'admin-1',
       email: ADMIN_EMAIL,
       password: ADMIN_PASSWORD,
+      nickname: 'Администратор',
       role: 'admin',
       registeredAt: new Date().toISOString(),
+      proPaidAt: null,
       proExpiresAt: null,
       blocked: false,
       lastActive: new Date().toISOString()
@@ -61,6 +63,51 @@ const App = (function () {
       };
       save(data);
     }
+  }
+
+  function migrateUsers() {
+    const data = load();
+    let changed = false;
+    data.users.forEach(u => {
+      if (!u.nickname) {
+        u.nickname = u.email ? u.email.split('@')[0] : 'Пользователь';
+        changed = true;
+      }
+      if (u.proPaidAt === undefined) {
+        u.proPaidAt = u.proExpiresAt && isProActive(u) ? u.registeredAt : null;
+        changed = true;
+      }
+    });
+    if (changed) save(data);
+  }
+
+  function getDisplayName(user) {
+    if (!user) return 'Гость';
+    return (user.nickname || '').trim() || user.email.split('@')[0];
+  }
+
+  function getStatusLabel(user) {
+    const s = getSubscriptionStatus(user);
+    const map = {
+      admin: 'Администратор',
+      pro: 'PRO',
+      free: 'Free',
+      expired: 'PRO истёк',
+      blocked: 'Заблокирован',
+      guest: 'Гость'
+    };
+    return map[s] || 'Free';
+  }
+
+  function normalizeNickname(nickname) {
+    return (nickname || '').trim().replace(/\s+/g, ' ');
+  }
+
+  function isNicknameTaken(nickname, excludeUserId) {
+    const n = normalizeNickname(nickname).toLowerCase();
+    return load().users.some(u =>
+      u.id !== excludeUserId && normalizeNickname(u.nickname).toLowerCase() === n
+    );
   }
 
   function ensureAdminSupportChat() {
@@ -216,9 +263,19 @@ const App = (function () {
     if (changed) save(data);
   }
 
-  function register(email, password) {
+  function register(email, password, nickname) {
     if (email.toLowerCase() === ADMIN_EMAIL) {
       return { ok: false, error: 'Этот email зарезервирован для администратора. Используйте форму входа.' };
+    }
+    const nick = normalizeNickname(nickname);
+    if (!nick || nick.length < 2) {
+      return { ok: false, error: 'Укажите ник (минимум 2 символа)' };
+    }
+    if (nick.length > 30) {
+      return { ok: false, error: 'Ник не должен быть длиннее 30 символов' };
+    }
+    if (isNicknameTaken(nick)) {
+      return { ok: false, error: 'Этот ник уже занят' };
     }
     const data = load();
     const exists = data.users.find(u => u.email.toLowerCase() === email.toLowerCase());
@@ -228,8 +285,10 @@ const App = (function () {
       id: uid(),
       email: email.toLowerCase(),
       password,
+      nickname: nick,
       role: 'user',
       registeredAt: new Date().toISOString(),
+      proPaidAt: null,
       proExpiresAt: null,
       blocked: false,
       lastActive: new Date().toISOString()
@@ -258,7 +317,9 @@ const App = (function () {
   }
 
   function grantPro(userId, days) {
+    const now = new Date().toISOString();
     const user = updateUser(userId, {
+      proPaidAt: now,
       proExpiresAt: new Date(Date.now() + days * 86400000).toISOString()
     });
     addNotification(userId, 'PRO-доступ активирован до ' + formatDate(user.proExpiresAt));
@@ -273,13 +334,22 @@ const App = (function () {
       ? new Date(user.proExpiresAt)
       : new Date();
     base.setDate(base.getDate() + days);
-    const updated = updateUser(userId, { proExpiresAt: base.toISOString() });
+    const updated = updateUser(userId, {
+      proPaidAt: new Date().toISOString(),
+      proExpiresAt: base.toISOString()
+    });
     addNotification(userId, 'PRO-подписка продлена до ' + formatDate(updated.proExpiresAt));
     return updated;
   }
 
   function setProExpiry(userId, dateStr) {
-    const user = updateUser(userId, { proExpiresAt: dateStr ? new Date(dateStr).toISOString() : null });
+    const patch = dateStr
+      ? {
+          proExpiresAt: new Date(dateStr).toISOString(),
+          proPaidAt: new Date().toISOString()
+        }
+      : { proExpiresAt: null, proPaidAt: null };
+    const user = updateUser(userId, patch);
     if (user) {
       const msg = dateStr
         ? 'Дата окончания PRO подписки: ' + formatDate(user.proExpiresAt)
@@ -290,7 +360,7 @@ const App = (function () {
   }
 
   function revokePro(userId) {
-    return setProExpiry(userId, null);
+    return updateUser(userId, { proExpiresAt: null, proPaidAt: null });
   }
 
   function blockUser(userId, blocked) {
@@ -378,6 +448,7 @@ const App = (function () {
         id: msgId,
         userId,
         authorEmail: user.email,
+        authorName: getDisplayName(user),
         text: trimmed,
         replyTo: replyTo || null,
         files: fileMeta,
@@ -627,17 +698,43 @@ const App = (function () {
     return { ...msg, files };
   }
 
-  function requireAuth(redirect) {
+  function getLoginUrl(nextPage) {
+    const next = nextPage || (typeof window !== 'undefined'
+      ? window.location.pathname.split('/').pop() || 'index.html'
+      : 'index.html');
+    if (next === 'login.html' || next === 'index.html') {
+      return 'login.html';
+    }
+    return 'login.html?next=' + encodeURIComponent(next);
+  }
+
+  function getRedirectAfterLogin(user, nextPage) {
+    if (user.role === 'admin') return 'admin.html';
+    const safeNext = nextPage && !nextPage.includes('login.html') ? nextPage : '';
+    if (isProActive(user)) {
+      if (!safeNext || safeNext === 'pro-request.html') return 'pro.html';
+      return safeNext;
+    }
+    if (safeNext) return safeNext;
+    return 'pro-request.html';
+  }
+
+  function requireAuth(silent) {
     expireSubscriptions();
+    migrateUsers();
     const user = getCurrentUser();
     if (!user) {
-      window.location.href = 'index.html#login';
+      if (!silent && typeof window !== 'undefined') {
+        window.location.href = getLoginUrl();
+      }
       return null;
     }
     if (user.blocked) {
-      alert('Ваш аккаунт заблокирован.');
-      logout();
-      window.location.href = 'index.html';
+      if (!silent) {
+        alert('Ваш аккаунт заблокирован.');
+        logout();
+        window.location.href = 'index.html';
+      }
       return null;
     }
     touchActivity(user.id);
@@ -660,22 +757,21 @@ const App = (function () {
   function requirePro() {
     const user = requireAuth();
     if (!user) return null;
-    if (!isProActive(user)) {
-      alert('PRO-доступ недоступен. Обратитесь к администратору для оформления подписки.');
-      window.location.href = 'pro-request.html';
-      return null;
-    }
-    return user;
+    if (isProActive(user)) return user;
+    window.location.href = 'pro-request.html';
+    return null;
   }
 
   expireSubscriptions();
   ensureAdmin();
   ensureAdminSupportChat();
+  migrateUsers();
 
   return {
     getData, getCurrentUser, getSession, login, logout, register,
-    ensureAdmin, ensureAdminSupportChat, ADMIN_EMAIL, ADMIN_PASSWORD,
+    ensureAdmin, ensureAdminSupportChat, migrateUsers, ADMIN_EMAIL, ADMIN_PASSWORD,
     CHAT_FREE, CHAT_ADMIN_SUPPORT, PRO_PAYMENT_INFO,
+    getDisplayName, getStatusLabel, normalizeNickname, getLoginUrl, getRedirectAfterLogin,
     isProActive, getSubscriptionStatus, grantPro, extendPro, revokePro,
     setProExpiry, blockUser, updateUser,
     getProTopics, createProTopic, updateProTopic, deleteProTopic,
