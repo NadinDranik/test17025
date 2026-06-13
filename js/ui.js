@@ -9,9 +9,16 @@ const UI = (function () {
 
     const navLinks = [
       { href: 'index.html', label: 'Главная', id: 'home' },
-      { href: 'chat.html', label: 'Общий чат', id: 'chat' },
-      { href: 'pro.html', label: 'PRO-раздел', id: 'pro' }
+      { href: 'chat.html', label: 'Общий чат', id: 'chat' }
     ];
+
+    if (user && App.isProActive(user)) {
+      navLinks.push({ href: 'pro.html', label: 'PRO-раздел', id: 'pro' });
+    } else if (user) {
+      navLinks.push({ href: 'pro-request.html', label: 'Оформить PRO', id: 'pro-request' });
+    } else {
+      navLinks.push({ href: 'pro-request.html', label: 'PRO-доступ', id: 'pro-request' });
+    }
 
     if (user && user.role === 'admin') {
       navLinks.push({ href: 'admin.html', label: 'Админ-панель', id: 'admin' });
@@ -127,8 +134,8 @@ const UI = (function () {
       const result = App.register(fd.get('email'), fd.get('password'));
       if (result.ok) {
         document.getElementById('register').close();
-        alert('Регистрация успешна! Добро пожаловать.');
-        window.location.href = 'chat.html';
+        alert('Регистрация успешна! Перейдите к оформлению PRO-доступа.');
+        window.location.href = 'pro-request.html';
       } else {
         alert(result.error);
       }
