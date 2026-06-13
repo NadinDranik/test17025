@@ -25,12 +25,14 @@
     </div>
   </header>
 
+  <div id="user-profile-bar" class="user-profile-bar" hidden></div>
+
   <main class="chat-layout">
     <div class="container chat-layout__inner">
       <aside class="chat-sidebar chat-sidebar--pro">
         <h1 class="chat-sidebar__title">PRO-раздел</h1>
         <p class="chat-sidebar__desc">Закрытые темы, создаваемые администратором.</p>
-        <div id="pro-status" class="pro-status"></div>
+        <div class="chat-sidebar__info" data-user-profile></div>
         <div class="search-box">
           <input type="search" class="form__input" id="search-input" placeholder="Поиск по темам и сообщениям…">
           <button type="button" class="btn btn--outline btn--sm btn--block" id="search-btn">Найти</button>
@@ -74,30 +76,24 @@
   <script src="js/ui.js"></script>
   <script src="js/chat-send.js"></script>
   <script>
-    let currentUser = App.requirePro();
-    if (!currentUser) { /* redirect handled */ }
+    let currentUser = App.getCurrentUser();
+    if (!currentUser) {
+      window.location.href = App.getLoginUrl('pro.html');
+    } else if (!App.isProActive(currentUser)) {
+      window.location.href = 'pro-request.html';
+    }
 
     let activeTopicId = null;
     const msgForm = document.getElementById('msg-form');
     const sendError = document.getElementById('send-error');
 
     UI.initHeader('pro');
+    UI.refreshUserProfile();
 
     const topicListEl = document.getElementById('topic-list');
     const messagesEl = document.getElementById('messages');
     const composeArea = document.getElementById('compose-area');
     const noTopicEl = document.getElementById('no-topic');
-    const proStatusEl = document.getElementById('pro-status');
-
-    function renderProStatus() {
-      currentUser = App.getCurrentUser();
-      if (!currentUser) return;
-      if (currentUser.role === 'admin') {
-        proStatusEl.innerHTML = '<span class="user-badge user-badge--pro">Администратор</span>';
-      } else {
-        proStatusEl.innerHTML = `<p>PRO активен до: <strong>${App.formatDate(currentUser.proExpiresAt)}</strong></p>`;
-      }
-    }
 
     function renderTopics() {
       const topics = App.getProTopics(false);
@@ -200,7 +196,6 @@
       });
     });
 
-    renderProStatus();
     renderTopics();
   </script>
 </body>
