@@ -30,12 +30,14 @@
   <main class="chat-layout">
     <div class="container chat-layout__inner">
       <aside class="chat-sidebar chat-sidebar--pro">
+        <div class="chat-sidebar__body">
         <h1 class="chat-sidebar__title">PRO-раздел</h1>
         <p class="chat-sidebar__desc">Закрытые темы, создаваемые администратором.</p>
         <div class="chat-sidebar__info" data-user-profile></div>
         <div class="search-box">
           <input type="search" class="form__input" id="search-input" placeholder="Поиск по темам и сообщениям…">
           <button type="button" class="btn btn--outline btn--sm btn--block" id="search-btn">Найти</button>
+        </div>
         </div>
         <nav class="topic-list" id="topic-list" aria-label="PRO-темы"></nav>
       </aside>
@@ -55,7 +57,7 @@
             <button type="button" id="cancel-reply">&times;</button>
           </div>
           <form id="msg-form" class="chat-form">
-            <textarea class="form__input chat-form__input" id="msg-text" rows="3" placeholder="Текст сообщения (необязательно, если есть файлы)…"></textarea>
+            <textarea class="form__input chat-form__input" id="msg-text" rows="4" placeholder="Текст сообщения (необязательно, если есть файлы)…"></textarea>
             <div class="chat-form__row">
               <label class="file-upload">
                 <input type="file" id="msg-files" multiple>
