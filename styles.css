@@ -23,6 +23,7 @@
   --radius: 8px;
   --radius-lg: 12px;
   --transition: 0.2s ease;
+  --color-on-accent: #0f2740;
 }
 
 [data-theme="dark"] {
@@ -119,6 +120,94 @@
 [data-theme="dark"] .chat-compose,
 [data-theme="dark"] .chat-guest-notice {
   background: var(--color-bg-white);
+}
+
+/* Тёмная тема — читаемость текста и контраст кнопок */
+[data-theme="dark"] .hero {
+  background: linear-gradient(160deg, #0a1628 0%, #1a3a5c 55%, #243b5c 100%);
+}
+
+[data-theme="dark"] .section--contacts,
+[data-theme="dark"] .footer {
+  background: #0a1628;
+}
+
+[data-theme="dark"] .section__title,
+[data-theme="dark"] .pricing-card__title,
+[data-theme="dark"] .about-card__title,
+[data-theme="dark"] .feature__title,
+[data-theme="dark"] .chat-sidebar__title,
+[data-theme="dark"] .chat-main__header h2,
+[data-theme="dark"] .payment-info__title,
+[data-theme="dark"] .legal-content h1,
+[data-theme="dark"] .legal-content h2,
+[data-theme="dark"] .admin-header h1,
+[data-theme="dark"] .modal__title,
+[data-theme="dark"] .auth-panel__title {
+  color: #e8edf4;
+}
+
+[data-theme="dark"] .pricing-card--pro .pricing-card__price {
+  color: var(--color-accent);
+}
+
+[data-theme="dark"] .msg__author {
+  color: var(--color-primary-light);
+}
+
+[data-theme="dark"] .btn--outline {
+  color: var(--color-primary-light);
+  border-color: var(--color-primary-light);
+}
+
+[data-theme="dark"] .btn--outline:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+[data-theme="dark"] .btn--ghost {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .btn--ghost:hover {
+  color: var(--color-text);
+  background: #243044;
+}
+
+[data-theme="dark"] .badge--pro {
+  background: #3d3520;
+  color: var(--color-accent);
+}
+
+[data-theme="dark"] .badge--expired,
+[data-theme="dark"] .user-badge--expired {
+  background: #3d2020;
+  color: #f5a8a8;
+  border-color: #5c3030;
+}
+
+[data-theme="dark"] .stat-card {
+  background: var(--color-bg-white);
+}
+
+[data-theme="dark"] .stat-card__num {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .form__error {
+  background: #3d2020;
+  color: #f5a8a8;
+}
+
+[data-theme="dark"] .payment-info__list dd,
+[data-theme="dark"] .payment-info__text {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .btn--write-admin:hover {
+  background: #fff;
+  color: var(--color-on-accent);
 }
 
 [hidden] {
@@ -354,7 +443,7 @@ ul {
 
 .btn--pro {
   background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-dark) 100%);
-  color: var(--color-primary-dark);
+  color: var(--color-on-accent);
   border-color: var(--color-accent);
   font-weight: 700;
 }
@@ -634,7 +723,7 @@ ul {
   top: -14px;
   right: 28px;
   background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
-  color: var(--color-primary-dark);
+  color: var(--color-on-accent);
   font-weight: 800;
   font-size: 0.75rem;
   letter-spacing: 0.1em;
@@ -813,14 +902,14 @@ ul {
 
 .btn--accent {
   background: var(--color-accent);
-  color: var(--color-primary-dark);
+  color: var(--color-on-accent);
   border: none;
   font-weight: 600;
 }
 
 .btn--accent:hover {
   background: #fff;
-  color: var(--color-primary-dark);
+  color: var(--color-on-accent);
 }
 
 /* ---- Footer ---- */
@@ -1298,7 +1387,7 @@ ul {
 
 .user-badge--pro {
   background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
-  color: var(--color-primary-dark);
+  color: var(--color-on-accent);
   border-color: var(--color-accent);
 }
 
@@ -1555,7 +1644,7 @@ ul {
 
 .chat-form__send.btn--pro {
   background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
-  color: var(--color-primary-dark);
+  color: var(--color-on-accent);
 }
 
 .chat-form__files {
