@@ -114,6 +114,16 @@ const UI = (function () {
     initBurger();
     renderUserProfileBar(user);
     mountThemeToggle(header);
+    showSyncNotice();
+  }
+
+  function showSyncNotice() {
+    if (document.getElementById('sync-notice') || App.isSyncEnabled()) return;
+    const notice = document.createElement('div');
+    notice.id = 'sync-notice';
+    notice.className = 'sync-notice';
+    notice.innerHTML = 'Данные только на этом устройстве. Чтобы сообщения с телефона были видны на компьютере, запустите сервер (<strong>npm start</strong>) и откройте один и тот же адрес на обоих устройствах.';
+    document.querySelector('.header')?.insertAdjacentElement('afterend', notice);
   }
 
   function renderUserProfile(user) {
