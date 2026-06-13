@@ -227,6 +227,7 @@
   <script src="js/app.js"></script>
   <script src="js/ui.js"></script>
   <script>
+    App.ready.then(() => {
     UI.initPasswordToggles();
     App.ensureAdmin();
 
@@ -650,10 +651,12 @@
       switchTab('requests');
     }
 
-    window.addEventListener('storage', e => {
-      if (e.key === 'gost17025_data') refresh();
+    window.addEventListener('gost-data-synced', () => {
+      if (typeof refresh === 'function') refresh();
     });
     }
+
+    });
   </script>
 </body>
 </html>
