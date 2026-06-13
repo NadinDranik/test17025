@@ -1,0 +1,16 @@
+{
+  "name": "gost17025-community",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Гид PRO ГОСТ ISO/IEC 17025-2019 — сервер с общим хранилищем",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
