@@ -50,15 +50,17 @@
             <button type="button" id="cancel-reply">&times;</button>
           </div>
           <form id="msg-form" class="chat-form">
-            <textarea class="form__input chat-form__input" id="msg-text" rows="3" placeholder="Напишите сообщение…" required></textarea>
+            <textarea class="form__input chat-form__input" id="msg-text" rows="3" placeholder="Текст сообщения (необязательно, если есть файлы)…"></textarea>
             <div class="chat-form__row">
               <label class="file-upload">
-                <input type="file" id="msg-files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.mp4">
-                <span class="btn btn--ghost btn--sm">📎 Прикрепить файл</span>
+                <input type="file" id="msg-files" multiple>
+                <span class="btn btn--ghost btn--sm">📎 Прикрепить файлы</span>
               </label>
               <span class="file-upload__hint" id="file-names"></span>
-              <button type="submit" class="btn btn--primary">Отправить</button>
+              <button type="submit" class="btn btn--primary" data-label="Отправить">Отправить</button>
             </div>
+            <p class="chat-form__hint">Можно отправить только текст, только файлы или оба. Фото, видео, PDF, Word, Excel, TXT и др. (до 25 МБ).</p>
+            <p class="form__error" id="send-error" hidden></p>
           </form>
         </div>
         <div class="chat-guest-notice" id="guest-notice" hidden>
@@ -70,6 +72,7 @@
 
   <script src="js/app.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/chat-send.js"></script>
   <script>
     const CHAT_ID = 'free';
     let currentUser = App.getCurrentUser();
@@ -81,17 +84,13 @@
     const composeArea = document.getElementById('compose-area');
     const guestNotice = document.getElementById('guest-notice');
     const accessInfo = document.getElementById('access-info');
+    const msgForm = document.getElementById('msg-form');
+    const sendError = document.getElementById('send-error');
 
-    function renderMessages() {
+    async function renderMessages() {
       const msgs = App.getMessages(CHAT_ID);
-      const pinned = msgs.filter(m => m.pinned);
-      const regular = msgs.filter(m => !m.pinned);
-      const sorted = [...pinned, ...regular];
-
       document.getElementById('msg-count').textContent = msgs.length + ' сообщ.';
-      messagesEl.innerHTML = sorted.length
-        ? sorted.map(m => UI.renderMessage(m, currentUser, CHAT_ID, msgs)).join('')
-        : '<p class="chat-empty">Пока нет сообщений. Будьте первым!</p>';
+      await UI.renderMessages(messagesEl, msgs, currentUser, CHAT_ID, 'Пока нет сообщений. Будьте первым!');
     }
 
     function updateAccessUI() {
@@ -113,43 +112,31 @@
 
     messagesEl.addEventListener('reply-to', e => {
       replyToId = e.detail.id;
+      msgForm._replyTo = replyToId;
       document.getElementById('reply-preview').hidden = false;
-      document.getElementById('reply-text').textContent = 'Ответ ' + e.detail.author + ': ' + e.detail.text.slice(0, 60);
+      document.getElementById('reply-text').textContent = 'Ответ ' + e.detail.author + ': ' + ChatSend.getReplyLabel(e.detail);
       document.getElementById('msg-text').focus();
     });
 
     document.getElementById('cancel-reply').addEventListener('click', () => {
       replyToId = null;
+      msgForm._replyTo = null;
       document.getElementById('reply-preview').hidden = true;
     });
 
-    document.getElementById('msg-files').addEventListener('change', e => {
-      const names = Array.from(e.target.files).map(f => f.name).join(', ');
-      document.getElementById('file-names').textContent = names;
-    });
-
-    document.getElementById('msg-form').addEventListener('submit', async e => {
-      e.preventDefault();
-      if (!currentUser) return;
-      const text = document.getElementById('msg-text').value;
-      const fileInput = document.getElementById('msg-files');
-      let files = [];
-      try {
-        if (fileInput.files.length) {
-          files = await App.readFilesAsAttachments(fileInput.files);
-        }
-      } catch (err) {
-        alert(err.message);
-        return;
+    ChatSend.bindForm(
+      msgForm,
+      () => CHAT_ID,
+      () => App.getCurrentUser(),
+      () => {
+        sendError.hidden = true;
+        renderMessages();
+      },
+      (msg) => {
+        sendError.textContent = msg;
+        sendError.hidden = false;
       }
-      App.addMessage(CHAT_ID, currentUser.id, text, replyToId, files);
-      document.getElementById('msg-form').reset();
-      document.getElementById('file-names').textContent = '';
-      replyToId = null;
-      document.getElementById('reply-preview').hidden = true;
-      renderMessages();
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    });
+    );
 
     document.getElementById('search-btn').addEventListener('click', () => {
       const q = document.getElementById('search-input').value.trim();
@@ -157,13 +144,12 @@
       if (!q) { resultsEl.innerHTML = ''; return; }
       const results = App.searchMessages(q, [CHAT_ID]);
       resultsEl.innerHTML = results.length
-        ? results.map(r => `<div class="search-result"><strong>${r.authorEmail}</strong><br>${UI.escapeHtml(r.text.slice(0, 100))}</div>`).join('')
+        ? results.map(r => `<div class="search-result"><strong>${r.authorEmail}</strong><br>${UI.escapeHtml((r.text || r.files?.[0]?.name || '').slice(0, 100))}</div>`).join('')
         : '<p class="search-result search-result--empty">Ничего не найдено</p>';
     });
 
     updateAccessUI();
     renderMessages();
-    messagesEl.scrollTop = messagesEl.scrollHeight;
   </script>
 </body>
 </html>
