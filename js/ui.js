@@ -1,7 +1,49 @@
 /**
- * Общий UI: шапка, авторизация, уведомления
+ * Общий UI: шапка, авторизация, уведомления, тема
  */
 const UI = (function () {
+  const THEME_KEY = 'gost17025_theme';
+
+  function applyTheme() {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    updateThemeButton();
+  }
+
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    localStorage.setItem(THEME_KEY, isDark ? 'light' : 'dark');
+    applyTheme();
+  }
+
+  function updateThemeButton() {
+    const btn = document.getElementById('btn-theme');
+    if (!btn) return;
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const icon = btn.querySelector('.btn-theme__icon');
+    if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+    btn.title = isDark ? 'Светлая тема' : 'Тёмная тема';
+    btn.setAttribute('aria-label', btn.title);
+  }
+
+  function mountThemeToggle(container) {
+    if (!container || container.querySelector('#btn-theme')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-theme';
+    btn.id = 'btn-theme';
+    btn.innerHTML = '<span class="btn-theme__icon">🌙</span>';
+    const burger = container.querySelector('.burger');
+    if (burger) container.insertBefore(btn, burger);
+    else container.appendChild(btn);
+    updateThemeButton();
+    btn.addEventListener('click', toggleTheme);
+  }
+
   function initHeader(activePage) {
     const user = App.getCurrentUser();
     const header = document.querySelector('.header__inner');
@@ -71,6 +113,7 @@ const UI = (function () {
 
     initBurger();
     renderUserProfileBar(user);
+    mountThemeToggle(header);
   }
 
   function renderUserProfile(user) {
@@ -389,6 +432,18 @@ const UI = (function () {
   return {
     initHeader, initAuthForms, renderMessage, renderMessages, bindMessageActions,
     renderUserProfile, renderUserProfileBar, refreshUserProfile, initPasswordToggles,
-    updateNotificationBadge, escapeHtml, escapeAttr
+    updateNotificationBadge, escapeHtml, escapeAttr, applyTheme, mountThemeToggle, toggleTheme
   };
+})();
+
+(function bootTheme() {
+  UI.applyTheme();
+  function mountAll() {
+    document.querySelectorAll('.header__inner').forEach(UI.mountThemeToggle);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mountAll);
+  } else {
+    mountAll();
+  }
 })();
