@@ -17,7 +17,7 @@ const UI = (function () {
     } else if (user) {
       navLinks.push({ href: 'pro-request.html', label: 'Оформить PRO', id: 'pro-request' });
     } else {
-      navLinks.push({ href: 'pro-request.html', label: 'PRO-доступ', id: 'pro-request' });
+      navLinks.push({ href: 'login.html?next=pro-request.html', label: 'PRO-доступ', id: 'pro-request' });
     }
 
     if (user && user.role === 'admin') {
@@ -39,14 +39,14 @@ const UI = (function () {
       actionsHtml = `
         <div class="user-menu">
           ${badge}
-          <span class="user-menu__email">${user.email}</span>
+          <span class="user-menu__nick">${escapeAttr(App.getDisplayName(user))}</span>
           <button type="button" class="btn btn--ghost btn--sm" id="btn-notifications" title="Уведомления">🔔</button>
           <button type="button" class="btn btn--ghost btn--sm" id="btn-logout">Выйти</button>
         </div>`;
     } else {
       actionsHtml = `
-        <a href="index.html#login" class="btn btn--ghost">Войти</a>
-        <a href="index.html#register" class="btn btn--primary">Зарегистрироваться</a>`;
+        <a href="${App.getLoginUrl()}" class="btn btn--ghost">Войти</a>
+        <a href="login.html?tab=register" class="btn btn--primary">Зарегистрироваться</a>`;
     }
 
     const logo = header.querySelector('.logo');
@@ -65,6 +65,62 @@ const UI = (function () {
     document.getElementById('btn-notifications')?.addEventListener('click', showNotifications);
 
     initBurger();
+    renderUserProfileBar(user);
+  }
+
+  function renderUserProfile(user) {
+    if (!user) return '';
+    const status = App.getSubscriptionStatus(user);
+    const badgeClass = status === 'pro' || status === 'admin' ? 'user-badge--pro'
+      : status === 'expired' ? 'user-badge--expired' : '';
+    const paidAt = user.proPaidAt ? App.formatDate(user.proPaidAt) : '—';
+    const expiresAt = user.proExpiresAt ? App.formatDate(user.proExpiresAt) : '—';
+
+    return `
+      <div class="user-profile">
+        <div class="user-profile__head">
+          <div class="user-profile__avatar">${escapeAttr(App.getDisplayName(user).charAt(0).toUpperCase())}</div>
+          <div>
+            <p class="user-profile__nick">${escapeAttr(App.getDisplayName(user))}</p>
+            <p class="user-profile__email">${escapeAttr(user.email)}</p>
+          </div>
+          <span class="user-badge ${badgeClass}">${App.getStatusLabel(user)}</span>
+        </div>
+        <dl class="user-profile__meta">
+          <div class="user-profile__row">
+            <dt>Статус</dt>
+            <dd>${App.getStatusLabel(user)}</dd>
+          </div>
+          <div class="user-profile__row">
+            <dt>Дата оплаты</dt>
+            <dd>${paidAt}</dd>
+          </div>
+          <div class="user-profile__row">
+            <dt>Следующая оплата до</dt>
+            <dd>${expiresAt}</dd>
+          </div>
+        </dl>
+      </div>`;
+  }
+
+  function renderUserProfileBar(user) {
+    const bar = document.getElementById('user-profile-bar');
+    if (!bar) return;
+    if (user) {
+      bar.hidden = false;
+      bar.innerHTML = renderUserProfile(user);
+    } else {
+      bar.hidden = true;
+      bar.innerHTML = '';
+    }
+  }
+
+  function refreshUserProfile() {
+    renderUserProfileBar(App.getCurrentUser());
+    document.querySelectorAll('[data-user-profile]').forEach(el => {
+      const user = App.getCurrentUser();
+      el.innerHTML = user ? renderUserProfile(user) : '';
+    });
   }
 
   function initBurger() {
@@ -113,11 +169,7 @@ const UI = (function () {
       const result = App.login(fd.get('email'), fd.get('password'));
       if (result.ok) {
         document.getElementById('login').close();
-        if (result.user.role === 'admin') {
-          window.location.href = 'admin.html';
-        } else {
-          window.location.reload();
-        }
+        window.location.href = App.getRedirectAfterLogin(result.user, '');
       } else {
         alert(result.error);
       }
@@ -131,7 +183,7 @@ const UI = (function () {
         alert('Пароли не совпадают');
         return;
       }
-      const result = App.register(fd.get('email'), fd.get('password'));
+      const result = App.register(fd.get('email'), fd.get('password'), fd.get('nickname'));
       if (result.ok) {
         document.getElementById('register').close();
         alert('Регистрация успешна! Перейдите к оформлению PRO-доступа.');
@@ -209,10 +261,10 @@ const UI = (function () {
       <article class="msg${msg.pinned ? ' msg--pinned' : ''}" data-id="${msg.id}">
         ${msg.pinned ? '<span class="msg__pin-label">Закреплено</span>' : ''}
         <header class="msg__header">
-          <strong class="msg__author">${escapeAttr(msg.authorEmail)}</strong>
+          <strong class="msg__author">${escapeAttr(msg.authorName || msg.authorEmail)}</strong>
           <time class="msg__time">${App.formatDateTime(msg.createdAt)}${msg.editedAt ? ' (ред.)' : ''}</time>
         </header>
-        ${reply ? `<div class="msg__reply">↩ ${escapeAttr(reply.authorEmail)}: ${escapeHtml(replyLabel)}${replyLabel.length >= 80 ? '…' : ''}</div>` : ''}
+        ${reply ? `<div class="msg__reply">↩ ${escapeAttr(reply.authorName || reply.authorEmail)}: ${escapeHtml(replyLabel)}${replyLabel.length >= 80 ? '…' : ''}</div>` : ''}
         ${textHtml}
         ${filesHtml}
         ${currentUser ? actions : ''}
@@ -270,11 +322,14 @@ const UI = (function () {
         onUpdate();
       } else if (action === 'reply') {
         container.dispatchEvent(new CustomEvent('reply-to', {
-          detail: { id, author: msg.authorEmail, text: msg.text, files: msg.files }
+          detail: { id, author: msg.authorName || msg.authorEmail, text: msg.text, files: msg.files }
         }));
       }
     });
   }
 
-  return { initHeader, initAuthForms, renderMessage, renderMessages, bindMessageActions, escapeHtml };
+  return {
+    initHeader, initAuthForms, renderMessage, renderMessages, bindMessageActions,
+    renderUserProfile, renderUserProfileBar, refreshUserProfile, escapeHtml, escapeAttr
+  };
 })();
