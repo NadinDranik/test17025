@@ -78,6 +78,7 @@
   <script src="js/ui.js"></script>
   <script src="js/chat-send.js"></script>
   <script>
+    App.ready.then(() => {
     let currentUser = App.getCurrentUser();
     if (!currentUser) {
       window.location.href = App.getLoginUrl('pro.html');
@@ -292,6 +293,12 @@
         selectTopic(decodeURIComponent(match[1]), { skipHistory: true });
       }
     })();
+
+    window.addEventListener('gost-data-synced', () => {
+      renderTopics();
+      if (activeTopicId) renderMessages();
+    });
+    });
   </script>
 </body>
 </html>
