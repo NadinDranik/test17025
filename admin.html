@@ -649,6 +649,10 @@
     if (App.getPendingProRequestCount() > 0 && window.location.hash !== '#requests') {
       switchTab('requests');
     }
+
+    window.addEventListener('storage', e => {
+      if (e.key === 'gost17025_data') refresh();
+    });
     }
   </script>
 </body>
