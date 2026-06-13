@@ -358,8 +358,10 @@ const UI = (function () {
         <button type="button" class="msg__btn" data-action="reply" data-id="${msg.id}">Ответить</button>
       </div>`;
 
+    const welcomeClass = msg.systemType === 'pro_welcome' ? ' msg--welcome' : '';
+
     return `
-      <article class="msg${msg.pinned ? ' msg--pinned' : ''}" data-id="${msg.id}">
+      <article class="msg${msg.pinned ? ' msg--pinned' : ''}${welcomeClass}" data-id="${msg.id}">
         ${msg.pinned ? '<span class="msg__pin-label">Закреплено</span>' : ''}
         <header class="msg__header">
           <strong class="msg__author">${escapeAttr(msg.authorName || msg.authorEmail)}</strong>
