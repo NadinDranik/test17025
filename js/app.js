@@ -70,8 +70,66 @@ const App = (function () {
     }
   }
 
+  /* Хранилище файлов (IndexedDB — без лимита localStorage) */
+  const FileDB = (function () {
+    const DB_NAME = 'gost17025_files';
+    const STORE = 'files';
+    let dbPromise = null;
+
+    function open() {
+      if (dbPromise) return dbPromise;
+      dbPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = e => {
+          if (!e.target.result.objectStoreNames.contains(STORE)) {
+            e.target.result.createObjectStore(STORE);
+          }
+        };
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = () => reject(req.error);
+      });
+      return dbPromise;
+    }
+
+    function tx(store, mode) {
+      return open().then(db => db.transaction(STORE, mode).objectStore(STORE));
+    }
+
+    function save(id, dataUrl) {
+      return tx(STORE, 'readwrite').then(s => new Promise((resolve, reject) => {
+        const req = s.put(dataUrl, id);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      }));
+    }
+
+    function get(id) {
+      return tx(STORE, 'readonly').then(s => new Promise((resolve, reject) => {
+        const req = s.get(id);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      }));
+    }
+
+    function remove(id) {
+      return tx(STORE, 'readwrite').then(s => new Promise((resolve, reject) => {
+        const req = s.delete(id);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      }));
+    }
+
+    return { save, get, remove };
+  })();
+
   function save(data) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      return true;
+    } catch (e) {
+      console.error('Save failed:', e);
+      return false;
+    }
   }
 
   function getData() {
@@ -273,26 +331,54 @@ const App = (function () {
   }
 
   function addMessage(chatId, userId, text, replyTo, files) {
+    const trimmed = (text || '').trim();
+    const attachments = files || [];
+    if (!trimmed && !attachments.length) {
+      return Promise.resolve({ ok: false, error: 'Введите текст или прикрепите файл' });
+    }
+
     const data = load();
     const user = data.users.find(u => u.id === userId);
-    if (!user) return null;
+    if (!user) return Promise.resolve({ ok: false, error: 'Пользователь не найден' });
     if (!data.messages[chatId]) data.messages[chatId] = [];
 
-    const msg = {
-      id: uid(),
-      userId,
-      authorEmail: user.email,
-      text: text.trim(),
-      replyTo: replyTo || null,
-      files: files || [],
-      createdAt: new Date().toISOString(),
-      editedAt: null,
-      pinned: false
-    };
-    data.messages[chatId].push(msg);
-    save(data);
-    touchActivity(userId);
-    return msg;
+    const msgId = uid();
+    const fileMeta = attachments.map(f => ({
+      id: f.id || uid(),
+      name: f.name,
+      size: f.size,
+      type: f.type || ''
+    }));
+
+    const saveFiles = attachments.map((f, i) =>
+      FileDB.save(fileMeta[i].id, f.dataUrl).catch(err => {
+        throw new Error('Не удалось сохранить файл «' + f.name + '»');
+      })
+    );
+
+    return Promise.all(saveFiles).then(() => {
+      const msg = {
+        id: msgId,
+        userId,
+        authorEmail: user.email,
+        text: trimmed,
+        replyTo: replyTo || null,
+        files: fileMeta,
+        createdAt: new Date().toISOString(),
+        editedAt: null,
+        pinned: false
+      };
+      data.messages[chatId].push(msg);
+      if (!save(data)) {
+        fileMeta.forEach(f => FileDB.remove(f.id));
+        return { ok: false, error: 'Не удалось сохранить сообщение. Очистите старые данные браузера.' };
+      }
+      touchActivity(userId);
+      return { ok: true, msg };
+    }).catch(err => ({
+      ok: false,
+      error: err.message || 'Ошибка при отправке'
+    }));
   }
 
   function editMessage(chatId, msgId, userId, newText) {
@@ -313,6 +399,12 @@ const App = (function () {
   function deleteMessage(chatId, msgId) {
     const data = load();
     if (!data.messages[chatId]) return;
+    const msg = data.messages[chatId].find(m => m.id === msgId);
+    if (msg && msg.files) {
+      msg.files.forEach(f => {
+        if (f.id) FileDB.remove(f.id);
+      });
+    }
     data.messages[chatId] = data.messages[chatId].filter(m => m.id !== msgId);
     save(data);
   }
@@ -331,8 +423,8 @@ const App = (function () {
     const results = [];
     chatIds.forEach(chatId => {
       getMessages(chatId).forEach(m => {
-        const fileMatch = m.files.some(f => f.name.toLowerCase().includes(q));
-        if (m.text.toLowerCase().includes(q) || fileMatch) {
+        const fileMatch = (m.files || []).some(f => f.name.toLowerCase().includes(q));
+        if ((m.text || '').toLowerCase().includes(q) || fileMatch) {
           results.push({ ...m, chatId });
         }
       });
@@ -396,30 +488,118 @@ const App = (function () {
     return (bytes / 1048576).toFixed(1) + ' МБ';
   }
 
-  const ALLOWED_EXT = ['pdf','doc','docx','xls','xlsx','jpg','jpeg','png','webp','mp4'];
+  const ALLOWED_EXT = [
+    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp',
+    'rtf', 'txt', 'csv', 'xml', 'json', 'log', 'md',
+    'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'svg',
+    'mp4', 'webm', 'mov', 'avi', 'mkv',
+    'zip', 'rar', '7z'
+  ];
 
-  function isAllowedFile(name) {
-    const ext = name.split('.').pop().toLowerCase();
-    return ALLOWED_EXT.includes(ext);
+  const MAX_FILE_SIZE = 25 * 1024 * 1024; /* 25 МБ на файл */
+
+  function getFileExt(name) {
+    const parts = name.split('.');
+    return parts.length > 1 ? parts.pop().toLowerCase() : '';
   }
 
-  function readFilesAsAttachments(fileList) {
-    return Promise.all(Array.from(fileList).map(file => {
+  function isAllowedFile(name) {
+    return ALLOWED_EXT.includes(getFileExt(name));
+  }
+
+  function isImageExt(ext) {
+    return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'svg'].includes(ext);
+  }
+
+  function isVideoExt(ext) {
+    return ['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(ext);
+  }
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Ошибка чтения файла'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function compressImageIfNeeded(file, dataUrl) {
+    if (!isImageExt(getFileExt(file.name)) || file.size < 1024 * 1024) {
+      return Promise.resolve(dataUrl);
+    }
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 1600;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxW) {
+          h = Math.round(h * maxW / w);
+          w = maxW;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }
+
+  async function readFilesAsAttachments(fileList) {
+    const files = [];
+    const errors = [];
+
+    for (const file of Array.from(fileList || [])) {
       if (!isAllowedFile(file.name)) {
-        return Promise.reject(new Error('Файл "' + file.name + '" не поддерживается'));
+        errors.push('«' + file.name + '» — формат не поддерживается');
+        continue;
       }
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve({
+      if (file.size > MAX_FILE_SIZE) {
+        errors.push('«' + file.name + '» — больше ' + formatFileSize(MAX_FILE_SIZE));
+        continue;
+      }
+      try {
+        let dataUrl = await readFileAsDataUrl(file);
+        dataUrl = await compressImageIfNeeded(file, dataUrl);
+        files.push({
+          id: uid(),
           name: file.name,
           size: file.size,
-          type: file.type,
-          dataUrl: reader.result
+          type: file.type || '',
+          dataUrl
         });
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      } catch {
+        errors.push('«' + file.name + '» — не удалось прочитать');
+      }
+    }
+
+    if (!files.length) {
+      return {
+        ok: false,
+        error: errors.length ? errors.join('\n') : 'Не выбрано ни одного файла'
+      };
+    }
+
+    return { ok: true, files, warnings: errors };
+  }
+
+  function resolveFileData(file) {
+    if (file.dataUrl) return Promise.resolve(file.dataUrl);
+    if (file.id) return FileDB.get(file.id);
+    return Promise.resolve(null);
+  }
+
+  async function hydrateMessageFiles(msg) {
+    if (!msg.files || !msg.files.length) return msg;
+    const files = await Promise.all(msg.files.map(async f => {
+      const dataUrl = await resolveFileData(f);
+      return { ...f, dataUrl: dataUrl || '' };
     }));
+    return { ...msg, files };
   }
 
   function requireAuth(redirect) {
@@ -475,6 +655,7 @@ const App = (function () {
     getMessages, addMessage, editMessage, deleteMessage, pinMessage,
     searchMessages, getNotifications, checkSubscriptionWarnings,
     formatDate, formatDateTime, formatFileSize, readFilesAsAttachments,
+    hydrateMessageFiles, isImageExt, isVideoExt, getFileExt, ALLOWED_EXT, MAX_FILE_SIZE,
     requireAuth, requireAdmin, requirePro, isAllowedFile
   };
 })();
