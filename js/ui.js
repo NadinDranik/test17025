@@ -206,6 +206,34 @@ const UI = (function () {
     if (window.location.hash === '#register') {
       document.getElementById('register')?.showModal();
     }
+
+    initPasswordToggles();
+  }
+
+  function initPasswordToggles(root) {
+    const scope = root || document;
+    scope.querySelectorAll('input[type="password"]').forEach(input => {
+      if (input.closest('.password-field')) return;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'password-field';
+      input.parentNode.insertBefore(wrap, input);
+      wrap.appendChild(input);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'password-field__toggle';
+      btn.setAttribute('aria-label', 'Показать пароль');
+      btn.innerHTML = '<span class="password-field__show">Показать</span><span class="password-field__hide" hidden>Скрыть</span>';
+      btn.addEventListener('click', () => {
+        const visible = input.type === 'text';
+        input.type = visible ? 'password' : 'text';
+        btn.querySelector('.password-field__show').hidden = !visible;
+        btn.querySelector('.password-field__hide').hidden = visible;
+        btn.setAttribute('aria-label', visible ? 'Показать пароль' : 'Скрыть пароль');
+      });
+      wrap.appendChild(btn);
+    });
   }
 
   function renderMessage(msg, currentUser, chatId, allMessages) {
@@ -330,6 +358,6 @@ const UI = (function () {
 
   return {
     initHeader, initAuthForms, renderMessage, renderMessages, bindMessageActions,
-    renderUserProfile, renderUserProfileBar, refreshUserProfile, escapeHtml, escapeAttr
+    renderUserProfile, renderUserProfileBar, refreshUserProfile, initPasswordToggles, escapeHtml, escapeAttr
   };
 })();
