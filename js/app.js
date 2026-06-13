@@ -1,9 +1,12 @@
 /**
- * Гид PRO — клиентское хранилище данных (localStorage)
+ * Гид PRO — хранилище данных (localStorage + синхронизация через сервер)
  */
 const App = (function () {
   const STORAGE_KEY = 'gost17025_data';
   const SESSION_KEY = 'gost17025_session';
+  let syncEnabled = false;
+  let syncVersion = 0;
+  let syncPollTimer = null;
   const ADMIN_EMAIL = 'admin@gost17025.pro';
   const ADMIN_PASSWORD = 'admin123';
   const CHAT_FREE = 'free';
@@ -284,7 +287,71 @@ const App = (function () {
     }
   }
 
-  /* Хранилище файлов (IndexedDB — без лимита localStorage) */
+  function hasStoredActivity(data) {
+    if (!data) return false;
+    const msgCount = Object.values(data.messages || {}).reduce((n, arr) => n + (arr?.length || 0), 0);
+    return (data.users && data.users.length > 1) || msgCount > 0 || (data.proRequests?.length > 0);
+  }
+
+  async function pullFromServer() {
+    const res = await fetch('/api/data', { cache: 'no-store' });
+    if (!res.ok) throw new Error('API unavailable');
+    const payload = await res.json();
+    syncVersion = payload.version || 0;
+    if (payload.data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload.data));
+    }
+    return payload;
+  }
+
+  async function pushToServer(data, wait) {
+    if (!syncEnabled) return;
+    const task = fetch('/api/data', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data })
+    }).then(res => (res.ok ? res.json() : null)).then(result => {
+      if (result?.version) syncVersion = result.version;
+    }).catch(err => console.warn('Sync push failed:', err));
+    if (wait) await task;
+  }
+
+  async function initSync() {
+    if (typeof window === 'undefined' || window.location.protocol === 'file:') return;
+    try {
+      const payload = await pullFromServer();
+      const localRaw = localStorage.getItem(STORAGE_KEY);
+      const localData = localRaw ? JSON.parse(localRaw) : null;
+      if (!hasStoredActivity(payload.data) && hasStoredActivity(localData)) {
+        await pushToServer(localData, true);
+      }
+      syncEnabled = true;
+    } catch {
+      syncEnabled = false;
+    }
+  }
+
+  function startSyncPolling() {
+    if (!syncEnabled || syncPollTimer) return;
+    syncPollTimer = setInterval(async () => {
+      try {
+        const res = await fetch('/api/data', { cache: 'no-store' });
+        if (!res.ok) return;
+        const payload = await res.json();
+        if (payload.version !== syncVersion && payload.data) {
+          syncVersion = payload.version;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload.data));
+          window.dispatchEvent(new CustomEvent('gost-data-synced'));
+        }
+      } catch { /* offline */ }
+    }, 2500);
+  }
+
+  function isSyncEnabled() {
+    return syncEnabled;
+  }
+
+  /* Хранилище файлов (IndexedDB + сервер при синхронизации) */
   const FileDB = (function () {
     const DB_NAME = 'gost17025_files';
     const STORE = 'files';
@@ -309,7 +376,7 @@ const App = (function () {
       return open().then(db => db.transaction(STORE, mode).objectStore(STORE));
     }
 
-    function save(id, dataUrl) {
+    function saveLocal(id, dataUrl) {
       return tx(STORE, 'readwrite').then(s => new Promise((resolve, reject) => {
         const req = s.put(dataUrl, id);
         req.onsuccess = () => resolve();
@@ -317,7 +384,19 @@ const App = (function () {
       }));
     }
 
-    function get(id) {
+    function save(id, dataUrl) {
+      const local = saveLocal(id, dataUrl);
+      if (!syncEnabled) return local;
+      return local.then(() =>
+        fetch('/api/files/' + encodeURIComponent(id), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dataUrl })
+        }).catch(() => {})
+      );
+    }
+
+    function getLocal(id) {
       return tx(STORE, 'readonly').then(s => new Promise((resolve, reject) => {
         const req = s.get(id);
         req.onsuccess = () => resolve(req.result || null);
@@ -325,12 +404,29 @@ const App = (function () {
       }));
     }
 
+    function get(id) {
+      if (!syncEnabled) return getLocal(id);
+      return fetch('/api/files/' + encodeURIComponent(id))
+        .then(res => (res.ok ? res.json() : null))
+        .then(payload => {
+          if (payload?.dataUrl) {
+            return saveLocal(id, payload.dataUrl).then(() => payload.dataUrl);
+          }
+          return getLocal(id);
+        })
+        .catch(() => getLocal(id));
+    }
+
     function remove(id) {
-      return tx(STORE, 'readwrite').then(s => new Promise((resolve, reject) => {
+      const local = tx(STORE, 'readwrite').then(s => new Promise((resolve, reject) => {
         const req = s.delete(id);
         req.onsuccess = () => resolve();
         req.onerror = () => reject(req.error);
       }));
+      if (!syncEnabled) return local;
+      return local.then(() =>
+        fetch('/api/files/' + encodeURIComponent(id), { method: 'DELETE' }).catch(() => {})
+      );
     }
 
     return { save, get, remove };
@@ -339,6 +435,7 @@ const App = (function () {
   function save(data) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      if (syncEnabled) pushToServer(data);
       return true;
     } catch (e) {
       console.error('Save failed:', e);
@@ -928,12 +1025,17 @@ const App = (function () {
     return null;
   }
 
-  expireSubscriptions();
-  ensureAdmin();
-  ensureAdminSupportChat();
-  migrateUsers();
+  const ready = initSync().finally(() => {
+    expireSubscriptions();
+    ensureAdmin();
+    ensureAdminSupportChat();
+    migrateUsers();
+    startSyncPolling();
+  });
 
   return {
+    ready,
+    isSyncEnabled,
     getData, getCurrentUser, getSession, login, logout, register,
     ensureAdmin, ensureAdminSupportChat, ensureProRequestWelcomeMessage, migrateUsers,
     ADMIN_EMAIL, ADMIN_PASSWORD,
