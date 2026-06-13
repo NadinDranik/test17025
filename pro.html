@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRO-раздел — Гид PRO ГОСТ ISO/IEC 17025-2019</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+</head>
+<body class="page-chat page-pro">
+
+  <header class="header">
+    <div class="container header__inner">
+      <a href="index.html" class="logo">
+        <span class="logo__mark">17025</span>
+        <span class="logo__text">Гид PRO</span>
+      </a>
+      <nav class="nav" aria-label="Основная навигация"></nav>
+      <div class="header__actions"></div>
+      <button class="burger" aria-label="Открыть меню" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="chat-layout">
+    <div class="container chat-layout__inner">
+      <aside class="chat-sidebar chat-sidebar--pro">
+        <h1 class="chat-sidebar__title">PRO-раздел</h1>
+        <p class="chat-sidebar__desc">Закрытые темы, создаваемые администратором.</p>
+        <div id="pro-status" class="pro-status"></div>
+        <div class="search-box">
+          <input type="search" class="form__input" id="search-input" placeholder="Поиск по темам и сообщениям…">
+          <button type="button" class="btn btn--outline btn--sm btn--block" id="search-btn">Найти</button>
+        </div>
+        <nav class="topic-list" id="topic-list" aria-label="PRO-темы"></nav>
+      </aside>
+
+      <section class="chat-main">
+        <div class="chat-main__header">
+          <h2 id="topic-title">Выберите тему</h2>
+          <span class="chat-main__count" id="msg-count"></span>
+        </div>
+        <div id="no-topic" class="chat-empty chat-empty--center">
+          <p>Выберите тему слева или дождитесь, пока администратор создаст PRO-чаты.</p>
+        </div>
+        <div class="chat-messages" id="messages" hidden></div>
+        <div class="chat-compose" id="compose-area" hidden>
+          <div class="reply-preview" id="reply-preview" hidden>
+            <span id="reply-text"></span>
+            <button type="button" id="cancel-reply">&times;</button>
+          </div>
+          <form id="msg-form" class="chat-form">
+            <textarea class="form__input chat-form__input" id="msg-text" rows="3" placeholder="Напишите сообщение…" required></textarea>
+            <div class="chat-form__row">
+              <label class="file-upload">
+                <input type="file" id="msg-files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.mp4">
+                <span class="btn btn--ghost btn--sm">📎 Прикрепить файл</span>
+              </label>
+              <span class="file-upload__hint" id="file-names"></span>
+              <button type="submit" class="btn btn--pro">Отправить</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    let currentUser = App.requirePro();
+    if (!currentUser) { /* redirect handled */ }
+
+    let activeTopicId = null;
+    let replyToId = null;
+
+    UI.initHeader('pro');
+
+    const topicListEl = document.getElementById('topic-list');
+    const messagesEl = document.getElementById('messages');
+    const composeArea = document.getElementById('compose-area');
+    const noTopicEl = document.getElementById('no-topic');
+    const proStatusEl = document.getElementById('pro-status');
+
+    function renderProStatus() {
+      currentUser = App.getCurrentUser();
+      if (!currentUser) return;
+      if (currentUser.role === 'admin') {
+        proStatusEl.innerHTML = '<span class="user-badge user-badge--pro">Администратор</span>';
+      } else {
+        proStatusEl.innerHTML = `<p>PRO активен до: <strong>${App.formatDate(currentUser.proExpiresAt)}</strong></p>`;
+      }
+    }
+
+    function renderTopics() {
+      const topics = App.getProTopics(false);
+      if (!topics.length) {
+        topicListEl.innerHTML = '<p class="topic-list__empty">Тем пока нет. Администратор создаст их в панели управления.</p>';
+        return;
+      }
+      topicListEl.innerHTML = topics.map(t => `
+        <button type="button" class="topic-item${activeTopicId === t.id ? ' topic-item--active' : ''}${t.pinned ? ' topic-item--pinned' : ''}"
+          data-id="${t.id}">
+          ${t.pinned ? '📌 ' : ''}${t.title}
+        </button>`).join('');
+
+      topicListEl.querySelectorAll('.topic-item').forEach(btn => {
+        btn.addEventListener('click', () => selectTopic(btn.dataset.id));
+      });
+
+      if (!activeTopicId && topics.length) selectTopic(topics[0].id);
+    }
+
+    function selectTopic(id) {
+      activeTopicId = id;
+      const topics = App.getProTopics(false);
+      const topic = topics.find(t => t.id === id);
+      if (!topic) return;
+
+      document.getElementById('topic-title').textContent = topic.title;
+      noTopicEl.hidden = true;
+      messagesEl.hidden = false;
+      composeArea.hidden = false;
+
+      renderTopics();
+      renderMessages();
+    }
+
+    function renderMessages() {
+      if (!activeTopicId) return;
+      const msgs = App.getMessages(activeTopicId);
+      const pinned = msgs.filter(m => m.pinned);
+      const regular = msgs.filter(m => !m.pinned);
+      const sorted = [...pinned, ...regular];
+
+      document.getElementById('msg-count').textContent = msgs.length + ' сообщ.';
+      messagesEl.innerHTML = sorted.length
+        ? sorted.map(m => UI.renderMessage(m, currentUser, activeTopicId, msgs)).join('')
+        : '<p class="chat-empty">В этой теме пока нет сообщений.</p>';
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    UI.bindMessageActions(messagesEl, () => activeTopicId, currentUser, () => {
+      if (activeTopicId) renderMessages();
+    });
+
+    messagesEl.addEventListener('reply-to', e => {
+      replyToId = e.detail.id;
+      document.getElementById('reply-preview').hidden = false;
+      document.getElementById('reply-text').textContent = 'Ответ ' + e.detail.author + ': ' + e.detail.text.slice(0, 60);
+      document.getElementById('msg-text').focus();
+    });
+
+    document.getElementById('cancel-reply').addEventListener('click', () => {
+      replyToId = null;
+      document.getElementById('reply-preview').hidden = true;
+    });
+
+    document.getElementById('msg-files').addEventListener('change', e => {
+      document.getElementById('file-names').textContent = Array.from(e.target.files).map(f => f.name).join(', ');
+    });
+
+    document.getElementById('msg-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!activeTopicId || !currentUser) return;
+      const text = document.getElementById('msg-text').value;
+      const fileInput = document.getElementById('msg-files');
+      let files = [];
+      try {
+        if (fileInput.files.length) files = await App.readFilesAsAttachments(fileInput.files);
+      } catch (err) {
+        alert(err.message);
+        return;
+      }
+      App.addMessage(activeTopicId, currentUser.id, text, replyToId, files);
+      document.getElementById('msg-form').reset();
+      document.getElementById('file-names').textContent = '';
+      replyToId = null;
+      document.getElementById('reply-preview').hidden = true;
+      renderMessages();
+    });
+
+    document.getElementById('search-btn').addEventListener('click', () => {
+      const q = document.getElementById('search-input').value.trim();
+      if (!q) return;
+      const topicIds = App.getProTopics(false).map(t => t.id);
+      const msgResults = App.searchMessages(q, topicIds);
+      const topicResults = App.getProTopics(false).filter(t =>
+        t.title.toLowerCase().includes(q.toLowerCase()) ||
+        t.description.toLowerCase().includes(q.toLowerCase())
+      );
+      let html = '';
+      if (topicResults.length) {
+        html += '<p><strong>Темы:</strong></p>' + topicResults.map(t =>
+          `<button type="button" class="topic-item topic-item--search" data-id="${t.id}">${t.title}</button>`
+        ).join('');
+      }
+      if (msgResults.length) {
+        html += '<p><strong>Сообщения:</strong></p>' + msgResults.map(r =>
+          `<div class="search-result">${r.authorEmail}: ${UI.escapeHtml(r.text.slice(0, 80))}</div>`
+        ).join('');
+      }
+      if (!html) html = '<p class="search-result--empty">Ничего не найдено</p>';
+      const wrap = document.createElement('div');
+      wrap.className = 'search-results';
+      wrap.innerHTML = html;
+      topicListEl.after(wrap);
+      wrap.querySelectorAll('[data-id]').forEach(btn => {
+        btn.addEventListener('click', () => { selectTopic(btn.dataset.id); wrap.remove(); });
+      });
+    });
+
+    renderProStatus();
+    renderTopics();
+  </script>
+</body>
+</html>
