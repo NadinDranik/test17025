@@ -1,3 +1,6 @@
 node_modules/
 data/store.json
+data/store.json.bak
+data/gost17025.db
+data/gost17025.db-*
 data/files/
