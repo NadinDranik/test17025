@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Оформление PRO-доступа — Гид PRO ГОСТ ISO/IEC 17025-2019</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+</head>
+<body class="page-chat page-pro-request">
+
+  <header class="header">
+    <div class="container header__inner">
+      <a href="index.html" class="logo">
+        <span class="logo__mark">17025</span>
+        <span class="logo__text">Гид PRO</span>
+      </a>
+      <nav class="nav" aria-label="Основная навигация"></nav>
+      <div class="header__actions"></div>
+      <button class="burger" aria-label="Открыть меню" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="chat-layout">
+    <div class="container chat-layout__inner">
+      <aside class="chat-sidebar chat-sidebar--pro">
+        <h1 class="chat-sidebar__title">Оформление PRO</h1>
+        <p class="chat-sidebar__desc">Чат с администратором для подключения PRO-доступа.</p>
+        <div class="payment-info">
+          <h2 class="payment-info__title">Реквизиты для оплаты</h2>
+          <dl class="payment-info__list">
+            <dt>Телефон (СБП)</dt>
+            <dd><a href="tel:+79824586893">8 982 458-68-93</a></dd>
+            <dt>Банк</dt>
+            <dd>Альфа банк</dd>
+            <dt>Получатель</dt>
+            <dd>Надежда Николаевна Д.</dd>
+          </dl>
+          <p class="payment-info__text">
+            Для получения PRO-доступа необходимо оплатить по номеру телефона
+            <strong>89824586893</strong> на <strong>Альфа банк</strong>, <strong>Надежда Николаевна Д.</strong>
+            Пришлите чек или скрин об оплате — и вам предоставят доступ.
+          </p>
+        </div>
+        <p class="chat-sidebar__note">После проверки оплаты администратор активирует ваш PRO-доступ.</p>
+      </aside>
+
+      <section class="chat-main">
+        <div class="chat-main__header">
+          <h2>Чат с администратором</h2>
+          <span class="chat-main__count" id="msg-count"></span>
+        </div>
+
+        <div class="payment-banner" id="payment-banner">
+          <p class="payment-banner__icon" aria-hidden="true">💳</p>
+          <p class="payment-banner__text">
+            <strong>Для доступа к PRO-разделу</strong> оплатите по номеру
+            <strong>89824586893</strong> (Альфа банк, Надежда Николаевна Д.),
+            затем отправьте в этот чат <strong>чек или скриншот об оплате</strong>.
+            Администратор проверит платёж и откроет вам PRO-доступ.
+          </p>
+        </div>
+
+        <div class="chat-messages" id="messages"></div>
+
+        <div class="chat-compose" id="compose-area">
+          <div class="reply-preview" id="reply-preview" hidden>
+            <span id="reply-text"></span>
+            <button type="button" id="cancel-reply">&times;</button>
+          </div>
+          <form id="msg-form" class="chat-form">
+            <textarea class="form__input chat-form__input" id="msg-text" rows="3" placeholder="Напишите администратору или прикрепите чек об оплате…"></textarea>
+            <div class="chat-form__row">
+              <label class="file-upload">
+                <input type="file" id="msg-files" multiple accept="image/*,.pdf">
+                <span class="btn btn--ghost btn--sm">📎 Прикрепить чек / скрин</span>
+              </label>
+              <span class="file-upload__hint" id="file-names"></span>
+              <button type="submit" class="btn btn--pro" data-label="Отправить">Отправить</button>
+            </div>
+            <p class="chat-form__hint">Прикрепите скриншот или фото чека об оплате — так администратор быстрее активирует доступ.</p>
+            <p class="form__error" id="send-error" hidden></p>
+          </form>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/chat-send.js"></script>
+  <script>
+    const CHAT_ID = App.CHAT_ADMIN_SUPPORT;
+    let currentUser = App.requireAuth();
+
+    if (currentUser && App.isProActive(currentUser)) {
+      window.location.href = 'pro.html';
+    }
+
+    UI.initHeader('pro-request');
+
+    const messagesEl = document.getElementById('messages');
+    const msgForm = document.getElementById('msg-form');
+    const sendError = document.getElementById('send-error');
+
+    async function renderMessages() {
+      const msgs = App.getMessages(CHAT_ID);
+      document.getElementById('msg-count').textContent = msgs.length + ' сообщ.';
+      await UI.renderMessages(messagesEl, msgs, currentUser, CHAT_ID, 'Напишите администратору или прикрепите чек об оплате.');
+    }
+
+    UI.bindMessageActions(messagesEl, CHAT_ID, currentUser, renderMessages);
+
+    messagesEl.addEventListener('reply-to', e => {
+      msgForm._replyTo = e.detail.id;
+      document.getElementById('reply-preview').hidden = false;
+      document.getElementById('reply-text').textContent = 'Ответ ' + e.detail.author + ': ' + ChatSend.getReplyLabel(e.detail);
+      document.getElementById('msg-text').focus();
+    });
+
+    document.getElementById('cancel-reply').addEventListener('click', () => {
+      msgForm._replyTo = null;
+      document.getElementById('reply-preview').hidden = true;
+    });
+
+    ChatSend.bindForm(
+      msgForm,
+      () => CHAT_ID,
+      () => App.getCurrentUser(),
+      () => {
+        sendError.hidden = true;
+        renderMessages();
+      },
+      (msg) => {
+        sendError.textContent = msg;
+        sendError.hidden = false;
+      }
+    );
+
+    renderMessages();
+  </script>
+</body>
+</html>
