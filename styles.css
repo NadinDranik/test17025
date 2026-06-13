@@ -1245,6 +1245,18 @@ ul {
   color: #e8dcc0;
 }
 
+.sync-notice--ok {
+  background: #edf9f0;
+  border-bottom-color: #8fd4a0;
+  color: #1e5c32;
+}
+
+[data-theme="dark"] .sync-notice--ok {
+  background: #152419;
+  border-bottom-color: rgba(143, 212, 160, 0.35);
+  color: #b8e6c8;
+}
+
 .btn--sm {
   padding: 6px 14px;
   font-size: 0.82rem;
