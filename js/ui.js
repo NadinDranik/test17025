@@ -157,28 +157,40 @@ const UI = (function () {
     let filesHtml = '';
     if (msg.files && msg.files.length) {
       filesHtml = '<div class="msg__files">' + msg.files.map(f => {
-        const ext = f.name.split('.').pop().toLowerCase();
-        if (['jpg','jpeg','png','webp'].includes(ext)) {
+        const ext = App.getFileExt(f.name);
+        const src = f.dataUrl || '';
+        if (src && App.isImageExt(ext)) {
           return `<figure class="msg__file msg__file--img">
-            <img src="${f.dataUrl}" alt="${f.name}">
-            <figcaption>${f.name} · ${App.formatFileSize(f.size)}</figcaption>
+            <img src="${src}" alt="${escapeAttr(f.name)}" loading="lazy">
+            <figcaption>${escapeAttr(f.name)} · ${App.formatFileSize(f.size)}</figcaption>
           </figure>`;
         }
-        if (ext === 'mp4') {
+        if (src && App.isVideoExt(ext)) {
           return `<figure class="msg__file msg__file--video">
-            <video controls src="${f.dataUrl}"></video>
-            <figcaption>${f.name} · ${App.formatFileSize(f.size)}</figcaption>
+            <video controls preload="metadata" src="${src}"></video>
+            <figcaption>${escapeAttr(f.name)} · ${App.formatFileSize(f.size)}</figcaption>
           </figure>`;
         }
-        return `<a class="msg__file msg__file--doc" href="${f.dataUrl}" download="${f.name}">
-          📎 ${f.name} · ${App.formatFileSize(f.size)}
-        </a>`;
+        if (src) {
+          return `<a class="msg__file msg__file--doc" href="${src}" download="${escapeAttr(f.name)}">
+            📎 ${escapeAttr(f.name)} · ${App.formatFileSize(f.size)}
+          </a>`;
+        }
+        return `<span class="msg__file msg__file--missing">📎 ${escapeAttr(f.name)} · файл недоступен</span>`;
       }).join('') + '</div>';
     }
 
+    const textHtml = msg.text
+      ? `<p class="msg__text">${escapeHtml(msg.text)}</p>`
+      : '';
+
+    const replyLabel = reply
+      ? (reply.text ? reply.text.slice(0, 80) : (reply.files && reply.files[0] ? '📎 ' + reply.files[0].name : '…'))
+      : '';
+
     const actions = (isOwn || isAdmin) ? `
       <div class="msg__actions">
-        ${isOwn ? `<button type="button" class="msg__btn" data-action="edit" data-id="${msg.id}">Изменить</button>` : ''}
+        ${isOwn && msg.text ? `<button type="button" class="msg__btn" data-action="edit" data-id="${msg.id}">Изменить</button>` : ''}
         <button type="button" class="msg__btn msg__btn--danger" data-action="delete" data-id="${msg.id}">Удалить</button>
         ${isAdmin ? `<button type="button" class="msg__btn" data-action="pin" data-id="${msg.id}">${msg.pinned ? 'Открепить' : 'Закрепить'}</button>` : ''}
         <button type="button" class="msg__btn" data-action="reply" data-id="${msg.id}">Ответить</button>
@@ -190,14 +202,31 @@ const UI = (function () {
       <article class="msg${msg.pinned ? ' msg--pinned' : ''}" data-id="${msg.id}">
         ${msg.pinned ? '<span class="msg__pin-label">Закреплено</span>' : ''}
         <header class="msg__header">
-          <strong class="msg__author">${msg.authorEmail}</strong>
+          <strong class="msg__author">${escapeAttr(msg.authorEmail)}</strong>
           <time class="msg__time">${App.formatDateTime(msg.createdAt)}${msg.editedAt ? ' (ред.)' : ''}</time>
         </header>
-        ${reply ? `<div class="msg__reply">↩ ${reply.authorEmail}: ${reply.text.slice(0, 80)}${reply.text.length > 80 ? '…' : ''}</div>` : ''}
-        <p class="msg__text">${escapeHtml(msg.text)}</p>
+        ${reply ? `<div class="msg__reply">↩ ${escapeAttr(reply.authorEmail)}: ${escapeHtml(replyLabel)}${replyLabel.length >= 80 ? '…' : ''}</div>` : ''}
+        ${textHtml}
         ${filesHtml}
         ${currentUser ? actions : ''}
       </article>`;
+  }
+
+  async function renderMessages(container, msgs, currentUser, chatId, emptyText) {
+    if (!msgs.length) {
+      container.innerHTML = '<p class="chat-empty">' + (emptyText || 'Нет сообщений') + '</p>';
+      return;
+    }
+    const pinned = msgs.filter(m => m.pinned);
+    const regular = msgs.filter(m => !m.pinned);
+    const sorted = [...pinned, ...regular];
+    const hydrated = await Promise.all(sorted.map(m => App.hydrateMessageFiles(m)));
+    container.innerHTML = hydrated.map(m => renderMessage(m, currentUser, chatId, msgs)).join('');
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function escapeAttr(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   }
 
   function escapeHtml(str) {
@@ -233,10 +262,12 @@ const UI = (function () {
         App.pinMessage(chatId, id, !msg.pinned);
         onUpdate();
       } else if (action === 'reply') {
-        container.dispatchEvent(new CustomEvent('reply-to', { detail: { id, author: msg.authorEmail, text: msg.text } }));
+        container.dispatchEvent(new CustomEvent('reply-to', {
+          detail: { id, author: msg.authorEmail, text: msg.text, files: msg.files }
+        }));
       }
     });
   }
 
-  return { initHeader, initAuthForms, renderMessage, bindMessageActions, escapeHtml };
+  return { initHeader, initAuthForms, renderMessage, renderMessages, bindMessageActions, escapeHtml };
 })();
