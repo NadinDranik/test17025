@@ -225,21 +225,17 @@
           <h2 class="section__title">Контакты администратора</h2>
           <p class="contacts-block__text">
             По вопросам регистрации, PRO-доступа и работы сообщества обращайтесь к администратору
-            <strong>Надежде</strong> — удобнее всего в мессенджерах или по email:
+            <strong>Надежде</strong> — в мессенджерах или через чат на сайте.
           </p>
           <div class="admin-contacts">
-            <a href="https://max.ru/u/f9LHodD0cOKDAVR-vHKW32GuSxfr27ol4LzzwpkZqgYd4JicavrrOAmBw48" class="admin-contact-card" target="_blank" rel="noopener noreferrer">
-              <img src="мах.jfif" alt="Контакт администратора в MAX" class="admin-contact-card__img" width="160" height="160">
-              <span class="admin-contact-card__label">MAX</span>
-              <span class="admin-contact-card__hint">Я пользуюсь мессенджером MAX. Присоединяйся!</span>
+            <a href="https://max.ru/u/f9LHodD0cOKDAVR-vHKW32GuSxfr27ol4LzzwpkZqgYd4JicavrrOAmBw48" class="admin-contact-icon" target="_blank" rel="noopener noreferrer" title="Написать в MAX">
+              <img src="мах.jfif" alt="MAX" width="52" height="52">
             </a>
-            <a href="https://t.me/expert_Nadezhda" class="admin-contact-card" target="_blank" rel="noopener noreferrer">
-              <img src="ТГ.jfif" alt="Контакт администратора в Telegram @expert_Nadezhda" class="admin-contact-card__img" width="160" height="160">
-              <span class="admin-contact-card__label">Telegram</span>
-              <span class="admin-contact-card__hint">@expert_Nadezhda</span>
+            <a href="https://t.me/expert_Nadezhda" class="admin-contact-icon" target="_blank" rel="noopener noreferrer" title="Написать в Telegram">
+              <img src="ТГ.jfif" alt="Telegram" width="52" height="52">
             </a>
           </div>
-          <a href="mailto:admin@gost17025.pro" class="contacts-block__email">admin@gost17025.pro</a>
+          <a href="pro-request.html" class="btn btn--accent btn--write-admin" id="btn-write-admin">Написать мне на сайте</a>
         </div>
       </div>
     </section>
@@ -373,6 +369,13 @@
         App.logout();
         window.location.reload();
       });
+    })();
+
+    (function initContactsButton() {
+      var btn = document.getElementById('btn-write-admin');
+      if (!btn) return;
+      var user = App.getCurrentUser();
+      btn.href = user ? 'pro-request.html' : App.getLoginUrl('pro-request.html');
     })();
   </script>
 
