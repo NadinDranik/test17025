@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админ-панель — Гид PRO ГОСТ ISO/IEC 17025-2019</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+</head>
+<body class="page-admin">
+
+  <header class="header">
+    <div class="container header__inner">
+      <a href="index.html" class="logo">
+        <span class="logo__mark">17025</span>
+        <span class="logo__text">Гид PRO</span>
+      </a>
+      <nav class="nav" aria-label="Основная навигация"></nav>
+      <div class="header__actions"></div>
+      <button class="burger" aria-label="Открыть меню" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="admin-layout">
+    <!-- Форма входа (если не авторизован как админ) -->
+    <div class="container" id="admin-login-wrap">
+      <div class="admin-login">
+        <h1>Вход в админ-панель</h1>
+        <p class="admin-login__desc">Доступ только для администратора сообщества.</p>
+        <div class="admin-demo-hint admin-demo-hint--block">
+          <strong>Логин:</strong> admin@gost17025.pro<br>
+          <strong>Пароль:</strong> admin123
+        </div>
+        <form id="admin-login-form" class="form">
+          <label class="form__label">
+            Email
+            <input type="email" class="form__input" name="email" required value="admin@gost17025.pro">
+          </label>
+          <label class="form__label">
+            Пароль
+            <input type="password" class="form__input" name="password" required placeholder="admin123">
+          </label>
+          <p class="form__error" id="admin-login-error" hidden></p>
+          <button type="submit" class="btn btn--primary btn--block">Войти в админ-панель</button>
+        </form>
+        <a href="index.html" class="legal-back">← На главную</a>
+      </div>
+    </div>
+
+    <div class="container" id="admin-content" hidden>
+      <div class="admin-header">
+        <h1>Административная панель</h1>
+        <p>Управление подписчиками, PRO-доступом и темами чатов</p>
+        <p class="admin-demo-hint">Демо-вход: <strong>admin@gost17025.pro</strong> / <strong>admin123</strong></p>
+      </div>
+
+      <!-- Статистика -->
+      <div class="admin-stats" id="stats"></div>
+
+      <!-- Вкладки -->
+      <div class="admin-tabs">
+        <button type="button" class="admin-tab admin-tab--active" data-tab="users">Пользователи</button>
+        <button type="button" class="admin-tab" data-tab="pro">PRO-подписки</button>
+        <button type="button" class="admin-tab" data-tab="topics">PRO-чаты</button>
+        <button type="button" class="admin-tab" data-tab="moderation">Модерация</button>
+      </div>
+
+      <!-- Пользователи -->
+      <section class="admin-panel" id="panel-users">
+        <div class="admin-panel__toolbar">
+          <input type="search" class="form__input" id="user-search" placeholder="Поиск по email…">
+          <select class="form__input form__input--select" id="user-filter">
+            <option value="all">Все пользователи</option>
+            <option value="pro">Активные PRO</option>
+            <option value="expired">Истёкшая подписка</option>
+            <option value="free">Без подписки</option>
+            <option value="blocked">Заблокированные</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table class="admin-table" id="users-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Регистрация</th>
+                <th>Статус</th>
+                <th>PRO до</th>
+                <th>Активность</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- PRO-подписки -->
+      <section class="admin-panel" id="panel-pro" hidden>
+        <div class="admin-cards">
+          <div class="admin-card">
+            <h3>Выдать PRO-доступ</h3>
+            <p class="admin-card__desc">После подтверждения оплаты выберите пользователя и срок.</p>
+            <form id="grant-form" class="form form--inline">
+              <select class="form__input" id="grant-user" required></select>
+              <select class="form__input form__input--select" id="grant-days">
+                <option value="30">30 дней</option>
+                <option value="90">90 дней</option>
+                <option value="180">180 дней</option>
+                <option value="365">365 дней</option>
+              </select>
+              <button type="submit" class="btn btn--pro">Выдать PRO</button>
+            </form>
+          </div>
+          <div class="admin-card">
+            <h3>Установить дату окончания</h3>
+            <form id="set-date-form" class="form form--inline">
+              <select class="form__input" id="set-date-user" required></select>
+              <input type="date" class="form__input" id="set-date-value" required>
+              <button type="submit" class="btn btn--primary">Сохранить</button>
+            </form>
+          </div>
+          <div class="admin-card admin-card--warn">
+            <h3>Отключить PRO-доступ</h3>
+            <p class="admin-card__desc">Используйте при просрочке оплаты. Аккаунт пользователя сохраняется.</p>
+            <form id="revoke-form" class="form form--inline">
+              <select class="form__input" id="revoke-user" required></select>
+              <button type="submit" class="btn btn--danger">Отключить PRO</button>
+            </form>
+          </div>
+        </div>
+
+        <h3 class="admin-subtitle">Активные подписчики</h3>
+        <div id="active-subs" class="subs-list"></div>
+        <h3 class="admin-subtitle">Истёкшая подписка</h3>
+        <div id="expired-subs" class="subs-list"></div>
+        <h3 class="admin-subtitle">Без подписки</h3>
+        <div id="free-subs" class="subs-list"></div>
+      </section>
+
+      <!-- PRO-чаты -->
+      <section class="admin-panel" id="panel-topics" hidden>
+        <div class="admin-card">
+          <h3>Создать PRO-чат (тему)</h3>
+          <form id="topic-form" class="form">
+            <label class="form__label">
+              Название темы
+              <input type="text" class="form__input" id="topic-title" required placeholder="Например: Подготовка к ПК">
+            </label>
+            <label class="form__label">
+              Описание
+              <textarea class="form__input" id="topic-desc" rows="2" placeholder="Краткое описание темы"></textarea>
+            </label>
+            <button type="submit" class="btn btn--primary">Создать тему</button>
+          </form>
+        </div>
+        <div class="table-wrap">
+          <table class="admin-table" id="topics-table">
+            <thead>
+              <tr>
+                <th>Название</th>
+                <th>Описание</th>
+                <th>Создана</th>
+                <th>Статус</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Модерация -->
+      <section class="admin-panel" id="panel-moderation" hidden>
+        <p class="admin-panel__desc">Удаление сообщений и блокировка пользователей.</p>
+        <div class="admin-cards">
+          <div class="admin-card">
+            <h3>Заблокировать пользователя</h3>
+            <form id="block-form" class="form form--inline">
+              <select class="form__input" id="block-user"></select>
+              <button type="submit" class="btn btn--danger">Заблокировать</button>
+            </form>
+          </div>
+          <div class="admin-card">
+            <h3>Разблокировать пользователя</h3>
+            <form id="unblock-form" class="form form--inline">
+              <select class="form__input" id="unblock-user"></select>
+              <button type="submit" class="btn btn--primary">Разблокировать</button>
+            </form>
+          </div>
+        </div>
+        <h3 class="admin-subtitle">Последние сообщения (общий чат)</h3>
+        <div id="mod-messages" class="mod-messages"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    App.ensureAdmin();
+
+    const loginWrap = document.getElementById('admin-login-wrap');
+    const adminContent = document.getElementById('admin-content');
+    const loginError = document.getElementById('admin-login-error');
+
+    function showAdminPanel() {
+      loginWrap.hidden = true;
+      adminContent.hidden = false;
+      UI.initHeader('admin');
+      initAdminPanel();
+    }
+
+    function showLoginForm(message) {
+      loginWrap.hidden = false;
+      adminContent.hidden = true;
+      if (message) {
+        loginError.textContent = message;
+        loginError.hidden = false;
+      }
+    }
+
+    document.getElementById('admin-login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      loginError.hidden = true;
+      const fd = new FormData(this);
+      const result = App.login(fd.get('email'), fd.get('password'));
+      if (!result.ok) {
+        loginError.textContent = result.error;
+        loginError.hidden = false;
+        return;
+      }
+      if (result.user.role !== 'admin') {
+        App.logout();
+        loginError.textContent = 'Этот аккаунт не является администратором. Используйте admin@gost17025.pro';
+        loginError.hidden = false;
+        return;
+      }
+      showAdminPanel();
+    });
+
+    if (App.requireAdmin()) {
+      showAdminPanel();
+    } else {
+      showLoginForm();
+    }
+
+    function initAdminPanel() {
+    App.checkSubscriptionWarnings();
+
+    const data = App.getData();
+    const nonAdminUsers = data.users.filter(u => u.role !== 'admin');
+
+    /* Tabs */
+    document.querySelectorAll('.admin-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('admin-tab--active'));
+        document.querySelectorAll('.admin-panel').forEach(p => p.hidden = true);
+        tab.classList.add('admin-tab--active');
+        document.getElementById('panel-' + tab.dataset.tab).hidden = false;
+      });
+    });
+
+    function getStatusBadge(user) {
+      const s = App.getSubscriptionStatus(user);
+      const map = {
+        admin: '<span class="badge badge--admin">Админ</span>',
+        pro: '<span class="badge badge--pro">PRO активен</span>',
+        expired: '<span class="badge badge--expired">PRO истёк</span>',
+        free: '<span class="badge badge--free">Free</span>',
+        blocked: '<span class="badge badge--blocked">Заблокирован</span>'
+      };
+      return map[s] || map.free;
+    }
+
+    function renderStats() {
+      const users = App.getData().users.filter(u => u.role !== 'admin');
+      const active = users.filter(u => App.isProActive(u));
+      const expired = users.filter(u => u.proExpiresAt && !App.isProActive(u) && !u.blocked);
+      const free = users.filter(u => !u.proExpiresAt && !u.blocked);
+      const topics = App.getProTopics(true);
+
+      document.getElementById('stats').innerHTML = `
+        <div class="stat-card"><span class="stat-card__num">${users.length}</span><span class="stat-card__label">Пользователей</span></div>
+        <div class="stat-card stat-card--pro"><span class="stat-card__num">${active.length}</span><span class="stat-card__label">Активных PRO</span></div>
+        <div class="stat-card stat-card--warn"><span class="stat-card__num">${expired.length}</span><span class="stat-card__label">Истёк PRO</span></div>
+        <div class="stat-card"><span class="stat-card__num">${topics.length}</span><span class="stat-card__label">PRO-чатов</span></div>`;
+    }
+
+    function fillUserSelects() {
+      const users = App.getData().users.filter(u => u.role !== 'admin');
+      const opts = users.map(u => `<option value="${u.id}">${u.email}</option>`).join('');
+      ['grant-user','set-date-user','revoke-user','block-user'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = opts;
+      });
+      const blocked = users.filter(u => u.blocked);
+      document.getElementById('unblock-user').innerHTML = blocked.length
+        ? blocked.map(u => `<option value="${u.id}">${u.email}</option>`).join('')
+        : '<option value="">Нет заблокированных</option>';
+    }
+
+    function renderUsers() {
+      const search = document.getElementById('user-search').value.toLowerCase();
+      const filter = document.getElementById('user-filter').value;
+      let users = App.getData().users.filter(u => u.role !== 'admin');
+
+      if (search) users = users.filter(u => u.email.includes(search));
+      if (filter === 'pro') users = users.filter(u => App.isProActive(u));
+      if (filter === 'expired') users = users.filter(u => u.proExpiresAt && !App.isProActive(u));
+      if (filter === 'free') users = users.filter(u => !u.proExpiresAt && !u.blocked);
+      if (filter === 'blocked') users = users.filter(u => u.blocked);
+
+      document.querySelector('#users-table tbody').innerHTML = users.map(u => `
+        <tr>
+          <td>${u.email}</td>
+          <td>${App.formatDate(u.registeredAt)}</td>
+          <td>${getStatusBadge(u)}</td>
+          <td>${App.formatDate(u.proExpiresAt)}</td>
+          <td>${App.formatDate(u.lastActive)}</td>
+          <td class="admin-actions">
+            <button type="button" class="btn btn--sm btn--pro" data-action="extend30" data-id="${u.id}">+30 дн.</button>
+            <button type="button" class="btn btn--sm btn--outline" data-action="extend90" data-id="${u.id}">+90 дн.</button>
+            ${App.isProActive(u)
+              ? `<button type="button" class="btn btn--sm btn--danger" data-action="revoke" data-id="${u.id}">Отключить</button>`
+              : `<button type="button" class="btn btn--sm btn--pro" data-action="grant30" data-id="${u.id}">Выдать PRO</button>`}
+            ${u.blocked
+              ? `<button type="button" class="btn btn--sm btn--primary" data-action="unblock" data-id="${u.id}">Разблок.</button>`
+              : `<button type="button" class="btn btn--sm btn--danger" data-action="block" data-id="${u.id}">Блок</button>`}
+          </td>
+        </tr>`).join('') || '<tr><td colspan="6" class="table-empty">Нет пользователей</td></tr>';
+    }
+
+    document.querySelector('#users-table tbody').addEventListener('click', e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const action = btn.dataset.action;
+      if (action === 'extend30') { App.extendPro(id, 30); toast('PRO продлён на 30 дней'); }
+      if (action === 'extend90') { App.extendPro(id, 90); toast('PRO продлён на 90 дней'); }
+      if (action === 'grant30') { App.grantPro(id, 30); toast('PRO выдан на 30 дней'); }
+      if (action === 'revoke') { if (confirm('Отключить PRO-доступ?')) { App.revokePro(id); toast('PRO отключён'); } }
+      if (action === 'block') { if (confirm('Заблокировать пользователя?')) { App.blockUser(id, true); toast('Пользователь заблокирован'); } }
+      if (action === 'unblock') { App.blockUser(id, false); toast('Пользователь разблокирован'); }
+      refresh();
+    });
+
+    function renderSubsLists() {
+      const users = App.getData().users.filter(u => u.role !== 'admin');
+      const renderList = (list, users, showExtend) => list.innerHTML = users.length
+        ? users.map(u => `<div class="subs-item">
+            <span>${u.email}</span>
+            <span>${App.formatDate(u.proExpiresAt)}</span>
+            ${showExtend ? `<button type="button" class="btn btn--sm btn--pro" data-extend="${u.id}">+30 дн.</button>` : ''}
+          </div>`).join('')
+        : '<p class="table-empty">Нет пользователей</p>';
+
+      renderList(document.getElementById('active-subs'), users.filter(u => App.isProActive(u)), true);
+      renderList(document.getElementById('expired-subs'), users.filter(u => u.proExpiresAt && !App.isProActive(u)), false);
+      renderList(document.getElementById('free-subs'), users.filter(u => !u.proExpiresAt && !u.blocked), false);
+
+      document.querySelectorAll('[data-extend]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          App.extendPro(btn.dataset.extend, 30);
+          toast('Подписка продлена');
+          refresh();
+        });
+      });
+    }
+
+    function renderTopics() {
+      const topics = App.getProTopics(true);
+      document.querySelector('#topics-table tbody').innerHTML = topics.length
+        ? topics.map(t => `
+          <tr>
+            <td>${t.pinned ? '📌 ' : ''}${t.title}</td>
+            <td>${t.description || '—'}</td>
+            <td>${App.formatDate(t.createdAt)}</td>
+            <td>${t.hidden ? '<span class="badge badge--blocked">Скрыта</span>' : '<span class="badge badge--pro">Видна</span>'}</td>
+            <td class="admin-actions">
+              <button type="button" class="btn btn--sm btn--outline" data-topic="pin" data-id="${t.id}">${t.pinned ? 'Открепить' : 'Закрепить'}</button>
+              <button type="button" class="btn btn--sm btn--outline" data-topic="hide" data-id="${t.id}">${t.hidden ? 'Показать' : 'Скрыть'}</button>
+              <button type="button" class="btn btn--sm btn--outline" data-topic="edit" data-id="${t.id}">Изменить</button>
+              <button type="button" class="btn btn--sm btn--danger" data-topic="delete" data-id="${t.id}">Удалить</button>
+            </td>
+          </tr>`).join('')
+        : '<tr><td colspan="5" class="table-empty">PRO-чаты не созданы</td></tr>';
+    }
+
+    document.querySelector('#topics-table tbody').addEventListener('click', e => {
+      const btn = e.target.closest('[data-topic]');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const action = btn.dataset.topic;
+      const topics = App.getProTopics(true);
+      const topic = topics.find(t => t.id === id);
+      if (!topic) return;
+
+      if (action === 'pin') { App.updateProTopic(id, { pinned: !topic.pinned }); toast(topic.pinned ? 'Откреплено' : 'Закреплено'); }
+      if (action === 'hide') { App.updateProTopic(id, { hidden: !topic.hidden }); toast(topic.hidden ? 'Тема показана' : 'Тема скрыта'); }
+      if (action === 'edit') {
+        const title = prompt('Название темы:', topic.title);
+        const desc = prompt('Описание:', topic.description);
+        if (title) { App.updateProTopic(id, { title, description: desc || '' }); toast('Тема обновлена'); }
+      }
+      if (action === 'delete') {
+        if (confirm('Удалить тему и все сообщения в ней?')) {
+          App.deleteProTopic(id);
+          toast('Тема удалена');
+        }
+      }
+      refresh();
+    });
+
+    function renderModeration() {
+      const msgs = App.getMessages('free').slice(-20).reverse();
+      document.getElementById('mod-messages').innerHTML = msgs.length
+        ? msgs.map(m => `<div class="mod-msg">
+            <div><strong>${m.authorEmail}</strong> · ${App.formatDateTime(m.createdAt)}</div>
+            <p>${UI.escapeHtml(m.text.slice(0, 200))}</p>
+            <button type="button" class="btn btn--sm btn--danger" data-del-msg="${m.id}">Удалить</button>
+          </div>`).join('')
+        : '<p class="table-empty">Нет сообщений</p>';
+
+      document.querySelectorAll('[data-del-msg]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          App.deleteMessage('free', btn.dataset.delMsg);
+          toast('Сообщение удалено');
+          renderModeration();
+        });
+      });
+    }
+
+    document.getElementById('grant-form').addEventListener('submit', e => {
+      e.preventDefault();
+      App.grantPro(document.getElementById('grant-user').value, +document.getElementById('grant-days').value);
+      toast('PRO-доступ выдан');
+      refresh();
+    });
+
+    document.getElementById('set-date-form').addEventListener('submit', e => {
+      e.preventDefault();
+      App.setProExpiry(document.getElementById('set-date-user').value, document.getElementById('set-date-value').value);
+      toast('Дата сохранена');
+      refresh();
+    });
+
+    document.getElementById('revoke-form').addEventListener('submit', e => {
+      e.preventDefault();
+      if (confirm('Отключить PRO-доступ у выбранного пользователя?')) {
+        App.revokePro(document.getElementById('revoke-user').value);
+        toast('PRO отключён');
+        refresh();
+      }
+    });
+
+    document.getElementById('topic-form').addEventListener('submit', e => {
+      e.preventDefault();
+      App.createProTopic(
+        document.getElementById('topic-title').value.trim(),
+        document.getElementById('topic-desc').value.trim()
+      );
+      document.getElementById('topic-form').reset();
+      toast('PRO-чат создан');
+      refresh();
+    });
+
+    document.getElementById('block-form').addEventListener('submit', e => {
+      e.preventDefault();
+      App.blockUser(document.getElementById('block-user').value, true);
+      toast('Пользователь заблокирован');
+      refresh();
+    });
+
+    document.getElementById('unblock-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const id = document.getElementById('unblock-user').value;
+      if (id) { App.blockUser(id, false); toast('Пользователь разблокирован'); refresh(); }
+    });
+
+    document.getElementById('user-search').addEventListener('input', renderUsers);
+    document.getElementById('user-filter').addEventListener('change', renderUsers);
+
+    function toast(msg) {
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 2500);
+    }
+
+    function refresh() {
+      renderStats();
+      fillUserSelects();
+      renderUsers();
+      renderSubsLists();
+      renderTopics();
+      renderModeration();
+    }
+
+    refresh();
+    }
+  </script>
+</body>
+</html>
