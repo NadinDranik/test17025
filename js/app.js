@@ -36,7 +36,8 @@ const App = (function () {
       proTopics: [],
       messages: { free: [], [CHAT_ADMIN_SUPPORT]: [] },
       notifications: [],
-      proRequests: []
+      proRequests: [],
+      proHistory: []
     };
   }
 
@@ -1062,6 +1063,58 @@ const App = (function () {
     return null;
   }
 
+  async function fetchAccountProfile() {
+    const res = await fetch('/api/account', { ...API_OPTS, cache: 'no-store' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Не удалось загрузить профиль');
+    if (data.user) _currentUser = data.user;
+    return data;
+  }
+
+  async function fetchUserAccountProfile(userId) {
+    const res = await fetch('/api/admin/users/' + encodeURIComponent(userId) + '/account', { ...API_OPTS, cache: 'no-store' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Не удалось загрузить профиль');
+    return data;
+  }
+
+  async function updateAccountNickname(nickname) {
+    const res = await fetch('/api/account/nickname', {
+      method: 'PATCH',
+      ...API_OPTS,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Ошибка сохранения');
+    if (data.profile?.user) _currentUser = data.profile.user;
+    return data.profile;
+  }
+
+  async function changeAccountPassword(currentPassword, newPassword) {
+    const res = await fetch('/api/account/password', {
+      method: 'POST',
+      ...API_OPTS,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Ошибка смены пароля');
+    return data;
+  }
+
+  function toastAccount(msg) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2500);
+  }
+
+  function isUserBlocked(user) {
+    return !!(user && user.blocked);
+  }
+
   const ready = initSync().finally(() => {
     expireSubscriptions();
     ensureAdmin();
@@ -1087,6 +1140,8 @@ const App = (function () {
     getProRequests, getPendingProRequestCount, markProRequestProcessed, markProRequestsProcessedByUser,
     formatDate, formatDateTime, formatFileSize, readFilesAsAttachments,
     hydrateMessageFiles, isImageExt, isVideoExt, getFileExt, ALLOWED_EXT, MAX_FILE_SIZE,
-    requireAuth, requireAdmin, requirePro, isAllowedFile
+    requireAuth, requireAdmin, requirePro, isAllowedFile,
+    fetchAccountProfile, fetchUserAccountProfile, updateAccountNickname,
+    changeAccountPassword, toastAccount, isUserBlocked
   };
 })();
