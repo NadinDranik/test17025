@@ -30,8 +30,8 @@
     <div class="chat-layout__inner">
       <aside class="chat-sidebar">
         <nav class="chat-rail" aria-label="Чаты">
-          <a href="chat.html" class="chat-rail__tab">Общий</a>
-          <a href="admin-chat.html" class="chat-rail__tab chat-rail__tab--active" aria-current="page">Админ</a>
+          <a href="chat.html" class="chat-rail__tab" data-chat-id="free">Общий</a>
+          <a href="admin-chat.html" class="chat-rail__tab chat-rail__tab--active" data-chat-kind="dm" aria-current="page">Админ</a>
           <a href="pro-request.html" class="chat-rail__tab">PRO</a>
         </nav>
         <div class="chat-sidebar__body">
@@ -105,10 +105,6 @@
         const msgs = App.getMessages(CHAT_ID);
         document.getElementById('msg-count').textContent = msgs.length + ' сообщ.';
         await UI.renderMessages(messagesEl, msgs, currentUser, CHAT_ID, 'Напишите администратору — ответ придёт в этот личный диалог.');
-        if (currentUser) {
-          App.markChatRead(currentUser.id, CHAT_ID);
-          UI.refreshUnreadBadges();
-        }
       }
 
       UI.bindMessageActions(messagesEl, CHAT_ID, currentUser, renderMessages);
@@ -141,6 +137,7 @@
 
       renderMessages();
       window.addEventListener('gost-data-synced', renderMessages);
+      window.addEventListener('gost-unread-changed', () => UI.refreshUnreadBadges());
     });
   </script>
 </body>
