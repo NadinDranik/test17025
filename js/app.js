@@ -5,6 +5,7 @@ const App = (function () {
   const STORAGE_KEY = 'gost17025_data';
   const SESSION_KEY = 'gost17025_session';
   let syncEnabled = false;
+  let serverAvailable = false;
   let syncVersion = 0;
   let syncPollTimer = null;
   let syncSocket = null;
@@ -363,26 +364,32 @@ const App = (function () {
     });
   }
 
+  async function activateUserSync() {
+    const payload = await pullFromServer();
+    const localRaw = localStorage.getItem(STORAGE_KEY);
+    const localData = localRaw ? JSON.parse(localRaw) : null;
+    if (!hasStoredActivity(payload.data) && hasStoredActivity(localData)) {
+      await pushToServer(localData, true);
+      await pullFromServer();
+    }
+    syncEnabled = true;
+    connectSyncSocket();
+    startSyncPolling();
+    window.dispatchEvent(new CustomEvent('gost-sync-ready'));
+  }
+
   async function initSync() {
     if (typeof window === 'undefined' || window.location.protocol === 'file:') return;
     try {
       const health = await fetch('/api/health', { cache: 'no-store' });
       if (!health.ok) throw new Error('API unavailable');
+      serverAvailable = true;
       await fetchAuthMe();
-      if (!_currentUser) {
-        syncEnabled = false;
-        return;
+      if (_currentUser) {
+        await activateUserSync();
       }
-      const payload = await pullFromServer();
-      const localRaw = localStorage.getItem(STORAGE_KEY);
-      const localData = localRaw ? JSON.parse(localRaw) : null;
-      if (!hasStoredActivity(payload.data) && hasStoredActivity(localData)) {
-        await pushToServer(localData, true);
-        await pullFromServer();
-      }
-      syncEnabled = true;
-      connectSyncSocket();
     } catch {
+      serverAvailable = false;
       syncEnabled = false;
     }
   }
@@ -396,6 +403,10 @@ const App = (function () {
 
   function isSyncEnabled() {
     return syncEnabled;
+  }
+
+  function isServerAvailable() {
+    return serverAvailable;
   }
 
   /* Хранилище файлов (IndexedDB + сервер при синхронизации) */
@@ -573,9 +584,8 @@ const App = (function () {
       if (!res.ok) return { ok: false, error: data.error || 'Ошибка регистрации' };
       _currentUser = data.user;
       setSession(data.user.id);
-      syncEnabled = true;
-      await pullFromServer();
-      connectSyncSocket();
+      serverAvailable = true;
+      await activateUserSync();
       return { ok: true, user: data.user };
     } catch {
       return { ok: false, error: 'Сервер недоступен' };
@@ -595,9 +605,8 @@ const App = (function () {
       _currentUser = data.user;
       setSession(data.user.id);
       expireSubscriptions();
-      syncEnabled = true;
-      await pullFromServer();
-      connectSyncSocket();
+      serverAvailable = true;
+      await activateUserSync();
       touchActivity(data.user.id);
       return { ok: true, user: data.user };
     } catch {
@@ -611,6 +620,11 @@ const App = (function () {
     } catch { /* ignore */ }
     _currentUser = null;
     setSession(null);
+    syncEnabled = false;
+    if (syncSocket) {
+      try { syncSocket.close(); } catch { /* ignore */ }
+      syncSocket = null;
+    }
   }
 
   async function adminRequest(path, method, body) {
@@ -1053,12 +1067,12 @@ const App = (function () {
     ensureAdmin();
     ensureAdminSupportChat();
     migrateUsers();
-    startSyncPolling();
   });
 
   return {
     ready,
     isSyncEnabled,
+    isServerAvailable,
     getData, getCurrentUser, getSession, login, logout, register,
     ensureAdmin, ensureAdminSupportChat, ensureProRequestWelcomeMessage, migrateUsers,
     ADMIN_EMAIL,
