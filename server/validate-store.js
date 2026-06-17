@@ -107,6 +107,13 @@ function mergeMessagesForChat(serverMsgs, clientMsgs, actor, chatId) {
     server.forEach(sm => {
       if (!clientIds.has(sm.id)) byId.delete(sm.id);
     });
+  } else {
+    const clientIds = new Set(client.map(m => m.id));
+    server.forEach(sm => {
+      if (sm.userId === actor.id && !clientIds.has(sm.id)) {
+        byId.delete(sm.id);
+      }
+    });
   }
 
   return Array.from(byId.values()).sort(
