@@ -97,7 +97,7 @@ const UI = (function () {
         ? '<span class="user-badge user-badge--pro">' + (status === 'admin' ? 'Админ' : 'PRO') + '</span>'
         : status === 'expired'
           ? '<span class="user-badge user-badge--expired">Истекла</span>'
-          : '<span class="user-badge">Free</span>';
+          : '<span class="user-badge">Без подписки</span>';
       const unread = App.getBellUnreadCount(user.id);
       const notifBadge = unread > 0 ? `<span class="notif-badge">${unread > 99 ? '99+' : unread}</span>` : '';
       actionsHtml = `
