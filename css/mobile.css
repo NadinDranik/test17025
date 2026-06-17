@@ -82,6 +82,118 @@ body {
     padding: 4px 6px;
   }
 
+  body.mobile-shell .logo {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .mobile-header-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .mobile-header-toolbar__auth {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .mobile-header-toolbar__user {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    position: relative;
+  }
+
+  .mobile-header-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+
+  .mobile-header-btn--ghost {
+    color: var(--color-primary);
+    border-color: var(--color-border);
+    background: transparent;
+  }
+
+  .mobile-header-btn--primary {
+    color: #fff;
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+
+  .mobile-header-login {
+    max-width: 28vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    text-decoration: none;
+    padding: 4px 2px;
+  }
+
+  .mobile-header-bell {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    font-size: 1.1rem;
+    cursor: pointer;
+    position: relative;
+    border-radius: 50%;
+  }
+
+  .mobile-bottom-nav__icon-wrap {
+    position: relative;
+    display: inline-flex;
+    line-height: 1;
+  }
+
+  .mobile-bottom-nav__badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #e74c3c;
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+  }
+
+  .m-card__unread {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: #e74c3c;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
   .mobile-header-status {
     margin-left: auto;
     margin-right: 8px;
