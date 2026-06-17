@@ -34,6 +34,7 @@
           <a href="admin-chat.html" class="chat-rail__tab" data-chat-kind="dm">Админ</a>
           <a href="pro-request.html" class="chat-rail__tab chat-rail__tab--active" aria-current="page">PRO</a>
         </nav>
+        <nav id="desktop-chats-nav" class="desktop-chats-nav" aria-label="Список чатов"></nav>
         <div class="chat-sidebar__body">
         <h1 class="chat-sidebar__title">Оформление PRO</h1>
         <p class="chat-sidebar__desc">Для доступа к PRO-чатам необходимо оплатить <strong>1000 ₽ в месяц</strong> и подтвердить оплату в личном диалоге с администратором.</p>
@@ -128,6 +129,7 @@
 
     UI.initHeader('chats');
     Mobile.init('chats');
+    Mobile.mountDesktopChatsNav('');
     App.ensureAdminDmWelcome(currentUser.id);
 
     const messagesEl = document.getElementById('messages');
