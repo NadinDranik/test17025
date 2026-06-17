@@ -1,5 +1,6 @@
 node_modules/
 .env
+DEPLOY-CREDENTIALS.txt
 data/store.json
 data/store.json.bak
 data/gost17025.db
