@@ -25,8 +25,6 @@
     </div>
   </header>
 
-  <div id="user-profile-bar" class="user-profile-bar" hidden></div>
-
   <main class="chat-layout">
     <div class="chat-layout__inner">
       <aside class="chat-sidebar">
@@ -38,7 +36,6 @@
         <div class="chat-sidebar__body">
           <h1 class="chat-sidebar__title">Личные сообщения</h1>
           <p class="chat-sidebar__desc">Ваш личный диалог с администратором. Здесь можно задать вопрос, обратиться за помощью или отправить чек для оформления PRO-доступа.</p>
-          <div class="chat-sidebar__info" data-user-profile></div>
           <p class="chat-sidebar__note">Сообщения видны только вам и администратору.</p>
           <a href="pro-request.html" class="btn btn--outline btn--block">Оформить PRO-доступ</a>
         </div>
@@ -94,7 +91,6 @@
       const CHAT_ID = App.getAdminDmChatId(currentUser.id);
 
       UI.initHeader('admin-chat');
-      UI.refreshUserProfile();
       App.ensureAdminDmWelcome(currentUser.id);
 
       const messagesEl = document.getElementById('messages');
