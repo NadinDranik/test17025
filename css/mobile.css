@@ -680,15 +680,7 @@ body.logged-in-home #user-dashboard {
 }
 
 @media (max-width: 992px) {
-  body.logged-in-home .hero,
-  body.logged-in-home #about,
-  body.logged-in-home #topics,
-  body.logged-in-home #free,
-  body.logged-in-home #features {
-    display: none;
-  }
-
-  body.logged-in-home .hero__buttons {
+  body.logged-in-home .home-landing {
     display: none;
   }
 }
