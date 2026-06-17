@@ -118,7 +118,6 @@ const UI = (function () {
     document.getElementById('btn-notifications')?.addEventListener('click', showNotifications);
 
     initBurger();
-    renderUserProfileBar(user);
     mountThemeToggle(header);
   }
 
@@ -153,61 +152,6 @@ const UI = (function () {
       }
       document.querySelector('.header')?.insertAdjacentElement('afterend', notice);
     }
-  }
-
-  function renderUserProfile(user) {
-    if (!user) return '';
-    const status = App.getSubscriptionStatus(user);
-    const badgeClass = status === 'pro' || status === 'admin' ? 'user-badge--pro'
-      : status === 'expired' ? 'user-badge--expired' : '';
-    const paidAt = user.proPaidAt ? App.formatDate(user.proPaidAt) : '—';
-    const expiresAt = user.proExpiresAt ? App.formatDate(user.proExpiresAt) : '—';
-
-    return `
-      <div class="user-profile">
-        <div class="user-profile__head">
-          <div class="user-profile__avatar">${escapeAttr(App.getDisplayName(user).charAt(0).toUpperCase())}</div>
-          <div>
-            <p class="user-profile__nick">${escapeAttr(App.getDisplayName(user))}</p>
-            <p class="user-profile__email">${escapeAttr(user.email)}</p>
-          </div>
-          <span class="user-badge ${badgeClass}">${App.getStatusLabel(user)}</span>
-        </div>
-        <dl class="user-profile__meta">
-          <div class="user-profile__row">
-            <dt>Статус</dt>
-            <dd>${App.getStatusLabel(user)}</dd>
-          </div>
-          <div class="user-profile__row">
-            <dt>Дата оплаты</dt>
-            <dd>${paidAt}</dd>
-          </div>
-          <div class="user-profile__row">
-            <dt>Следующая оплата до</dt>
-            <dd>${expiresAt}</dd>
-          </div>
-        </dl>
-      </div>`;
-  }
-
-  function renderUserProfileBar(user) {
-    const bar = document.getElementById('user-profile-bar');
-    if (!bar) return;
-    if (user) {
-      bar.hidden = false;
-      bar.innerHTML = renderUserProfile(user);
-    } else {
-      bar.hidden = true;
-      bar.innerHTML = '';
-    }
-  }
-
-  function refreshUserProfile() {
-    renderUserProfileBar(App.getCurrentUser());
-    document.querySelectorAll('[data-user-profile]').forEach(el => {
-      const user = App.getCurrentUser();
-      el.innerHTML = user ? renderUserProfile(user) : '';
-    });
   }
 
   function initBurger() {
@@ -472,7 +416,7 @@ const UI = (function () {
 
   return {
     initHeader, initAuthForms, renderMessage, renderMessages, bindMessageActions,
-    renderUserProfile, renderUserProfileBar, refreshUserProfile, initPasswordToggles,
+    initPasswordToggles,
     updateNotificationBadge, escapeHtml, escapeAttr, applyTheme, mountThemeToggle, toggleTheme,
     showSyncNotice
   };
