@@ -79,6 +79,9 @@ const Mobile = (function () {
     const user = App.getCurrentUser();
     const active = PAGE_TAB[page] || '';
     const chatUnread = user ? App.getTotalUnreadMessages(user.id) : 0;
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const themeIcon = isDark ? '☀️' : '🌙';
+    const themeLabel = isDark ? 'Светлая' : 'Тёмная';
     const items = [
       { id: 'home', href: 'index.html', icon: '⌂', label: 'Главная' },
       { id: 'chats', href: 'chats.html', icon: '💬', label: 'Чаты', badge: chatUnread },
@@ -95,7 +98,7 @@ const Mobile = (function () {
       document.body.appendChild(nav);
     }
 
-    nav.innerHTML = items.map(item => {
+    const linksHtml = items.map(item => {
       const badgeHtml = item.badge > 0
         ? `<span class="mobile-bottom-nav__badge">${item.badge > 99 ? '99+' : item.badge}</span>`
         : '';
@@ -108,6 +111,18 @@ const Mobile = (function () {
         <span class="mobile-bottom-nav__label">${item.label}</span>
       </a>`;
     }).join('');
+
+    nav.innerHTML = linksHtml + `
+      <button type="button" id="btn-theme-mobile" class="mobile-bottom-nav__item mobile-bottom-nav__item--theme" aria-label="${themeLabel} тема">
+        <span class="mobile-bottom-nav__icon-wrap">
+          <span class="mobile-bottom-nav__icon" aria-hidden="true">${themeIcon}</span>
+        </span>
+        <span class="mobile-bottom-nav__label">Тема</span>
+      </button>`;
+
+    nav.querySelector('#btn-theme-mobile')?.addEventListener('click', () => {
+      UI.toggleTheme();
+    });
 
     document.body.classList.add('has-mobile-nav');
   }
@@ -122,32 +137,11 @@ const Mobile = (function () {
     if (hub && hub.innerHTML.trim()) renderChatsHub(hub);
   }
 
-  let mobileMenuCloseHandler = null;
-
   function bindMobileHeaderEvents(header) {
     header.querySelector('[data-action="logout"]')?.addEventListener('click', async () => {
       await App.logout();
       window.location.href = 'index.html';
     });
-    header.querySelector('[data-action="theme"]')?.addEventListener('click', () => {
-      UI.toggleTheme();
-      header.querySelector('.mobile-header-menu')?.setAttribute('hidden', '');
-    });
-    const moreBtn = header.querySelector('.mobile-header-more');
-    const menu = header.querySelector('.mobile-header-menu');
-    if (moreBtn && menu) {
-      moreBtn.addEventListener('click', () => {
-        menu.hidden = !menu.hidden;
-      });
-      if (mobileMenuCloseHandler) {
-        document.removeEventListener('click', mobileMenuCloseHandler);
-      }
-      mobileMenuCloseHandler = (e) => {
-        if (menu.hidden) return;
-        if (!menu.contains(e.target) && e.target !== moreBtn) menu.hidden = true;
-      };
-      document.addEventListener('click', mobileMenuCloseHandler);
-    }
     header.querySelector('#btn-notifications-mobile')?.addEventListener('click', () => {
       if (typeof UI !== 'undefined' && UI.showNotifications) UI.showNotifications();
     });
@@ -171,12 +165,7 @@ const Mobile = (function () {
       <div class="mobile-header-toolbar__user">
         <a href="account.html" class="mobile-header-login" title="Личный кабинет">${UI.escapeHtml(App.getDisplayName(user))}</a>
         <button type="button" class="btn-notifications mobile-header-bell" id="btn-notifications-mobile" title="Уведомления и сообщения" aria-label="Уведомления">🔔${bellBadge}</button>
-        <button type="button" class="mobile-header-more" aria-label="Ещё">⋯</button>
-        <div class="mobile-header-menu" hidden>
-          ${user.role === 'admin' ? '<a href="admin.html" class="mobile-header-menu__link">Админ-панель</a>' : ''}
-          <button type="button" class="mobile-header-menu__link" data-action="theme">Тема оформления</button>
-          <button type="button" class="mobile-header-menu__link mobile-header-menu__link--danger" data-action="logout">Выйти</button>
-        </div>
+        <button type="button" class="mobile-header-logout" data-action="logout">Выйти</button>
       </div>`;
   }
 
@@ -208,6 +197,7 @@ const Mobile = (function () {
     if (nav) nav.hidden = true;
     if (actions) actions.hidden = true;
     if (burger) burger.hidden = true;
+    header.querySelector('#btn-theme')?.remove();
 
     let toolbar = header.querySelector('.mobile-header-toolbar');
     if (!toolbar) {
@@ -261,6 +251,21 @@ const Mobile = (function () {
     return `<span class="m-card__unread">${count > 99 ? '99+' : count}</span>`;
   }
 
+  function chatRowHtml(opts) {
+    const tier = opts.tier
+      ? `<span class="m-card__tier m-card__tier--${opts.tier}" aria-label="${opts.tier === 'pro' ? 'PRO' : 'FREE'}">${opts.tier === 'pro' ? 'PRO' : 'FREE'}</span>`
+      : '';
+    const pin = opts.pinned ? '📌 ' : '';
+    return `
+      <a href="${opts.href}" class="m-card m-card--chat m-card--compact${opts.modifier || ''}">
+        <div class="m-card__row">
+          ${tier}
+          <span class="m-card__title">${pin}${UI.escapeHtml(opts.title)}</span>
+          ${unreadBadgeHtml(opts.unread || 0)}
+        </div>
+      </a>`;
+  }
+
   function renderChatsHub(container) {
     const user = App.getCurrentUser();
     if (!container || !user) return;
@@ -268,46 +273,31 @@ const Mobile = (function () {
     const isPro = App.isProActive(user) || user.role === 'admin';
     const topics = isPro ? App.getProTopics(false) : [];
 
-    function topicCard(t) {
-      const count = App.getMessages(t.id).length;
-      const unread = getUnreadCount(t.id);
-      const lastMsg = count ? App.getMessages(t.id)[count - 1] : null;
-      const preview = lastMsg
-        ? (lastMsg.text ? lastMsg.text.slice(0, 60) : (lastMsg.files?.[0]?.name ? '📎 ' + lastMsg.files[0].name : 'Сообщение'))
-        : 'Нет сообщений';
-      return `
-        <a href="pro.html#t=${encodeURIComponent(t.id)}" class="m-card m-card--chat m-card--pro">
-          <div class="m-card__head">
-            <h3 class="m-card__title">${t.pinned ? '📌 ' : ''}${UI.escapeHtml(t.title)}</h3>
-            <span class="m-card__badge m-card__badge--pro">Для подписчиков</span>
-            ${unreadBadgeHtml(unread)}
-          </div>
-          <p class="m-card__desc">${UI.escapeHtml(t.description || 'Экспертное обсуждение')}</p>
-          <span class="m-card__meta-line">${count ? count + ' сообщ.' : 'Пусто'} · ${UI.escapeHtml(preview)}</span>
-        </a>`;
-    }
-
     let proCardsHtml = '';
     if (isPro) {
       if (topics.length) {
-        proCardsHtml = topics.map(topicCard).join('');
+        proCardsHtml = topics.map(t => chatRowHtml({
+          href: 'pro.html#t=' + encodeURIComponent(t.id),
+          tier: 'pro',
+          title: t.title,
+          pinned: t.pinned,
+          unread: getUnreadCount(t.id),
+          modifier: ' m-card--pro'
+        })).join('');
       } else {
         proCardsHtml = `
-          <article class="m-card m-card--empty">
-            <h3 class="m-card__title">PRO-чаты</h3>
-            <p class="m-card__desc">Пока нет активных PRO-чатов. Администратор добавит темы в ближайшее время.</p>
+          <article class="m-card m-card--compact m-card--empty">
+            <span class="m-card__title">PRO-чаты пока не созданы</span>
           </article>`;
       }
     } else {
       proCardsHtml = `
-        <article class="m-card m-card--locked">
-          <div class="m-card__head">
-            <h3 class="m-card__title">PRO-чаты</h3>
-            <span class="m-card__badge m-card__badge--pro">Для подписчиков</span>
+        <article class="m-card m-card--compact m-card--locked">
+          <div class="m-card__row">
+            <span class="m-card__tier m-card__tier--pro">PRO</span>
+            <span class="m-card__title">PRO-чаты</span>
           </div>
-          <p class="m-card__desc">Экспертные обсуждения и закрытые разделы для подписчиков</p>
-          <p class="m-card__lock-text">Доступ открыт для подписчиков PRO</p>
-          <a href="pro-request.html" class="btn btn--pro btn--block m-card__cta">Оформить доступ</a>
+          <a href="pro-request.html" class="btn btn--pro btn--sm m-card__cta-compact">Оформить доступ</a>
         </article>`;
     }
 
@@ -316,23 +306,10 @@ const Mobile = (function () {
     container.innerHTML = `
       <div class="m-page m-page--chats">
         <h1 class="m-page__title">Чаты</h1>
-        <div class="m-cards">
-          <a href="chat.html" class="m-card m-card--chat">
-            <div class="m-card__head">
-              <h3 class="m-card__title">Общий чат</h3>
-              <span class="m-card__badge">Общий</span>
-              ${unreadBadgeHtml(getUnreadCount('free'))}
-            </div>
-            <p class="m-card__desc">Общение всех участников сообщества</p>
-          </a>
+        <div class="m-cards m-cards--compact">
+          ${chatRowHtml({ href: 'chat.html', tier: 'free', title: 'Общий чат', unread: getUnreadCount('free') })}
           ${proCardsHtml}
-          <a href="admin-chat.html" class="m-card m-card--chat">
-            <div class="m-card__head">
-              <h3 class="m-card__title">Вопрос администратору</h3>
-              ${unreadBadgeHtml(getUnreadCount(dmChatId))}
-            </div>
-            <p class="m-card__desc">Личное обращение по доступу, оплате или вопросам работы сообщества</p>
-          </a>
+          ${chatRowHtml({ href: 'admin-chat.html', title: 'Вопрос администратору', unread: getUnreadCount(dmChatId) })}
         </div>
       </div>`;
   }
