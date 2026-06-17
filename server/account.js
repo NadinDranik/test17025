@@ -67,8 +67,9 @@ function buildAccountProfile(userId, storeData) {
     }));
 
   const adminUser = data.users.find(u => u.role === 'admin');
-  const supportChat = data.messages?.['admin-support'] || [];
-  const adminMessages = supportChat
+  const { getAdminDmChatId } = require('./dm');
+  const dmChat = data.messages?.[getAdminDmChatId(userId)] || [];
+  const adminMessages = dmChat
     .filter(m => adminUser && m.userId === adminUser.id && m.systemType !== 'pro_welcome')
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 10)
