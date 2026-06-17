@@ -1,0 +1,813 @@
+/* =============================================
+   Мобильный UX — mobile-first (360–430px+)
+   ============================================= */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  font-size: 16px;
+}
+
+/* --- Нижнее меню --- */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--color-bg-white);
+  border-top: 1px solid var(--color-border);
+  box-shadow: 0 -4px 20px rgba(15, 39, 64, 0.08);
+  grid-template-columns: repeat(4, 1fr);
+  align-items: stretch;
+}
+
+.has-mobile-nav .mobile-bottom-nav {
+  display: grid;
+}
+
+.mobile-bottom-nav__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 6px 4px;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-bottom-nav__item--active {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.mobile-bottom-nav__item--active .mobile-bottom-nav__icon {
+  transform: scale(1.08);
+}
+
+.mobile-bottom-nav__icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+/* --- Компактная шапка --- */
+@media (max-width: 992px) {
+  body.mobile-shell .header .container {
+    padding: 0 12px;
+    max-width: 100%;
+  }
+
+  body.mobile-shell .header__inner {
+    height: 48px;
+    position: relative;
+  }
+
+  body.mobile-shell .logo__text {
+    font-size: 0.95rem;
+  }
+
+  body.mobile-shell .logo__mark {
+    font-size: 0.75rem;
+    padding: 4px 6px;
+  }
+
+  .mobile-header-status {
+    margin-left: auto;
+    margin-right: 8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    max-width: 42vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .m-status--pro { background: rgba(200, 169, 81, 0.2); color: var(--color-pro); }
+  .m-status--free { background: var(--color-bg); color: var(--color-text-muted); }
+  .m-status--admin { background: rgba(26, 58, 92, 0.12); color: var(--color-primary); }
+  .m-status--warn { background: rgba(200, 120, 60, 0.15); color: #9a5b20; }
+  .m-status--danger { background: rgba(200, 80, 80, 0.12); color: #a33; }
+
+  .mobile-header-more {
+    min-width: 44px;
+    min-height: 44px;
+    border: none;
+    background: transparent;
+    font-size: 1.4rem;
+    line-height: 1;
+    color: var(--color-primary);
+    cursor: pointer;
+    border-radius: var(--radius);
+  }
+
+  .mobile-header-menu {
+    position: absolute;
+    top: 100%;
+    right: 8px;
+    min-width: 200px;
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 6px;
+    z-index: 300;
+  }
+
+  .mobile-header-menu__link {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 14px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 0.92rem;
+    color: var(--color-text);
+    text-decoration: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+
+  .mobile-header-menu__link:hover,
+  .mobile-header-menu__link:focus {
+    background: var(--color-bg);
+  }
+
+  .mobile-header-menu__link--danger {
+    color: #b33;
+  }
+
+  /* Отступ под нижнее меню */
+  body.has-mobile-nav {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.has-mobile-nav.page-chat {
+    padding-bottom: 0;
+  }
+
+  body.has-mobile-nav .m-main,
+  body.has-mobile-nav .account-page,
+  body.has-mobile-nav .page-chats-hub main,
+  body.has-mobile-nav .page-admin .admin-layout {
+    padding-bottom: calc(16px + 56px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Скрыть верхнюю навигацию на мобильных */
+  body.mobile-shell .nav,
+  body.mobile-shell .header__actions,
+  body.mobile-shell .burger {
+    display: none !important;
+  }
+
+  /* Скрыть боковой rail — навигация через chats.html */
+  body.has-mobile-nav.page-chat .chat-sidebar,
+  body.has-mobile-nav.page-chat .chat-rail {
+    display: none !important;
+  }
+
+  body.has-mobile-nav.page-chat .chat-layout {
+    top: 48px !important;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  body.has-mobile-nav.page-chat .chat-layout__inner {
+    flex-direction: column;
+  }
+
+  body.has-mobile-nav.page-chat .chat-main {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    border-radius: 0;
+  }
+
+  body.has-mobile-nav.page-pro .chat-sidebar {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 !important;
+  }
+
+  body.has-mobile-nav.page-pro:not(.pro-chat-open) .pro-chat-panel {
+    display: none;
+  }
+
+  body.has-mobile-nav.page-pro.pro-chat-open .pro-topics-panel {
+    display: none;
+  }
+
+  body.has-mobile-nav.page-pro.pro-chat-open .pro-chat-panel {
+    display: flex;
+  }
+}
+
+/* --- Карточки / дашборд --- */
+.m-main {
+  padding: 16px 0 24px;
+}
+
+.m-page__title,
+.m-dashboard__greeting {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  margin: 0 0 16px;
+  padding: 0 16px;
+}
+
+.m-dashboard__greeting {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.m-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px;
+}
+
+.m-card {
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.m-card--link,
+.m-card--chat {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow var(--transition), border-color var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.m-card--link:active,
+.m-card--chat:active {
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-md);
+}
+
+.m-card__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  margin: 0 0 6px;
+}
+
+.m-card__desc {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.m-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.m-card__badge {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
+.m-card__badge--pro {
+  background: rgba(200, 169, 81, 0.2);
+  color: var(--color-pro);
+}
+
+.m-card__status {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.m-card__status--pro { color: var(--color-pro); }
+.m-card__status--free { color: var(--color-text-muted); }
+.m-card__status--admin { color: var(--color-primary); }
+
+.m-card__meta {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  margin: 4px 0 0;
+}
+
+.m-card__lock-text {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  margin: 10px 0;
+  padding: 10px 12px;
+  background: var(--color-bg);
+  border-radius: var(--radius);
+}
+
+.m-card--locked {
+  opacity: 0.95;
+}
+
+.m-card__cta {
+  margin-top: 8px;
+  min-height: 44px;
+}
+
+.m-card__action {
+  display: block;
+  margin-top: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-pro);
+}
+
+.m-card__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.m-section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin: 20px 16px 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.m-empty {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  padding: 12px 16px;
+  margin: 0;
+}
+
+/* Главная — дашборд после входа */
+#user-dashboard {
+  display: none;
+  background: var(--color-bg);
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+body.logged-in-home #user-dashboard {
+  display: block;
+}
+
+@media (max-width: 992px) {
+  body.logged-in-home .hero,
+  body.logged-in-home #about,
+  body.logged-in-home #topics,
+  body.logged-in-home #free,
+  body.logged-in-home #features {
+    display: none;
+  }
+
+  body.logged-in-home .hero__buttons {
+    display: none;
+  }
+}
+
+@media (min-width: 993px) {
+  body.logged-in-home #user-dashboard {
+    display: block;
+    max-width: 900px;
+    margin: 0 auto;
+    border: none;
+    background: transparent;
+    padding-top: 24px;
+  }
+
+  body.logged-in-home #user-dashboard .m-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  body.logged-in-home #user-dashboard .m-card--status {
+    grid-column: 1 / -1;
+  }
+}
+
+/* --- Мессенджер: пузыри --- */
+@media (max-width: 992px) {
+  .chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: var(--color-bg);
+  }
+
+  .msg {
+    max-width: 88%;
+    padding: 10px 12px;
+    border-radius: 16px;
+    border: none;
+    background: var(--color-bg-white);
+    box-shadow: var(--shadow-sm);
+    align-self: flex-start;
+  }
+
+  .msg--own {
+    align-self: flex-end;
+    background: var(--color-primary);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg:not(.msg--own) {
+    border-bottom-left-radius: 4px;
+  }
+
+  .msg--own .msg__author,
+  .msg--own .msg__time,
+  .msg--own .msg__text {
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  .msg--own .msg__time {
+    opacity: 0.75;
+  }
+
+  .msg--own .msg__reply {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+  }
+
+  .msg--pinned,
+  .msg--welcome {
+    max-width: 100%;
+    align-self: stretch;
+    background: rgba(200, 169, 81, 0.12);
+    border: 1px solid rgba(200, 169, 81, 0.35);
+    color: var(--color-text);
+  }
+
+  .msg__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    margin-bottom: 4px;
+  }
+
+  .msg--own .msg__header {
+    align-items: flex-end;
+  }
+
+  .msg__author {
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .msg__time {
+    font-size: 0.68rem;
+  }
+
+  .msg__text {
+    font-size: 0.94rem;
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  .msg__actions {
+    margin-top: 6px;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .msg__btn {
+    min-height: 36px;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+
+  .chat-compose {
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: var(--color-bg-white);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .chat-form__bar {
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  .chat-form__attach {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .chat-form__send {
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 50%;
+    padding: 0;
+  }
+
+  .chat-form__input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .chat-main__header h2 {
+    font-size: 1rem;
+  }
+
+  .chat-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin-right: 4px;
+    font-size: 1.25rem;
+    color: var(--color-primary);
+    text-decoration: none;
+    border-radius: var(--radius);
+    flex-shrink: 0;
+  }
+
+  .chat-main__header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .chat-empty {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  .chat-empty__title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-primary-dark);
+    margin: 0 0 8px;
+  }
+
+  .chat-empty--warm .chat-empty__hint {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--color-bg-white);
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    text-align: left;
+  }
+}
+
+/* --- Личный кабинет: мобильные карточки --- */
+@media (max-width: 992px) {
+  .page-account .account-page {
+    padding: 12px 0 24px;
+  }
+
+  .page-account .account-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .page-account .account-header__desc {
+    font-size: 0.9rem;
+  }
+
+  .page-account .account-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 16px;
+  }
+
+  .page-account .account-card {
+    margin: 0;
+    border-radius: var(--radius-lg);
+    padding: 16px;
+  }
+
+  .page-account .account-card h2 {
+    font-size: 1rem;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .page-account .account-card--wide {
+    order: 10;
+  }
+
+  .page-account .account-card--profile { order: 1; }
+  .page-account .account-card--subscription { order: 2; }
+  .page-account .account-card--actions-mobile { order: 3; }
+  .page-account .account-card--settings { order: 4; }
+
+  .page-account .account-sub-status {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-primary-dark);
+    margin: 0 0 12px;
+  }
+
+  .page-account .account-email {
+    word-break: break-all;
+    font-size: 0.88rem;
+  }
+
+  .page-account .btn {
+    min-height: 44px;
+  }
+
+  .page-account .form__input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .page-account #acc-status-badge.badge--free::after {
+    content: '';
+  }
+}
+
+.page-account .account-card--actions-mobile {
+  display: none;
+}
+
+@media (max-width: 992px) {
+  .page-account .account-card--actions-mobile {
+    display: block;
+  }
+
+  .page-account .account-card--actions-mobile .account-actions-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .page-account .account-card--actions-mobile .btn {
+    width: 100%;
+  }
+}
+
+/* --- Админка: таблицы → карточки --- */
+@media (max-width: 992px) {
+  .page-admin .admin-layout {
+    padding: 12px 0;
+  }
+
+  .page-admin .admin-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+
+  .page-admin .admin-tab {
+    flex-shrink: 0;
+    min-height: 44px;
+    font-size: 0.82rem;
+    padding: 8px 12px;
+  }
+
+  .page-admin .admin-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .page-admin .stat-card {
+    padding: 12px;
+  }
+
+  .page-admin .stat-card__num {
+    font-size: 1.4rem;
+  }
+
+  .page-admin .table-wrap {
+    overflow: visible;
+  }
+
+  .page-admin .admin-table thead {
+    display: none;
+  }
+
+  .page-admin .admin-table tbody tr {
+    display: block;
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .page-admin .admin-table tbody td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border: none;
+    font-size: 0.88rem;
+    word-break: break-word;
+  }
+
+  .page-admin .admin-table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+    max-width: 40%;
+  }
+
+  .page-admin .admin-table tbody td.admin-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-admin .admin-table tbody td.admin-actions::before {
+    display: none;
+  }
+
+  .page-admin .admin-table tbody td.admin-actions .btn {
+    min-height: 44px;
+    width: 100%;
+    margin: 2px 0;
+  }
+
+  .page-admin .admin-panel__toolbar {
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .page-admin .admin-dm-layout {
+    grid-template-columns: 1fr;
+    padding: 0 12px;
+  }
+
+  .page-admin .form--inline {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-admin .form--inline .btn {
+    min-height: 44px;
+  }
+
+  .page-admin .pro-request {
+    margin: 0 12px 10px;
+  }
+}
+
+/* Кнопки — touch targets */
+@media (max-width: 992px) {
+  .btn {
+    min-height: 44px;
+    font-size: 0.92rem;
+  }
+
+  .btn--sm {
+    min-height: 40px;
+  }
+
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  img, video, iframe {
+    max-width: 100%;
+  }
+}
+
+/* Скрыть технические sync-notice на мобильных для пользователей */
+@media (max-width: 992px) {
+  body:not(.page-admin) .sync-notice {
+    display: none !important;
+  }
+}
