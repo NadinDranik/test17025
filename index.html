@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Профессиональное сообщество специалистов аккредитованных лабораторий. ГОСТ ISO/IEC 17025-2019, критерии аккредитации, подготовка к проверкам.">
+  <meta name="description" content="Профессиональное закрытое сообщество специалистов аккредитованных лабораторий. ГОСТ ISO/IEC 17025-2019, критерии аккредитации, практическое применение требований.">
   <title>Гид PRO ГОСТ ISO/IEC 17025-2019</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="css/mobile.css">
   <link rel="stylesheet" href="css/visual-refresh.css">
+  <link rel="stylesheet" href="css/home.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="page-home">
 
   <header class="header">
     <div class="container header__inner">
@@ -21,213 +22,315 @@
         <span class="logo__text">Гид PRO</span>
       </a>
       <nav class="nav" aria-label="Основная навигация">
-        <a href="#about" class="nav__link">О проекте</a>
-        <a href="chat.html" class="nav__link">Общий чат</a>
-        <a href="pro-request.html" class="nav__link">PRO-доступ</a>
-        <a href="#free" class="nav__link">Тарифы</a>
+        <a href="#audience" class="nav__link">Для кого</a>
+        <a href="#benefits" class="nav__link">Возможности</a>
+        <a href="#access" class="nav__link">Участие</a>
+        <a href="#contacts" class="nav__link">Контакты</a>
       </nav>
       <div class="header__actions">
         <a href="login.html" class="btn btn--ghost">Войти</a>
         <a href="login.html?tab=register" class="btn btn--primary">Зарегистрироваться</a>
       </div>
       <button class="burger" aria-label="Открыть меню" aria-expanded="false">
-        <span></span>
-        <span></span>
-        <span></span>
+        <span></span><span></span><span></span>
       </button>
     </div>
   </header>
 
   <main>
-
     <div id="user-dashboard" hidden></div>
 
-    <!-- Первый экран -->
-    <section class="hero">
-      <div class="container hero__inner">
-        <div class="hero__content">
-          <p class="hero__badge">Экспертное сообщество</p>
-          <h1 class="hero__title">Гид PRO ГОСТ ISO/IEC 17025-2019</h1>
-          <p class="hero__desc">
-            Профессиональное сообщество специалистов аккредитованных лабораторий.
+    <div class="home-landing">
+
+      <!-- Блок 1. Первый экран -->
+      <section class="home-hero" aria-labelledby="home-hero-title">
+        <div class="container home-hero__inner">
+          <div class="home-hero__content">
+            <p class="home-hero__badge">Экспертное сообщество</p>
+            <h1 class="home-hero__title" id="home-hero-title">Гид PRO ГОСТ ISO/IEC 17025-2019</h1>
+            <p class="home-hero__subtitle">
+              Профессиональное сообщество специалистов аккредитованных лабораторий для практического применения требований ГОСТ ISO/IEC 17025-2019, критериев аккредитации, документов Росаккредитации и нормативных правовых актов в сфере оценки соответствия.
+            </p>
+            <p class="home-hero__lead">
+              Экспертные обсуждения, тематические чаты, база знаний, практические решения и профессиональное взаимодействие специалистов лабораторной отрасли.
+            </p>
+            <div class="home-hero__actions">
+              <a href="login.html?tab=register" class="btn btn--primary btn--lg">Зарегистрироваться</a>
+              <a href="login.html" class="btn btn--outline btn--lg">Войти</a>
+            </div>
+          </div>
+          <div class="home-hero__visual" aria-hidden="true">
+            <svg class="home-hero__illustration" viewBox="0 0 420 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="24" y="40" width="180" height="240" rx="12" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+              <rect x="44" y="68" width="100" height="8" rx="4" fill="rgba(255,255,255,0.35)"/>
+              <rect x="44" y="88" width="140" height="6" rx="3" fill="rgba(255,255,255,0.2)"/>
+              <rect x="44" y="102" width="120" height="6" rx="3" fill="rgba(255,255,255,0.2)"/>
+              <rect x="44" y="116" width="130" height="6" rx="3" fill="rgba(255,255,255,0.2)"/>
+              <circle cx="72" cy="160" r="14" fill="rgba(200,169,81,0.5)" stroke="#c8a951" stroke-width="2"/>
+              <path d="M68 160l3 3 6-7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="100" y="148" width="70" height="6" rx="3" fill="rgba(255,255,255,0.25)"/>
+              <rect x="100" y="162" width="50" height="6" rx="3" fill="rgba(255,255,255,0.15)"/>
+              <circle cx="72" cy="200" r="14" fill="rgba(200,169,81,0.5)" stroke="#c8a951" stroke-width="2"/>
+              <path d="M68 200l3 3 6-7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="100" y="188" width="80" height="6" rx="3" fill="rgba(255,255,255,0.25)"/>
+              <rect x="44" y="232" width="60" height="28" rx="6" fill="rgba(200,169,81,0.35)" stroke="#c8a951" stroke-width="1"/>
+              <text x="74" y="251" text-anchor="middle" fill="#fff" font-size="11" font-family="Inter,sans-serif" font-weight="600">17025</text>
+              <rect x="220" y="80" width="176" height="120" rx="14" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.22)" stroke-width="1.5"/>
+              <circle cx="260" cy="120" r="22" fill="rgba(42,82,128,0.6)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+              <path d="M252 120c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="260" cy="128" r="10" fill="rgba(255,255,255,0.25)"/>
+              <rect x="290" y="108" width="80" height="6" rx="3" fill="rgba(255,255,255,0.3)"/>
+              <rect x="290" y="122" width="60" height="6" rx="3" fill="rgba(255,255,255,0.18)"/>
+              <rect x="236" y="152" width="144" height="36" rx="8" fill="rgba(255,255,255,0.08)"/>
+              <rect x="248" y="164" width="90" height="5" rx="2.5" fill="rgba(255,255,255,0.25)"/>
+              <rect x="248" y="176" width="70" height="5" rx="2.5" fill="rgba(255,255,255,0.15)"/>
+              <path d="M200 280c40-30 80-30 120 0" stroke="rgba(200,169,81,0.6)" stroke-width="2" stroke-linecap="round" fill="none"/>
+              <circle cx="200" cy="280" r="8" fill="#c8a951"/>
+              <circle cx="260" cy="255" r="8" fill="#4a8ec9"/>
+              <circle cx="320" cy="280" r="8" fill="#c8a951"/>
+              <rect x="280" y="200" width="100" height="80" rx="10" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.15)"/>
+              <path d="M300 230h60M300 245h45M300 260h55" stroke="rgba(255,255,255,0.25)" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- Блок 2. Для кого -->
+      <section id="audience" class="home-section home-section--alt" aria-labelledby="audience-title">
+        <div class="container">
+          <header class="home-section__header">
+            <h2 class="home-section__title" id="audience-title">Для кого создано сообщество</h2>
+          </header>
+          <div class="home-audience-grid">
+            <article class="home-audience-card">
+              <div class="home-audience-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2m-16 0H3m2-16h10M9 7h1m-1 4h1m4-4h1m-1 4h1"/></svg>
+              </div>
+              <h3 class="home-audience-card__title">Руководители испытательных лабораторий</h3>
+            </article>
+            <article class="home-audience-card">
+              <div class="home-audience-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+              </div>
+              <h3 class="home-audience-card__title">Менеджеры по качеству</h3>
+            </article>
+            <article class="home-audience-card">
+              <div class="home-audience-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+              </div>
+              <h3 class="home-audience-card__title">Специалисты по СМК</h3>
+            </article>
+            <article class="home-audience-card">
+              <div class="home-audience-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              </div>
+              <h3 class="home-audience-card__title">Сотрудники аккредитованных лабораторий</h3>
+            </article>
+            <article class="home-audience-card">
+              <div class="home-audience-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+              </div>
+              <h3 class="home-audience-card__title">Специалисты по аккредитации</h3>
+            </article>
+            <article class="home-audience-card">
+              <div class="home-audience-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              </div>
+              <h3 class="home-audience-card__title">Организации, готовящиеся к аккредитации или подтверждению компетентности</h3>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Блок 3. Что доступно -->
+      <section id="benefits" class="home-section" aria-labelledby="benefits-title">
+        <div class="container">
+          <header class="home-section__header">
+            <h2 class="home-section__title" id="benefits-title">Что доступно участникам сообщества</h2>
+          </header>
+          <div class="home-benefits-grid">
+            <article class="home-benefit-card">
+              <div class="home-benefit-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+              </div>
+              <h3 class="home-benefit-card__title">Экспертные обсуждения</h3>
+              <p class="home-benefit-card__text">Практические вопросы применения требований стандартов, критериев аккредитации и нормативных документов.</p>
+            </article>
+            <article class="home-benefit-card">
+              <div class="home-benefit-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+              </div>
+              <h3 class="home-benefit-card__title">Тематические чаты</h3>
+              <p class="home-benefit-card__text">Структурированные разделы по направлениям деятельности лабораторий и отдельным требованиям.</p>
+            </article>
+            <article class="home-benefit-card">
+              <div class="home-benefit-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+              </div>
+              <h3 class="home-benefit-card__title">База знаний</h3>
+              <p class="home-benefit-card__text">Материалы, шаблоны документов, чек-листы, разъяснения и примеры практического применения требований.</p>
+            </article>
+            <article class="home-benefit-card">
+              <div class="home-benefit-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+              </div>
+              <h3 class="home-benefit-card__title">Поддержка</h3>
+              <p class="home-benefit-card__text">Возможность обратиться к администратору и получить помощь по работе сообщества.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Блок 4. Практические задачи -->
+      <section id="tasks" class="home-section home-section--alt" aria-labelledby="tasks-title">
+        <div class="container">
+          <header class="home-section__header">
+            <h2 class="home-section__title" id="tasks-title">Какие задачи помогает решать сообщество</h2>
+          </header>
+          <div class="home-tasks-grid">
+            <article class="home-task-card"><div class="home-task-card__icon" aria-hidden="true">ПК</div><h3 class="home-task-card__title">Подготовка к ПК и РОА</h3></article>
+            <article class="home-task-card"><div class="home-task-card__icon" aria-hidden="true">!</div><h3 class="home-task-card__title">Анализ несоответствий</h3></article>
+            <article class="home-task-card"><div class="home-task-card__icon" aria-hidden="true">КД</div><h3 class="home-task-card__title">Корректирующие действия</h3></article>
+            <article class="home-task-card"><div class="home-task-card__icon" aria-hidden="true">ФГ</div><h3 class="home-task-card__title">Работа с ФГИС Росаккредитации</h3></article>
+            <article class="home-task-card"><div class="home-task-card__icon" aria-hidden="true">ВЛ</div><h3 class="home-task-card__title">Внутренний лабораторный контроль</h3></article>
+            <article class="home-task-card"><div class="home-task-card__icon" aria-hidden="true">МС</div><h3 class="home-task-card__title">Проверки квалификации и МСИ</h3></article>
+            <article class="home-task-card"><div class="home-task-card__icon" aria-hidden="true">U</div><h3 class="home-task-card__title">Неопределенность измерений</h3></article>
+            <article class="home-task-card"><div class="home-task-card__icon" aria-hidden="true">ВВ</div><h3 class="home-task-card__title">Верификация и валидация</h3></article>
+            <article class="home-task-card"><div class="home-task-card__icon" aria-hidden="true">КП</div><h3 class="home-task-card__title">Управление компетентностью персонала</h3></article>
+            <article class="home-task-card"><div class="home-task-card__icon" aria-hidden="true">СМ</div><h3 class="home-task-card__title">Система менеджмента лаборатории</h3></article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Блок 5. Уровни доступа -->
+      <section id="access" class="home-section" aria-labelledby="access-title">
+        <div class="container">
+          <header class="home-section__header">
+            <h2 class="home-section__title" id="access-title">Уровни участия в сообществе</h2>
+          </header>
+          <div class="home-tiers-grid">
+            <article class="home-tier-card">
+              <span class="home-tier-card__label">Базовый</span>
+              <h3 class="home-tier-card__title">Базовый доступ</h3>
+              <p class="home-tier-card__desc">Для знакомства с сообществом и участия в открытых обсуждениях.</p>
+              <ul class="home-tier-card__list">
+                <li>регистрация и личный кабинет</li>
+                <li>общий чат участников</li>
+                <li>новости и объявления сообщества</li>
+                <li>знакомство со структурой разделов</li>
+                <li>возможность перехода на приватный доступ</li>
+              </ul>
+              <a href="login.html?tab=register" class="btn btn--outline btn--block">Зарегистрироваться</a>
+            </article>
+            <article class="home-tier-card home-tier-card--pro">
+              <span class="home-tier-card__label">Приватный</span>
+              <h3 class="home-tier-card__title">Приватный доступ</h3>
+              <p class="home-tier-card__desc">Для специалистов, регулярно работающих с вопросами аккредитации и деятельности лабораторий.</p>
+              <p class="home-tier-card__desc home-tier-card__extra">Дополнительно доступно:</p>
+              <ul class="home-tier-card__list">
+                <li>закрытые тематические чаты</li>
+                <li>экспертные обсуждения практических ситуаций</li>
+                <li>специализированные материалы и документы</li>
+                <li>шаблоны и примеры оформления документов</li>
+                <li>разборы несоответствий и корректирующих действий</li>
+                <li>дополнительные разделы базы знаний</li>
+                <li>профессиональное взаимодействие внутри закрытого сообщества</li>
+              </ul>
+              <a href="login.html?next=pro-request.html" class="btn btn--pro btn--block">Оформить приватный доступ</a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Блок 6. Почему полезно -->
+      <section id="why" class="home-section home-section--alt" aria-labelledby="why-title">
+        <div class="container">
+          <header class="home-section__header">
+            <h2 class="home-section__title" id="why-title">Почему наше сообщество полезно специалистам лабораторий</h2>
+          </header>
+          <div class="home-why">
+            <div class="home-why__text">
+              <p>Большинство специалистов лабораторий сталкиваются не с отсутствием нормативных документов, а с необходимостью правильно понимать и применять их требования в реальной работе.</p>
+              <p>Тексты стандартов, критериев аккредитации и документов Росаккредитации доступны каждому. Намного сложнее определить, каким образом выполнить конкретное требование на практике, какие доказательства будут достаточными при проверке, как оформить документы и записи, каким образом обосновать принятое решение и подтвердить его соответствие установленным требованиям.</p>
+              <p>Сообщество объединяет специалистов, которые ежедневно работают с вопросами аккредитации, системой менеджмента, подтверждением компетентности, внутренним лабораторным контролем, метрологической прослеживаемостью, валидацией, верификацией и управлением несоответствиями.</p>
+              <p>Здесь обсуждаются реальные рабочие ситуации, возникающие в деятельности аккредитованных лабораторий.</p>
+              <p>Участники получают возможность сопоставлять требования различных нормативных документов, обмениваться практическим опытом их применения и находить решения, основанные на требованиях стандарта, критериев аккредитации и сложившейся практике оценки соответствия.</p>
+            </div>
+            <aside class="home-flow" aria-label="Схема применения требований">
+              <div class="home-flow__step">Требование</div>
+              <div class="home-flow__arrow" aria-hidden="true">↓</div>
+              <div class="home-flow__step">Анализ ситуации</div>
+              <div class="home-flow__arrow" aria-hidden="true">↓</div>
+              <div class="home-flow__step">Практическое решение</div>
+              <div class="home-flow__arrow" aria-hidden="true">↓</div>
+              <div class="home-flow__step">Готовое обоснование</div>
+              <p class="home-flow__caption">От нормативного требования к практическому применению.</p>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <!-- Блок 7. Этапы работы -->
+      <section id="stages" class="home-section" aria-labelledby="stages-title">
+        <div class="container">
+          <header class="home-section__header">
+            <h2 class="home-section__title" id="stages-title">Поддержка на всех этапах работы лаборатории</h2>
+          </header>
+          <div class="home-stages-grid">
+            <article class="home-stage-card">
+              <span class="home-stage-card__phase">Этап 1</span>
+              <h3 class="home-stage-card__title">До проверки</h3>
+              <ul class="home-stage-card__list">
+                <li>анализ документов</li>
+                <li>выявление слабых мест</li>
+                <li>оценка готовности</li>
+                <li>подготовка доказательств</li>
+              </ul>
+            </article>
+            <article class="home-stage-card">
+              <span class="home-stage-card__phase">Этап 2</span>
+              <h3 class="home-stage-card__title">Во время проверки</h3>
+              <ul class="home-stage-card__list">
+                <li>понимание требований</li>
+                <li>аргументация решений</li>
+                <li>ответы на вопросы экспертной группы</li>
+                <li>подтверждение компетентности</li>
+              </ul>
+            </article>
+            <article class="home-stage-card">
+              <span class="home-stage-card__phase">Этап 3</span>
+              <h3 class="home-stage-card__title">После проверки</h3>
+              <ul class="home-stage-card__list">
+                <li>анализ замечаний</li>
+                <li>корректирующие действия</li>
+                <li>оценка результативности</li>
+                <li>подтверждение устранения несоответствий</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Блок 8. Заключительный экран -->
+      <section class="home-cta" aria-labelledby="cta-title">
+        <div class="container">
+          <h2 class="home-cta__title" id="cta-title">Профессиональная среда для специалистов лабораторной отрасли</h2>
+          <p class="home-cta__text">
+            Сообщество создано для специалистов, которым важно не только знать требования нормативных документов, но и понимать их практическое применение в деятельности аккредитованных лабораторий.
           </p>
-          <p class="hero__desc hero__desc--secondary">
-            Обсуждение требований ГОСТ ISO/IEC 17025-2019, критериев аккредитации, документов Росаккредитации,
-            подготовки к проверкам, несоответствий, корректирующих действий и практических вопросов лабораторной деятельности.
-          </p>
-          <div class="hero__buttons">
+          <div class="home-cta__actions">
             <a href="login.html?tab=register" class="btn btn--primary btn--lg">Зарегистрироваться</a>
             <a href="login.html" class="btn btn--outline btn--lg">Войти</a>
-            <a href="login.html?next=pro-request.html" class="btn btn--pro btn--lg">Получить PRO-доступ</a>
           </div>
         </div>
-        <aside class="hero__aside">
-          <div class="hero-card">
-            <h2 class="hero-card__title">Для кого создан проект</h2>
-            <ul class="hero-card__list">
-              <li>Руководители лабораторий</li>
-              <li>Менеджеры по качеству</li>
-              <li>Специалисты по аккредитации</li>
-              <li>Внутренние аудиторы</li>
-              <li>Испытательные и калибровочные лаборатории</li>
-              <li>Лаборатории производственного контроля</li>
-            </ul>
-          </div>
-        </aside>
-      </div>
-    </section>
+      </section>
 
-    <!-- О проекте -->
-    <section id="about" class="section section--light">
-      <div class="container">
-        <div class="section__header">
-          <h2 class="section__title">О проекте</h2>
-          <p class="section__subtitle">
-            Это не просто чат — это профессиональное сообщество специалистов лабораторной отрасли.
-          </p>
-        </div>
-        <div class="about-grid">
-          <div class="about-card">
-            <div class="about-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-              </svg>
-            </div>
-            <h3 class="about-card__title">Задавать вопросы</h3>
-            <p class="about-card__text">Обсуждайте реальные ситуации из практики аккредитованных лабораторий.</p>
-          </div>
-          <div class="about-card">
-            <div class="about-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
-            </div>
-            <h3 class="about-card__title">Обмениваться опытом</h3>
-            <p class="about-card__text">Получайте помощь коллег и участвуйте в профессиональных дискуссиях.</p>
-          </div>
-          <div class="about-card">
-            <div class="about-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-              </svg>
-            </div>
-            <h3 class="about-card__title">Публиковать материалы</h3>
-            <p class="about-card__text">Делитесь документами, изображениями и материалами с участниками сообщества.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Темы -->
-    <section id="topics" class="section">
-      <div class="container">
-        <div class="section__header">
-          <h2 class="section__title">Какие темы обсуждаются</h2>
-          <p class="section__subtitle">
-            Актуальные вопросы аккредитации, управления качеством и лабораторной деятельности.
-          </p>
-        </div>
-        <ul class="topics-list">
-          <li class="topics-list__item">ГОСТ ISO/IEC 17025-2019</li>
-          <li class="topics-list__item">Критерии аккредитации</li>
-          <li class="topics-list__item">Процедуры СМК</li>
-          <li class="topics-list__item">Персонал</li>
-          <li class="topics-list__item">Оборудование</li>
-          <li class="topics-list__item">Помещения</li>
-          <li class="topics-list__item">Методы испытаний</li>
-          <li class="topics-list__item">Отбор проб</li>
-          <li class="topics-list__item">Неопределённость измерений</li>
-          <li class="topics-list__item">ВЛК</li>
-          <li class="topics-list__item">МСИ</li>
-          <li class="topics-list__item">ФГИС Росаккредитации</li>
-          <li class="topics-list__item">Протоколы испытаний</li>
-          <li class="topics-list__item">Жалобы</li>
-          <li class="topics-list__item">Несоответствия</li>
-          <li class="topics-list__item">Корректирующие действия</li>
-          <li class="topics-list__item">Внутренние аудиты</li>
-          <li class="topics-list__item">Анализ со стороны руководства</li>
-          <li class="topics-list__item">Подготовка к ПК</li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- Бесплатно / PRO -->
-    <section class="section section--pricing">
-      <div class="container">
-        <div class="pricing-grid">
-
-          <div id="free" class="pricing-card">
-            <div class="pricing-card__header">
-              <h2 class="pricing-card__title">Что доступно бесплатно</h2>
-              <p class="pricing-card__label">Общий чат сообщества</p>
-            </div>
-            <ul class="pricing-card__list">
-              <li>Регистрация</li>
-              <li>Общий чат сообщества</li>
-              <li>Чтение общедоступных сообщений</li>
-              <li>Участие в обсуждениях</li>
-              <li>Публикация сообщений</li>
-              <li>Прикрепление файлов</li>
-            </ul>
-            <a href="chat.html" class="btn btn--outline btn--block">Перейти в общий чат</a>
-          </div>
-
-          <div id="pro" class="pricing-card pricing-card--pro">
-            <div class="pricing-card__badge">PRO</div>
-            <div class="pricing-card__header">
-              <h2 class="pricing-card__title">Что входит в PRO-доступ</h2>
-              <p class="pricing-card__price">1000 ₽ <span>/ месяц</span></p>
-              <p class="pricing-card__label">Закрытое профессиональное сообщество</p>
-            </div>
-            <ul class="pricing-card__list">
-              <li>Доступ к закрытому профессиональному сообществу</li>
-              <li>Специализированные темы</li>
-              <li>Возможность получать экспертные ответы</li>
-              <li>Доступ к дополнительным материалам участников</li>
-              <li>Структурированное обсуждение вопросов аккредитации</li>
-            </ul>
-            <a href="login.html?next=pro-request.html" class="btn btn--pro btn--block">Получить PRO-доступ</a>
-            <p class="pricing-card__note">Стоимость PRO-доступа — 1000 ₽ в месяц. Оплата через администратора сообщества.</p>
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- Возможности платформы -->
-    <section class="section section--light">
-      <div class="container">
-        <div class="section__header">
-          <h2 class="section__title">Возможности платформы</h2>
-        </div>
-        <div class="features-grid">
-          <article class="feature">
-            <h3 class="feature__title">Общий чат</h3>
-            <p class="feature__text">Публикация сообщений, ответы, прикрепление файлов, изображений и видео. Редактирование и удаление своих сообщений, поиск по сообщениям.</p>
-          </article>
-          <article class="feature">
-            <h3 class="feature__title">PRO-раздел</h3>
-            <p class="feature__text">Закрытый раздел с темами, создаваемыми администратором. Доступ по подписке — 1000 ₽ в месяц после подтверждения оплаты.</p>
-          </article>
-          <article class="feature">
-            <h3 class="feature__title">Работа с файлами</h3>
-            <p class="feature__text">PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, WEBP, MP4. Отображение названия, автора, даты и размера файла.</p>
-          </article>
-          <article class="feature">
-            <h3 class="feature__title">Уведомления</h3>
-            <p class="feature__text">О новых сообщениях, ответах на ваши сообщения, приближении и окончании подписки PRO.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- Контакты -->
-    <section id="contacts" class="section section--contacts">
-      <div class="container">
-        <div class="contacts-block">
-          <h2 class="section__title">Контакты администратора</h2>
-          <p class="contacts-block__text">
-            По вопросам регистрации, PRO-доступа и работы сообщества обращайтесь к администратору
+      <!-- Контакты -->
+      <section id="contacts" class="home-contacts">
+        <div class="container home-contacts__inner">
+          <h2 class="home-contacts__title">Контакты администратора</h2>
+          <p class="home-contacts__text">
+            По вопросам регистрации, приватного доступа и работы сообщества обращайтесь к администратору
             <strong>Надежде</strong> — в мессенджерах или через чат на сайте.
           </p>
           <div class="admin-contacts">
@@ -238,11 +341,11 @@
               <img src="ТГ.jfif" alt="Telegram" width="52" height="52">
             </a>
           </div>
-          <a href="admin-chat.html" class="btn btn--accent btn--write-admin" id="btn-write-admin">Написать мне на сайте</a>
+          <a href="admin-chat.html" class="btn btn--accent btn--write-admin" id="btn-write-admin">Написать на сайте</a>
         </div>
-      </div>
-    </section>
+      </section>
 
+    </div>
   </main>
 
   <footer class="footer">
@@ -262,105 +365,28 @@
     </div>
   </footer>
 
-  <!-- Модальное окно: Вход -->
-  <dialog id="login" class="modal">
-    <div class="modal__content">
-      <button class="modal__close" aria-label="Закрыть" onclick="this.closest('dialog').close()">&times;</button>
-      <h2 class="modal__title">Вход в систему</h2>
-      <form class="form" action="#" method="post">
-        <label class="form__label">
-          Email
-          <input type="email" class="form__input" name="email" required placeholder="example@mail.ru">
-        </label>
-        <label class="form__label">
-          Пароль
-          <input type="password" class="form__input" name="password" required placeholder="Введите пароль">
-        </label>
-        <button type="submit" class="btn btn--primary btn--block">Войти</button>
-        <a href="#recover" class="form__link">Восстановить пароль</a>
-      </form>
-    </div>
-  </dialog>
-
-  <!-- Модальное окно: Регистрация -->
-  <dialog id="register" class="modal">
-    <div class="modal__content">
-      <button class="modal__close" aria-label="Закрыть" onclick="this.closest('dialog').close()">&times;</button>
-      <h2 class="modal__title">Регистрация</h2>
-      <form class="form" action="#" method="post">
-        <label class="form__label">
-          Ник (отображается в чате)
-          <input type="text" class="form__input" name="nickname" required placeholder="Например: LabExpert" minlength="2" maxlength="30">
-        </label>
-        <label class="form__label">
-          Email
-          <input type="email" class="form__input" name="email" required placeholder="example@mail.ru">
-        </label>
-        <label class="form__label">
-          Пароль
-          <input type="password" class="form__input" name="password" required placeholder="Не менее 8 символов" minlength="8">
-        </label>
-        <label class="form__label">
-          Подтверждение пароля
-          <input type="password" class="form__input" name="password_confirm" required placeholder="Повторите пароль">
-        </label>
-        <fieldset class="form__checkboxes">
-          <label class="form__checkbox">
-            <input type="checkbox" name="terms" required>
-            <span>Согласен с <a href="terms.html" target="_blank">пользовательским соглашением</a></span>
-          </label>
-          <label class="form__checkbox">
-            <input type="checkbox" name="privacy" required>
-            <span>Согласен с <a href="privacy.html" target="_blank">политикой конфиденциальности</a></span>
-          </label>
-          <label class="form__checkbox">
-            <input type="checkbox" name="consent" required>
-            <span>Даю <a href="consent.html" target="_blank">согласие на обработку персональных данных</a></span>
-          </label>
-        </fieldset>
-        <button type="submit" class="btn btn--primary btn--block">Зарегистрироваться</button>
-      </form>
-    </div>
-  </dialog>
-
-  <!-- Модальное окно: Восстановление пароля -->
-  <dialog id="recover" class="modal">
-    <div class="modal__content">
-      <button class="modal__close" aria-label="Закрыть" onclick="this.closest('dialog').close()">&times;</button>
-      <h2 class="modal__title">Восстановление пароля</h2>
-      <p class="modal__desc">Укажите email, указанный при регистрации. Мы отправим инструкцию по восстановлению.</p>
-      <form class="form" action="#" method="post">
-        <label class="form__label">
-          Email
-          <input type="email" class="form__input" name="email" required placeholder="example@mail.ru">
-        </label>
-        <button type="submit" class="btn btn--primary btn--block">Отправить</button>
-      </form>
-    </div>
-  </dialog>
-
   <script src="js/app.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/mobile.js"></script>
   <script>
     App.ready.then(() => {
-    UI.initAuthForms();
-    UI.initHeader('home');
+      UI.initAuthForms();
+      UI.initHeader('home');
 
-    (function initIndexPage() {
-      var user = App.getCurrentUser();
-      if (user) {
-        Mobile.renderHomeDashboard(document.getElementById('user-dashboard'));
-      }
-      Mobile.init('home');
-    })();
+      (function initIndexPage() {
+        var user = App.getCurrentUser();
+        if (user) {
+          Mobile.renderHomeDashboard(document.getElementById('user-dashboard'));
+        }
+        Mobile.init('home');
+      })();
 
-    (function initContactsButton() {
-      var btn = document.getElementById('btn-write-admin');
-      if (!btn) return;
-      var user = App.getCurrentUser();
-      btn.href = user ? 'admin-chat.html' : App.getLoginUrl('admin-chat.html');
-    })();
+      (function initContactsButton() {
+        var btn = document.getElementById('btn-write-admin');
+        if (!btn) return;
+        var user = App.getCurrentUser();
+        btn.href = user ? 'admin-chat.html' : App.getLoginUrl('admin-chat.html');
+      })();
     });
   </script>
 
