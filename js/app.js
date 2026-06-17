@@ -372,6 +372,16 @@ const App = (function () {
     return 'pro.html#t=' + encodeURIComponent(chatId);
   }
 
+  function getProUnreadTotal(userId) {
+    const user = load().users.find(u => u.id === userId);
+    if (!user) return 0;
+    if (!isProActive(user) && user.role !== 'admin') return 0;
+    return getProTopics(false).reduce(
+      (sum, t) => sum + getChatUnreadCount(userId, t.id),
+      0
+    );
+  }
+
   function getUnreadChatsSummary(userId) {
     const user = load().users.find(u => u.id === userId);
     if (!user) return [];
@@ -1384,7 +1394,7 @@ const App = (function () {
     getMessages, addMessage, editMessage, deleteMessage, pinMessage,
     searchMessages, getNotifications, getUnreadNotificationCount, markNotificationsRead,
     getChatUnreadCount, getTotalUnreadMessages, getBellUnreadCount, getAccessibleChatIds, markChatRead,
-    getChatLabel, getChatHref, getUnreadChatsSummary,
+    getChatLabel, getChatHref, getUnreadChatsSummary, getProUnreadTotal,
     checkSubscriptionWarnings,
     getProRequests, getPendingProRequestCount, getAdminInboxConversations, getPendingPrivateMessageCount,
     markProRequestProcessed, markProRequestsProcessedByUser,
