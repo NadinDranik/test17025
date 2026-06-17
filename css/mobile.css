@@ -351,9 +351,11 @@ body {
   }
 
   body.has-mobile-nav.page-pro .pro-topics-panel .chat-sidebar__body {
-    display: block !important;
-    padding: 12px 16px 8px;
-    flex-shrink: 0;
+    display: none !important;
+  }
+
+  body.has-mobile-nav.page-pro .pro-topics-panel #desktop-chats-nav {
+    display: none !important;
   }
 
   body.has-mobile-nav.page-pro .pro-topics-panel .topic-list {
@@ -495,6 +497,12 @@ body {
   background: var(--color-bg);
   color: var(--color-text-muted);
   border: 1px solid var(--color-border);
+}
+
+.m-card__tier--dm {
+  background: rgba(42, 82, 128, 0.12);
+  color: var(--color-primary);
+  border: 1px solid rgba(42, 82, 128, 0.2);
 }
 
 .m-card--compact .m-card__unread {
