@@ -45,6 +45,7 @@
       Mobile.init('chats');
       refreshHub();
       window.addEventListener('gost-data-synced', refreshHub);
+      window.addEventListener('gost-unread-changed', refreshHub);
     });
   </script>
 </body>
