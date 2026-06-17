@@ -1,4 +1,5 @@
-const { canAccessChat } = require('./roles');
+const { canAccessChat, canAccessProChat } = require('./roles');
+const { isAdminDmChat, canAccessDmChat } = require('./dm');
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -68,7 +69,9 @@ function mergeMessagesForChat(serverMsgs, clientMsgs, actor, chatId) {
   const server = serverMsgs || [];
   const client = clientMsgs || [];
 
-  if (!canAccessChat(actor, chatId)) {
+  if (isAdminDmChat(chatId)) {
+    if (!canAccessDmChat(actor, chatId)) return server;
+  } else if (!canAccessChat(actor, chatId)) {
     return server;
   }
 
