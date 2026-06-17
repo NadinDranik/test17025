@@ -77,7 +77,7 @@
         <button type="button" class="admin-tab admin-tab--active" data-tab="users">Пользователи</button>
         <button type="button" class="admin-tab" data-tab="pro">PRO-подписки</button>
         <button type="button" class="admin-tab" data-tab="topics">PRO-чаты</button>
-        <button type="button" class="admin-tab" data-tab="moderation">Модерация</button>
+        <button type="button" class="admin-tab" data-tab="moderation">Модерация <span class="tab-badge" id="moderation-badge" hidden>0</span></button>
       </div>
 
       <!-- Заявки PRO -->
@@ -307,8 +307,17 @@
     }
 
     document.querySelectorAll('.admin-tab').forEach(tab => {
-      tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+      tab.addEventListener('click', () => {
+        switchTab(tab.dataset.tab);
+        const admin = App.getCurrentUser();
+        if (tab.dataset.tab === 'moderation' && admin) {
+          App.markChatRead(admin.id, App.CHAT_FREE);
+          UI.refreshUnreadBadges();
+        }
+      });
     });
+
+    let selectedDmUserId = null;
 
     document.getElementById('btn-go-requests')?.addEventListener('click', () => switchTab('requests'));
 
@@ -318,8 +327,11 @@
     if (window.location.hash === '#messages') {
       switchTab('messages');
     }
-
-    let selectedDmUserId = null;
+    const dmHash = window.location.hash.match(/^#dm-(.+)$/);
+    if (dmHash) {
+      selectedDmUserId = decodeURIComponent(dmHash[1]);
+      switchTab('messages');
+    }
 
     function getStatusBadge(user) {
       const s = App.getSubscriptionStatus(user);
@@ -507,11 +519,17 @@
     }
 
     function renderTopics() {
+      const admin = App.getCurrentUser();
       const topics = App.getProTopics(true);
       document.querySelector('#topics-table tbody').innerHTML = topics.length
-        ? topics.map(t => `
+        ? topics.map(t => {
+          const unread = admin ? App.getChatUnreadCount(admin.id, t.id) : 0;
+          const unreadHtml = unread
+            ? ` <span class="tab-badge tab-badge--inline">${unread > 99 ? '99+' : unread}</span>`
+            : '';
+          return `
           <tr>
-            <td>${t.pinned ? '📌 ' : ''}${t.title}</td>
+            <td>${t.pinned ? '📌 ' : ''}${t.title}${unreadHtml}</td>
             <td>${t.description || '—'}</td>
             <td>${App.formatDate(t.createdAt)}</td>
             <td>${t.hidden ? '<span class="badge badge--blocked">Скрыта</span>' : '<span class="badge badge--pro">Видна</span>'}</td>
@@ -521,7 +539,8 @@
               <button type="button" class="btn btn--sm btn--outline" data-topic="edit" data-id="${t.id}">Изменить</button>
               <button type="button" class="btn btn--sm btn--danger" data-topic="delete" data-id="${t.id}">Удалить</button>
             </td>
-          </tr>`).join('')
+          </tr>`;
+        }).join('')
         : '<tr><td colspan="5" class="table-empty">PRO-чаты не созданы</td></tr>';
     }
 
@@ -652,29 +671,31 @@
       };
       const messagesBox = threadEl.querySelector('.admin-dm-thread__messages');
       if (messagesBox) messagesBox.scrollTop = messagesBox.scrollHeight;
+      if (admin) {
+        App.markChatRead(admin.id, chatId);
+        UI.refreshUnreadBadges();
+      }
     }
 
     function renderPrivateMessages() {
       const inbox = document.getElementById('dm-inbox');
       const conversations = App.getAdminInboxConversations();
-      const pending = conversations.filter(c => c.needsReply).length;
-      const badge = document.getElementById('private-messages-badge');
-      if (badge) {
-        badge.textContent = pending;
-        badge.hidden = pending === 0;
-      }
       if (!conversations.length) {
         inbox.innerHTML = '<p class="table-empty">Личных сообщений пока нет</p>';
         document.getElementById('dm-thread').innerHTML = '<p class="table-empty">Выберите диалог слева</p>';
         selectedDmUserId = null;
+        UI.refreshUnreadBadges();
         return;
       }
       if (!selectedDmUserId || !conversations.some(c => c.userId === selectedDmUserId)) {
         selectedDmUserId = conversations[0].userId;
       }
       inbox.innerHTML = conversations.map(c => `
-        <button type="button" class="admin-dm-item${c.userId === selectedDmUserId ? ' admin-dm-item--active' : ''}${c.needsReply ? ' admin-dm-item--new' : ''}" data-dm-user="${c.userId}">
-          <strong>${UI.escapeHtml(c.userNickname)}</strong>
+        <button type="button" class="admin-dm-item${c.userId === selectedDmUserId ? ' admin-dm-item--active' : ''}${c.unreadCount > 0 ? ' admin-dm-item--new' : ''}" data-dm-user="${c.userId}">
+          <div class="admin-dm-item__head">
+            <strong>${UI.escapeHtml(c.userNickname)}</strong>
+            ${c.unreadCount > 0 ? `<span class="admin-dm-item__badge">${c.unreadCount > 99 ? '99+' : c.unreadCount}</span>` : ''}
+          </div>
           <span class="admin-dm-item__email">${UI.escapeHtml(c.userEmail)}</span>
           <span class="admin-dm-item__preview">${UI.escapeHtml(c.lastMessage)}</span>
           <time>${App.formatDateTime(c.lastAt)}</time>
@@ -789,7 +810,7 @@
       renderModeration();
       renderPrivateMessages();
       const admin = App.getCurrentUser();
-      if (admin) UI.updateNotificationBadge(admin.id);
+      if (admin) UI.refreshUnreadBadges();
     }
 
     refresh();
@@ -798,6 +819,9 @@
     }
 
     window.addEventListener('gost-data-synced', () => {
+      if (typeof refresh === 'function') refresh();
+    });
+    window.addEventListener('gost-unread-changed', () => {
       if (typeof refresh === 'function') refresh();
     });
     }
