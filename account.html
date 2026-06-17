@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Личный кабинет — Гид PRO ГОСТ ISO/IEC 17025-2019</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/mobile.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
@@ -53,25 +54,39 @@
                 <dt>Дата регистрации</dt>
                 <dd id="acc-registered">—</dd>
               </div>
-              <div class="account-meta__row">
-                <dt>Начало подписки PRO</dt>
-                <dd id="acc-pro-start">—</dd>
-              </div>
-              <div class="account-meta__row">
-                <dt>Окончание подписки PRO</dt>
-                <dd id="acc-pro-end">—</dd>
-              </div>
-              <div class="account-meta__row" id="acc-days-row" hidden>
-                <dt>Осталось дней PRO</dt>
-                <dd id="acc-days-left" class="account-days">—</dd>
-              </div>
             </dl>
             <div class="account-actions" id="acc-pro-actions"></div>
           </section>
 
+          <!-- Подписка -->
+          <section class="account-card account-card--subscription">
+            <h2>Подписка</h2>
+            <p class="account-sub-status" id="acc-sub-status">—</p>
+            <dl class="account-meta">
+              <div class="account-meta__row">
+                <dt>Дата начала</dt>
+                <dd id="acc-sub-start">—</dd>
+              </div>
+              <div class="account-meta__row">
+                <dt>Дата окончания</dt>
+                <dd id="acc-sub-end">—</dd>
+              </div>
+              <div class="account-meta__row" id="acc-sub-days-row" hidden>
+                <dt>Осталось дней</dt>
+                <dd id="acc-sub-days" class="account-days">—</dd>
+              </div>
+            </dl>
+          </section>
+
+          <!-- Действия (мобильная карточка) -->
+          <section class="account-card account-card--actions-mobile">
+            <h2>Действия</h2>
+            <div class="account-actions-row" id="acc-mobile-actions"></div>
+          </section>
+
           <!-- Настройки -->
-          <section class="account-card">
-            <h2>Настройки аккаунта</h2>
+          <section class="account-card account-card--settings">
+            <h2>Настройки</h2>
             <form id="nickname-form" class="form">
               <label class="form__label">
                 Ник (отображается в чате)
@@ -128,6 +143,7 @@
 
   <script src="js/app.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/mobile.js"></script>
   <script>
     App.ready.then(async () => {
       UI.initPasswordToggles();
@@ -138,6 +154,7 @@
       }
 
       UI.initHeader('account');
+      Mobile.init('account');
 
       const loading = document.getElementById('account-loading');
       const errorEl = document.getElementById('account-error');
@@ -149,35 +166,61 @@
         return 'badge--free';
       }
 
+      function humanStatusLabel(p) {
+        if (p.blocked) return 'Доступ ограничен';
+        if (p.status === 'admin') return 'Администратор';
+        if (p.proActive) return 'Подписка активна';
+        return 'Подписка не оформлена';
+      }
+
       function renderProfile(p) {
         const u = p.user;
         document.getElementById('acc-avatar').textContent = (u.nickname || u.email).charAt(0).toUpperCase();
         document.getElementById('acc-nickname').textContent = u.nickname || u.email.split('@')[0];
         document.getElementById('acc-email').textContent = u.email;
         const badge = document.getElementById('acc-status-badge');
-        badge.textContent = p.statusLabel;
+        badge.textContent = humanStatusLabel(p);
         badge.className = 'badge ' + statusBadgeClass(p.status, p.blocked);
         document.getElementById('acc-registered').textContent = p.registeredAtFormatted || '—';
-        document.getElementById('acc-pro-start').textContent = p.proPaidAtFormatted || '—';
-        document.getElementById('acc-pro-end').textContent = p.proExpiresAtFormatted || '—';
+        document.getElementById('acc-sub-status').textContent = humanStatusLabel(p);
+        document.getElementById('acc-sub-start').textContent = p.proPaidAtFormatted || '—';
+        document.getElementById('acc-sub-end').textContent = p.proExpiresAtFormatted || '—';
 
-        const daysRow = document.getElementById('acc-days-row');
+        const subDaysRow = document.getElementById('acc-sub-days-row');
         if (p.proActive && p.daysLeft != null) {
-          daysRow.hidden = false;
-          document.getElementById('acc-days-left').textContent = p.daysLeft + ' дн.';
+          subDaysRow.hidden = false;
+          document.getElementById('acc-sub-days').textContent = p.daysLeft + ' дн.';
         } else {
-          daysRow.hidden = true;
+          subDaysRow.hidden = true;
         }
 
         const actions = document.getElementById('acc-pro-actions');
+        const mobileActions = document.getElementById('acc-mobile-actions');
+        let actionsHtml = '';
         if (p.blocked) {
-          actions.innerHTML = '<p class="account-blocked">Аккаунт заблокирован. Доступ к чатам ограничен. Обратитесь к администратору.</p>';
+          actionsHtml = '<p class="account-blocked">Аккаунт заблокирован. Обратитесь к администратору.</p>';
         } else if (p.status === 'admin') {
-          actions.innerHTML = '<a href="admin.html" class="btn btn--primary">Админ-панель</a>';
+          actionsHtml = '<a href="admin.html" class="btn btn--primary">Админ-панель</a>';
         } else if (p.proActive) {
-          actions.innerHTML = '<a href="pro.html" class="btn btn--pro">PRO-раздел</a> <a href="pro-request.html" class="btn btn--outline">Продлить PRO</a>';
+          actionsHtml = '<a href="pro-request.html" class="btn btn--outline">Продлить подписку</a>';
         } else {
-          actions.innerHTML = '<a href="pro-request.html" class="btn btn--pro">Оформить PRO</a>';
+          actionsHtml = '<a href="pro-request.html" class="btn btn--pro">Оформить подписку</a>';
+        }
+        actions.innerHTML = actionsHtml;
+
+        if (mobileActions) {
+          let mobile = '';
+          if (!p.blocked && p.status !== 'admin') {
+            mobile += p.proActive
+              ? '<a href="pro-request.html" class="btn btn--pro">Продлить подписку</a>'
+              : '<a href="pro-request.html" class="btn btn--pro">Оформить подписку</a>';
+          }
+          mobile += '<a href="admin-chat.html" class="btn btn--outline">Написать администратору</a>';
+          mobile += '<a href="chats.html" class="btn btn--primary">Перейти в чаты</a>';
+          if (p.status === 'admin') {
+            mobile = '<a href="admin.html" class="btn btn--primary">Админ-панель</a>' + mobile;
+          }
+          mobileActions.innerHTML = mobile;
         }
 
         document.getElementById('nickname-input').value = u.nickname || '';
