@@ -285,8 +285,11 @@ const App = (function () {
         if (_currentUser) setSession(_currentUser.id);
         return _currentUser;
       }
-    } catch { /* ignore */ }
-    _currentUser = null;
+      _currentUser = null;
+      setSession(null);
+    } catch {
+      _currentUser = null;
+    }
     return null;
   }
 
@@ -294,6 +297,7 @@ const App = (function () {
     const res = await fetch('/api/data', { ...API_OPTS, cache: 'no-store' });
     if (res.status === 401) {
       _currentUser = null;
+      setSession(null);
       throw new Error('Unauthorized');
     }
     if (!res.ok) throw new Error('API unavailable');
@@ -524,13 +528,7 @@ const App = (function () {
   }
 
   function getCurrentUser() {
-    if (_currentUser) return _currentUser;
-    const session = getSession();
-    if (!session) return null;
-    const data = load();
-    const user = data.users.find(u => u.id === session.userId) || null;
-    if (user) _currentUser = user;
-    return user;
+    return _currentUser;
   }
 
   function updateUser(userId, patch) {
