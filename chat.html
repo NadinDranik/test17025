@@ -6,6 +6,7 @@
   <title>Общий чат — Гид PRO ГОСТ ISO/IEC 17025-2019</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="css/mobile.css">
+  <link rel="stylesheet" href="css/visual-refresh.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
@@ -100,7 +101,7 @@
     async function renderMessages() {
       const msgs = App.getMessages(CHAT_ID);
       document.getElementById('msg-count').textContent = msgs.length + ' сообщ.';
-      await UI.renderMessages(messagesEl, msgs, currentUser, CHAT_ID, 'Пока нет сообщений. Будьте первым!');
+      await UI.renderMessages(messagesEl, msgs, currentUser, CHAT_ID, 'Здесь пока нет сообщений. Начните обсуждение первым.');
     }
 
     function updateAccessUI() {
