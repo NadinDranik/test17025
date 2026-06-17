@@ -30,27 +30,25 @@
   <main class="chat-layout">
     <div class="chat-layout__inner pro-layout">
       <aside class="chat-sidebar chat-sidebar--pro pro-topics-panel">
-        <nav id="desktop-chats-nav" class="desktop-chats-nav" aria-label="Список чатов"></nav>
-        <div class="chat-sidebar__body">
-        <h1 class="chat-sidebar__title">PRO-чаты</h1>
-        <p class="chat-sidebar__desc">Закрытые темы, создаваемые администратором. Выберите тему для общения.</p>
-        <div class="search-box">
-          <input type="search" class="form__input" id="search-input" placeholder="Поиск по темам и сообщениям…">
-          <button type="button" class="btn btn--outline btn--sm btn--block" id="search-btn">Найти</button>
+        <nav id="desktop-chats-nav" class="desktop-chats-nav" aria-label="Мои чаты"></nav>
+        <div class="chat-sidebar__body pro-sidebar-tools">
+          <div class="search-box">
+            <input type="search" class="form__input" id="search-input" placeholder="Поиск по темам и сообщениям…">
+            <button type="button" class="btn btn--outline btn--sm btn--block" id="search-btn">Найти</button>
+          </div>
+          <div id="search-results" class="search-results"></div>
         </div>
-        </div>
-        <nav class="topic-list" id="topic-list" aria-label="PRO-темы"></nav>
       </aside>
 
       <section class="chat-main pro-chat-panel">
         <div class="chat-main__header">
-          <button type="button" class="pro-chat-back" id="pro-chat-back" aria-label="К списку PRO-чатов">←</button>
-          <h2 id="topic-title">Выберите тему</h2>
+          <button type="button" class="pro-chat-back" id="pro-chat-back" aria-label="К чатам">←</button>
+          <h2 id="topic-title">Выберите чат</h2>
           <span class="chat-main__count" id="msg-count"></span>
         </div>
         <div id="no-topic" class="chat-empty chat-empty--center">
-          <p class="chat-empty__title">Закрытые чаты</p>
-          <p>Доступны после оформления подписки. Выберите тему из списка или вернитесь в <a href="chats.html">раздел «Чаты»</a>.</p>
+          <p class="chat-empty__title">Выберите чат</p>
+          <p>Выберите чат в списке «Мои чаты» слева или вернитесь в <a href="chats.html">раздел чатов</a>.</p>
         </div>
         <div class="chat-messages" id="messages" hidden></div>
         <div class="chat-compose" id="compose-area" hidden>
@@ -94,8 +92,6 @@
 
     UI.initHeader('chats');
     Mobile.init('chats');
-    Mobile.mountDesktopChatsNav('');
-    const topicListEl = document.getElementById('topic-list');
     const messagesEl = document.getElementById('messages');
     const composeArea = document.getElementById('compose-area');
     const noTopicEl = document.getElementById('no-topic');
@@ -103,6 +99,14 @@
 
     function isMobileView() {
       return mobileMq.matches;
+    }
+
+    function syncNavActive() {
+      const navEl = document.getElementById('desktop-chats-nav');
+      if (navEl) {
+        navEl.dataset.activeChat = activeTopicId || '';
+        Mobile.refreshDesktopChatsNav();
+      }
     }
 
     function openMobileChat() {
@@ -116,46 +120,23 @@
       }
     }
 
-    function renderTopics() {
-      const topics = App.getProTopics(false);
-      if (!topics.length) {
-        topicListEl.innerHTML = '<p class="topic-list__empty">Тем пока нет. Администратор создаст их в панели управления.</p>';
-        return;
-      }
-      topicListEl.innerHTML = topics.map(t => {
-        const count = App.getMessages(t.id).length;
-        const unread = currentUser ? App.getChatUnreadCount(currentUser.id, t.id) : 0;
-        const lastMsg = count ? App.getMessages(t.id)[count - 1] : null;
-        const preview = lastMsg
-          ? (lastMsg.text ? lastMsg.text.slice(0, 60) : (lastMsg.files?.[0]?.name ? '📎 ' + lastMsg.files[0].name : 'Сообщение'))
-          : 'Нет сообщений';
-        const unreadHtml = unread
-          ? `<span class="topic-item__unread">${unread > 99 ? '99+' : unread}</span>`
-          : '';
-        return `
-        <button type="button" class="topic-item${activeTopicId === t.id ? ' topic-item--active' : ''}${t.pinned ? ' topic-item--pinned' : ''}"
-          data-id="${t.id}">
-          <span class="topic-item__title">${t.pinned ? '📌 ' : ''}${UI.escapeHtml(t.title)}${unreadHtml}</span>
-          <span class="topic-item__meta">${count ? count + ' сообщ.' : 'Пусто'} · ${UI.escapeHtml(preview)}</span>
-        </button>`;
-      }).join('');
-
-      topicListEl.querySelectorAll('.topic-item').forEach(btn => {
-        btn.addEventListener('click', () => selectTopic(btn.dataset.id));
-      });
-
-      if (!activeTopicId && topics.length && !isMobileView()) {
-        selectTopic(topics[0].id, { skipHistory: true });
-      }
+    function showEmptyTopic() {
+      activeTopicId = null;
+      document.getElementById('topic-title').textContent = 'Выберите чат';
+      document.getElementById('msg-count').textContent = '';
+      noTopicEl.hidden = false;
+      messagesEl.hidden = true;
+      composeArea.hidden = true;
+      syncNavActive();
     }
 
     function selectTopic(id, options) {
       options = options || {};
-      activeTopicId = id;
       const topics = App.getProTopics(false);
       const topic = topics.find(t => t.id === id);
       if (!topic) return;
 
+      activeTopicId = id;
       document.getElementById('topic-title').textContent = topic.title;
       noTopicEl.hidden = true;
       messagesEl.hidden = false;
@@ -164,17 +145,20 @@
       if (isMobileView()) {
         openMobileChat();
         if (!options.skipHistory) {
-          history.pushState({ proChat: id }, '', '#t=' + encodeURIComponent(id));
+          const hash = '#t=' + encodeURIComponent(id);
+          if (window.location.hash !== hash) {
+            history.pushState({ proChat: id }, '', hash);
+          }
+        }
+      } else if (!options.skipHistory) {
+        const hash = '#t=' + encodeURIComponent(id);
+        if (window.location.hash !== hash) {
+          history.replaceState({ proChat: id }, '', hash);
         }
       }
 
-      renderTopics();
+      syncNavActive();
       renderMessages();
-      const navEl = document.getElementById('desktop-chats-nav');
-      if (navEl) {
-        navEl.dataset.activeChat = id;
-        Mobile.refreshDesktopChatsNav();
-      }
     }
 
     async function renderMessages() {
@@ -182,6 +166,36 @@
       const msgs = App.getMessages(activeTopicId);
       document.getElementById('msg-count').textContent = msgs.length + ' сообщ.';
       await UI.renderMessages(messagesEl, msgs, currentUser, activeTopicId, 'В этой теме пока нет сообщений.');
+    }
+
+    function initFromHash() {
+      const match = window.location.hash.match(/^#t=(.+)$/);
+      if (match) {
+        const id = decodeURIComponent(match[1]);
+        if (App.getProTopics(false).some(t => t.id === id)) {
+          if (!isMobileView()) Mobile.mountDesktopChatsNav(id);
+          selectTopic(id, { skipHistory: true });
+          return;
+        }
+      }
+      if (isMobileView()) {
+        window.location.replace('chats.html');
+        return;
+      }
+      Mobile.mountDesktopChatsNav('');
+      showEmptyTopic();
+    }
+
+    function onHashChange() {
+      const match = window.location.hash.match(/^#t=(.+)$/);
+      if (match) {
+        const id = decodeURIComponent(match[1]);
+        if (App.getProTopics(false).some(t => t.id === id) && id !== activeTopicId) {
+          selectTopic(id, { skipHistory: true });
+        }
+      } else if (!isMobileView()) {
+        showEmptyTopic();
+      }
     }
 
     UI.bindMessageActions(messagesEl, () => activeTopicId, currentUser, () => {
@@ -207,7 +221,7 @@
       () => {
         sendError.hidden = true;
         renderMessages();
-        renderTopics();
+        syncNavActive();
       },
       (msg) => {
         sendError.textContent = msg;
@@ -217,7 +231,8 @@
 
     document.getElementById('search-btn').addEventListener('click', () => {
       const q = document.getElementById('search-input').value.trim();
-      if (!q) return;
+      const resultsEl = document.getElementById('search-results');
+      if (!q) { resultsEl.innerHTML = ''; return; }
       const topicIds = App.getProTopics(false).map(t => t.id);
       const msgResults = App.searchMessages(q, topicIds);
       const topicResults = App.getProTopics(false).filter(t =>
@@ -227,55 +242,30 @@
       let html = '';
       if (topicResults.length) {
         html += '<p><strong>Темы:</strong></p>' + topicResults.map(t =>
-          `<button type="button" class="topic-item topic-item--search" data-id="${t.id}">${t.title}</button>`
+          `<button type="button" class="topic-item topic-item--search" data-id="${t.id}">${UI.escapeHtml(t.title)}</button>`
         ).join('');
       }
       if (msgResults.length) {
         html += '<p><strong>Сообщения:</strong></p>' + msgResults.map(r =>
-          `<div class="search-result">${r.authorEmail}: ${UI.escapeHtml((r.text || r.files?.[0]?.name || '').slice(0, 80))}</div>`
+          `<div class="search-result">${UI.escapeHtml(r.authorEmail)}: ${UI.escapeHtml((r.text || r.files?.[0]?.name || '').slice(0, 80))}</div>`
         ).join('');
       }
       if (!html) html = '<p class="search-result--empty">Ничего не найдено</p>';
-      const wrap = document.createElement('div');
-      wrap.className = 'search-results';
-      wrap.innerHTML = html;
-      topicListEl.after(wrap);
-      wrap.querySelectorAll('[data-id]').forEach(btn => {
+      resultsEl.innerHTML = html;
+      resultsEl.querySelectorAll('[data-id]').forEach(btn => {
         btn.addEventListener('click', () => {
           selectTopic(btn.dataset.id);
-          wrap.remove();
+          resultsEl.innerHTML = '';
         });
       });
     });
 
     document.getElementById('pro-chat-back').addEventListener('click', () => {
       if (isMobileView()) {
-        if (document.body.classList.contains('pro-chat-open')) {
-          closeMobileChat(false);
-          activeTopicId = null;
-          noTopicEl.hidden = false;
-          messagesEl.hidden = true;
-          composeArea.hidden = true;
-          document.getElementById('topic-title').textContent = 'PRO-чаты';
-          document.getElementById('msg-count').textContent = '';
-          renderTopics();
-        } else {
-          window.location.href = 'chats.html';
-        }
+        window.location.href = 'chats.html';
         return;
       }
-      if (window.history.length > 1) {
-        history.back();
-      } else {
-        closeMobileChat();
-        activeTopicId = null;
-        noTopicEl.hidden = false;
-        messagesEl.hidden = true;
-        composeArea.hidden = true;
-        document.getElementById('topic-title').textContent = 'PRO-чаты';
-        document.getElementById('msg-count').textContent = '';
-        renderTopics();
-      }
+      window.location.href = 'chats.html';
     });
 
     window.addEventListener('popstate', () => {
@@ -286,49 +276,38 @@
           selectTopic(id, { skipHistory: true });
         }
       } else {
-        closeMobileChat(false);
-        activeTopicId = null;
-        noTopicEl.hidden = false;
-        messagesEl.hidden = true;
-        composeArea.hidden = true;
-        document.getElementById('topic-title').textContent = 'PRO-чаты';
-        document.getElementById('msg-count').textContent = '';
-        renderTopics();
+        window.location.href = 'chats.html';
       }
     });
+
+    window.addEventListener('hashchange', onHashChange);
 
     mobileMq.addEventListener('change', () => {
       if (!isMobileView()) {
         closeMobileChat(false);
-        if (!activeTopicId) {
-          const topics = App.getProTopics(false);
-          if (topics.length) selectTopic(topics[0].id, { skipHistory: true });
-        }
-      } else if (activeTopicId && window.location.hash.startsWith('#t=')) {
+        syncNavActive();
+      } else if (!window.location.hash.startsWith('#t=')) {
+        window.location.href = 'chats.html';
+      } else if (activeTopicId) {
         openMobileChat();
-      } else {
-        closeMobileChat(false);
       }
     });
 
-    renderTopics();
+    initFromHash();
 
-    (function initFromHash() {
-      const match = window.location.hash.match(/^#t=(.+)$/);
-      if (match && App.getProTopics(false).some(t => t.id === decodeURIComponent(match[1]))) {
-        selectTopic(decodeURIComponent(match[1]), { skipHistory: true });
-      } else {
-        Mobile.mountDesktopChatsNav('');
-      }
-    })();
+    document.getElementById('desktop-chats-nav')?.addEventListener('click', (e) => {
+      const link = e.target.closest('a[href^="#t="]');
+      if (!link) return;
+      e.preventDefault();
+      const id = decodeURIComponent(link.getAttribute('href').slice(3));
+      selectTopic(id);
+    });
 
     window.addEventListener('gost-data-synced', () => {
-      renderTopics();
       if (activeTopicId) renderMessages();
+      syncNavActive();
     });
-    window.addEventListener('gost-unread-changed', () => {
-      renderTopics();
-    });
+    window.addEventListener('gost-unread-changed', syncNavActive);
     });
   </script>
 </body>
