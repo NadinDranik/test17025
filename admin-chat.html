@@ -34,6 +34,7 @@
           <a href="admin-chat.html" class="chat-rail__tab chat-rail__tab--active" data-chat-kind="dm" aria-current="page">Админ</a>
           <a href="pro-request.html" class="chat-rail__tab">PRO</a>
         </nav>
+        <nav id="desktop-chats-nav" class="desktop-chats-nav" aria-label="Список чатов"></nav>
         <div class="chat-sidebar__body">
           <h1 class="chat-sidebar__title">Личные сообщения</h1>
           <p class="chat-sidebar__desc">Ваш личный диалог с администратором. Здесь можно задать вопрос, обратиться за помощью или отправить чек для оформления PRO-доступа.</p>
@@ -95,6 +96,7 @@
       UI.initHeader('admin-chat');
       Mobile.init('support');
       App.ensureAdminDmWelcome(currentUser.id);
+      Mobile.mountDesktopChatsNav(CHAT_ID);
 
       const messagesEl = document.getElementById('messages');
       const msgForm = document.getElementById('msg-form');
