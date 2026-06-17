@@ -32,11 +32,12 @@
       <aside class="chat-sidebar chat-sidebar--pro">
         <nav class="chat-rail" aria-label="Чаты">
           <a href="chat.html" class="chat-rail__tab">Общий</a>
+          <a href="admin-chat.html" class="chat-rail__tab">Админ</a>
           <a href="pro-request.html" class="chat-rail__tab chat-rail__tab--active" aria-current="page">PRO</a>
         </nav>
         <div class="chat-sidebar__body">
         <h1 class="chat-sidebar__title">Оформление PRO</h1>
-        <p class="chat-sidebar__desc">Для доступа к PRO-чатам необходимо оплатить <strong>1000 ₽ в месяц</strong> и подтвердить оплату через этот чат с администратором.</p>
+        <p class="chat-sidebar__desc">Для доступа к PRO-чатам необходимо оплатить <strong>1000 ₽ в месяц</strong> и подтвердить оплату в личном диалоге с администратором.</p>
         <div class="chat-sidebar__info" data-user-profile></div>
         <div class="payment-info">
           <h2 class="payment-info__title">Реквизиты для оплаты</h2>
@@ -70,7 +71,7 @@
 
       <section class="chat-main">
         <div class="chat-main__header">
-          <h2>Чат с администратором</h2>
+          <h2>Личный диалог с администратором</h2>
           <span class="chat-main__count" id="msg-count"></span>
         </div>
 
@@ -113,7 +114,6 @@
   <script src="js/chat-send.js"></script>
   <script>
     App.ready.then(() => {
-    const CHAT_ID = App.CHAT_ADMIN_SUPPORT;
     let currentUser = App.getCurrentUser();
 
     if (currentUser && App.isProActive(currentUser)) {
@@ -122,11 +122,14 @@
 
     if (!currentUser) {
       window.location.href = App.getLoginUrl('pro-request.html');
+      return;
     }
+
+    const CHAT_ID = App.getAdminDmChatId(currentUser.id);
 
     UI.initHeader('pro-request');
     UI.refreshUserProfile();
-    App.ensureProRequestWelcomeMessage();
+    App.ensureAdminDmWelcome(currentUser.id);
 
     const messagesEl = document.getElementById('messages');
     const msgForm = document.getElementById('msg-form');
