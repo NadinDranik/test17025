@@ -25,8 +25,6 @@
     </div>
   </header>
 
-  <div id="user-profile-bar" class="user-profile-bar" hidden></div>
-
   <main class="chat-layout">
     <div class="chat-layout__inner">
       <aside class="chat-sidebar chat-sidebar--pro">
@@ -38,7 +36,6 @@
         <div class="chat-sidebar__body">
         <h1 class="chat-sidebar__title">Оформление PRO</h1>
         <p class="chat-sidebar__desc">Для доступа к PRO-чатам необходимо оплатить <strong>1000 ₽ в месяц</strong> и подтвердить оплату в личном диалоге с администратором.</p>
-        <div class="chat-sidebar__info" data-user-profile></div>
         <div class="payment-info">
           <h2 class="payment-info__title">Реквизиты для оплаты</h2>
           <dl class="payment-info__list">
@@ -128,7 +125,6 @@
     const CHAT_ID = App.getAdminDmChatId(currentUser.id);
 
     UI.initHeader('pro-request');
-    UI.refreshUserProfile();
     App.ensureAdminDmWelcome(currentUser.id);
 
     const messagesEl = document.getElementById('messages');
