@@ -72,6 +72,9 @@
         <button type="button" class="admin-tab" data-tab="requests">
           Заявки PRO <span class="tab-badge" id="pro-requests-badge" hidden>0</span>
         </button>
+        <button type="button" class="admin-tab" data-tab="messages">
+          Личные сообщения <span class="tab-badge" id="private-messages-badge" hidden>0</span>
+        </button>
         <button type="button" class="admin-tab admin-tab--active" data-tab="users">Пользователи</button>
         <button type="button" class="admin-tab" data-tab="pro">PRO-подписки</button>
         <button type="button" class="admin-tab" data-tab="topics">PRO-чаты</button>
@@ -80,8 +83,19 @@
 
       <!-- Заявки PRO -->
       <section class="admin-panel" id="panel-requests" hidden>
-        <p class="admin-panel__desc">Здесь отображаются сообщения пользователей из чата оформления PRO — с текстом и прикреплёнными чеками.</p>
+        <p class="admin-panel__desc">Здесь отображаются сообщения пользователей с чеками об оплате из личных диалогов.</p>
         <div id="pro-requests-list" class="pro-requests-list"></div>
+      </section>
+
+      <!-- Личные сообщения -->
+      <section class="admin-panel" id="panel-messages" hidden>
+        <p class="admin-panel__desc">Личные диалоги с подписчиками. Каждый пользователь видит только свою переписку с вами.</p>
+        <div class="admin-dm-layout">
+          <div class="admin-dm-inbox" id="dm-inbox"></div>
+          <div class="admin-dm-thread" id="dm-thread">
+            <p class="table-empty">Выберите диалог слева</p>
+          </div>
+        </div>
       </section>
 
       <!-- Пользователи -->
@@ -211,9 +225,6 @@
         </div>
         <h3 class="admin-subtitle">Последние сообщения (общий чат)</h3>
         <div id="mod-messages" class="mod-messages"></div>
-        <h3 class="admin-subtitle">Заявки на PRO — чат с администратором</h3>
-        <p class="admin-panel__desc">Сообщения пользователей с чеками об оплате. После проверки выдайте PRO во вкладке «PRO-подписки».</p>
-        <div id="mod-support-messages" class="mod-messages"></div>
       </section>
 
     </div>
@@ -304,6 +315,11 @@
     if (window.location.hash === '#requests') {
       switchTab('requests');
     }
+    if (window.location.hash === '#messages') {
+      switchTab('messages');
+    }
+
+    let selectedDmUserId = null;
 
     function getStatusBadge(user) {
       const s = App.getSubscriptionStatus(user);
@@ -543,14 +559,11 @@
             const author = users.find(u => u.email === m.authorEmail);
             const filesInfo = (m.files && m.files.length)
               ? `<p class="mod-msg__files">📎 ${m.files.map(f => f.name).join(', ')}</p>` : '';
-            const grantBtn = (chatId === App.CHAT_ADMIN_SUPPORT && author)
-              ? `<button type="button" class="btn btn--sm btn--pro" data-grant="${author.id}">Выдать PRO 30 дн.</button>` : '';
             return `<div class="mod-msg">
               <div><strong>${App.getDisplayName(author || { email: m.authorEmail, nickname: m.authorName })}</strong> · ${m.authorEmail} · ${App.formatDateTime(m.createdAt)}</div>
               <p>${UI.escapeHtml((m.text || '').slice(0, 200))}${!m.text && m.files?.length ? ' (прикреплён файл)' : ''}</p>
               ${filesInfo}
               <div class="admin-actions">
-                ${grantBtn}
                 <button type="button" class="btn btn--sm btn--danger" data-del="${delPrefix}:${m.id}">Удалить</button>
               </div>
             </div>`;
@@ -559,26 +572,120 @@
 
       container.querySelectorAll('[data-del]').forEach(btn => {
         btn.addEventListener('click', () => {
-          const [prefix, id] = btn.dataset.del.split(':');
-          const cid = prefix === 'support' ? App.CHAT_ADMIN_SUPPORT : 'free';
-          App.deleteMessage(cid, id);
+          const [, id] = btn.dataset.del.split(':');
+          App.deleteMessage('free', id);
           toast('Сообщение удалено');
           renderModeration();
-        });
-      });
-
-      container.querySelectorAll('[data-grant]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          await App.grantPro(btn.dataset.grant, 30);
-          toast('PRO выдан на 30 дней');
-          refresh();
         });
       });
     }
 
     function renderModeration() {
       renderModChatList('free', 'mod-messages', 'free');
-      renderModChatList(App.CHAT_ADMIN_SUPPORT, 'mod-support-messages', 'support');
+    }
+
+    async function renderDmThread(userId) {
+      const threadEl = document.getElementById('dm-thread');
+      const user = App.getData().users.find(u => u.id === userId);
+      if (!user) {
+        threadEl.innerHTML = '<p class="table-empty">Пользователь не найден</p>';
+        return;
+      }
+      const chatId = App.getAdminDmChatId(userId);
+      const admin = App.getCurrentUser();
+      const msgs = App.getMessages(chatId);
+      const messagesHtml = msgs.length
+        ? (await Promise.all(msgs.map(async m => {
+            const isOwn = m.userId === admin.id;
+            const filesInfo = (m.files && m.files.length)
+              ? `<p class="mod-msg__files">📎 ${m.files.map(f => f.name).join(', ')}</p>` : '';
+            return `<div class="dm-msg${isOwn ? ' dm-msg--own' : ''}">
+              <div class="dm-msg__meta"><strong>${UI.escapeHtml(m.authorName || m.authorEmail)}</strong> · ${App.formatDateTime(m.createdAt)}</div>
+              <p>${UI.escapeHtml(m.text || '')}${!m.text && m.files?.length ? ' (файл)' : ''}</p>
+              ${filesInfo}
+              <button type="button" class="btn btn--sm btn--danger" data-dm-del="${m.id}">Удалить</button>
+            </div>`;
+          }))).join('')
+        : '<p class="table-empty">Сообщений пока нет</p>';
+
+      threadEl.innerHTML = `
+        <div class="admin-dm-thread__header">
+          <div>
+            <strong>${UI.escapeHtml(App.getDisplayName(user))}</strong>
+            <span class="admin-dm-thread__email">${UI.escapeHtml(user.email)}</span>
+          </div>
+          <div class="admin-actions">
+            <button type="button" class="btn btn--sm btn--pro" data-dm-grant="${user.id}">Выдать PRO 30 дн.</button>
+            <button type="button" class="btn btn--sm btn--outline" data-dm-account="${user.id}">Личный кабинет</button>
+          </div>
+        </div>
+        <div class="admin-dm-thread__messages">${messagesHtml}</div>
+        <form id="dm-reply-form" class="admin-dm-reply form">
+          <textarea class="form__input" id="dm-reply-text" rows="3" placeholder="Ответ пользователю…"></textarea>
+          <button type="submit" class="btn btn--primary">Отправить</button>
+        </form>`;
+
+      threadEl.querySelector('[data-dm-grant]')?.addEventListener('click', async () => {
+        await App.grantPro(user.id, 30);
+        toast('PRO выдан на 30 дней');
+        refresh();
+      });
+      threadEl.querySelector('[data-dm-account]')?.addEventListener('click', () => showUserAccountModal(user.id));
+      threadEl.querySelectorAll('[data-dm-del]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          App.deleteMessage(chatId, btn.dataset.dmDel);
+          toast('Сообщение удалено');
+          renderPrivateMessages();
+        });
+      });
+      document.getElementById('dm-reply-form').onsubmit = async e => {
+        e.preventDefault();
+        const text = document.getElementById('dm-reply-text').value.trim();
+        if (!text) return;
+        const result = await App.addMessage(chatId, admin.id, text, null, []);
+        if (!result.ok) {
+          toast(result.error || 'Не удалось отправить');
+          return;
+        }
+        document.getElementById('dm-reply-text').value = '';
+        renderPrivateMessages();
+      };
+      const messagesBox = threadEl.querySelector('.admin-dm-thread__messages');
+      if (messagesBox) messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    function renderPrivateMessages() {
+      const inbox = document.getElementById('dm-inbox');
+      const conversations = App.getAdminInboxConversations();
+      const pending = conversations.filter(c => c.needsReply).length;
+      const badge = document.getElementById('private-messages-badge');
+      if (badge) {
+        badge.textContent = pending;
+        badge.hidden = pending === 0;
+      }
+      if (!conversations.length) {
+        inbox.innerHTML = '<p class="table-empty">Личных сообщений пока нет</p>';
+        document.getElementById('dm-thread').innerHTML = '<p class="table-empty">Выберите диалог слева</p>';
+        selectedDmUserId = null;
+        return;
+      }
+      if (!selectedDmUserId || !conversations.some(c => c.userId === selectedDmUserId)) {
+        selectedDmUserId = conversations[0].userId;
+      }
+      inbox.innerHTML = conversations.map(c => `
+        <button type="button" class="admin-dm-item${c.userId === selectedDmUserId ? ' admin-dm-item--active' : ''}${c.needsReply ? ' admin-dm-item--new' : ''}" data-dm-user="${c.userId}">
+          <strong>${UI.escapeHtml(c.userNickname)}</strong>
+          <span class="admin-dm-item__email">${UI.escapeHtml(c.userEmail)}</span>
+          <span class="admin-dm-item__preview">${UI.escapeHtml(c.lastMessage)}</span>
+          <time>${App.formatDateTime(c.lastAt)}</time>
+        </button>`).join('');
+      inbox.querySelectorAll('[data-dm-user]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedDmUserId = btn.dataset.dmUser;
+          renderPrivateMessages();
+        });
+      });
+      renderDmThread(selectedDmUserId);
     }
 
     document.getElementById('grant-form').addEventListener('submit', async e => {
@@ -680,6 +787,7 @@
       renderSubsLists();
       renderTopics();
       renderModeration();
+      renderPrivateMessages();
       const admin = App.getCurrentUser();
       if (admin) UI.updateNotificationBadge(admin.id);
     }
