@@ -158,6 +158,47 @@ function registerDataRoutes(app, broadcast) {
     broadcast({ type: 'data-updated', version });
     res.json({ ok: true, version });
   });
+
+  app.delete('/api/messages', requireAuth, (req, res) => {
+    const { chatId, messageId } = req.body || {};
+    if (!chatId || !messageId) {
+      return res.status(400).json({ error: 'chatId и messageId обязательны' });
+    }
+
+    const { canAccessChat } = require('./roles');
+    const { isAdminDmChat, canAccessDmChat } = require('./dm');
+
+    const canRead = isAdminDmChat(chatId)
+      ? canAccessDmChat(req.user, chatId)
+      : canAccessChat(req.user, chatId);
+    if (!canRead) {
+      return res.status(403).json({ error: 'Нет доступа к чату' });
+    }
+
+    const store = db.getStore();
+    const msgs = store.data.messages[chatId];
+    if (!msgs) return res.json({ ok: true });
+
+    const msg = msgs.find(m => m.id === messageId);
+    if (!msg) return res.json({ ok: true });
+
+    if (msg.userId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Можно удалять только свои сообщения' });
+    }
+
+    (msg.files || []).forEach(f => {
+      if (f.id) db.deleteFile(f.id);
+    });
+
+    const version = db.updateStore(data => {
+      if (!data.messages[chatId]) return data;
+      data.messages[chatId] = data.messages[chatId].filter(m => m.id !== messageId);
+      return data;
+    }).version;
+
+    broadcast({ type: 'data-updated', version });
+    res.json({ ok: true, version });
+  });
 }
 
 function safeFileId(id) {
