@@ -53,7 +53,7 @@ const Mobile = (function () {
     if (user.proExpiresAt && new Date(user.proExpiresAt) <= new Date()) {
       return { title: 'Подписка не оформлена', short: 'Истекла', tone: 'warn' };
     }
-    return { title: 'Подписка не оформлена', short: 'Free', tone: 'free' };
+    return { title: 'Подписка не оформлена', short: 'Без подписки', tone: 'free' };
   }
 
   function subscriptionCardHtml(user) {
@@ -357,8 +357,9 @@ const Mobile = (function () {
         <article class="m-card m-card--compact m-card--locked">
           <div class="m-card__row">
             <span class="m-card__tier m-card__tier--pro">PRO</span>
-            <span class="m-card__title">PRO-чаты</span>
+            <span class="m-card__title">Закрытые чаты</span>
           </div>
+          <p class="m-card__desc-locked">Доступ открыт для подписчиков</p>
           <a href="pro-request.html" class="btn btn--pro btn--sm m-card__cta-compact">Оформить доступ</a>
         </article>`;
     }
@@ -397,14 +398,14 @@ const Mobile = (function () {
     }
     if (chatId === 'free') {
       return `<div class="chat-empty chat-empty--warm">
-        <p class="chat-empty__title">Пока здесь нет сообщений</p>
-        <p>Задайте первый вопрос или начните обсуждение.</p>
-        <p class="chat-empty__hint">Здесь можно задавать вопросы по аккредитации, ГОСТ ISO/IEC 17025, проверкам, СМК и лабораторной практике.</p>
+        <p class="chat-empty__title">Здесь пока нет сообщений</p>
+        <p>Начните обсуждение первым.</p>
+        <p class="chat-empty__hint">Вопросы по аккредитации, ГОСТ ISO/IEC 17025, проверкам и лабораторной практике — здесь уместны.</p>
       </div>`;
     }
     return `<div class="chat-empty">
-      <p class="chat-empty__title">Пока здесь нет сообщений</p>
-      <p>Задайте первый вопрос или начните обсуждение.</p>
+      <p class="chat-empty__title">Здесь пока нет сообщений</p>
+      <p>Начните обсуждение первым.</p>
     </div>`;
   }
 
