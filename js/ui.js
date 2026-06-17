@@ -104,8 +104,8 @@ const UI = (function () {
     if (nav) nav.innerHTML = navHtml;
     if (actions) actions.innerHTML = actionsHtml;
 
-    document.getElementById('btn-logout')?.addEventListener('click', () => {
-      App.logout();
+    document.getElementById('btn-logout')?.addEventListener('click', async () => {
+      await App.logout();
       window.location.href = 'index.html';
     });
 
@@ -255,10 +255,10 @@ const UI = (function () {
     });
 
     const loginForm = document.querySelector('#login form');
-    loginForm?.addEventListener('submit', e => {
+    loginForm?.addEventListener('submit', async e => {
       e.preventDefault();
       const fd = new FormData(loginForm);
-      const result = App.login(fd.get('email'), fd.get('password'));
+      const result = await App.login(fd.get('email'), fd.get('password'));
       if (result.ok) {
         document.getElementById('login').close();
         window.location.href = App.getRedirectAfterLogin(result.user, '');
@@ -268,14 +268,14 @@ const UI = (function () {
     });
 
     const regForm = document.querySelector('#register form');
-    regForm?.addEventListener('submit', e => {
+    regForm?.addEventListener('submit', async e => {
       e.preventDefault();
       const fd = new FormData(regForm);
       if (fd.get('password') !== fd.get('password_confirm')) {
         alert('Пароли не совпадают');
         return;
       }
-      const result = App.register(fd.get('email'), fd.get('password'), fd.get('nickname'));
+      const result = await App.register(fd.get('email'), fd.get('password'), fd.get('nickname'));
       if (result.ok) {
         document.getElementById('register').close();
         alert('Регистрация успешна! Перейдите к оформлению PRO-доступа.');
