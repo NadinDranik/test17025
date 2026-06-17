@@ -5,90 +5,102 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
+const session = require('express-session');
 const { WebSocketServer } = require('ws');
 const db = require('./server/db');
+const { attachUser, requireAdminPage } = require('./server/middleware');
+const {
+  registerAuthRoutes,
+  registerDataRoutes,
+  registerFileRoutes,
+  registerAdminRoutes,
+  registerProRoutes
+} = require('./server/routes');
 
 const app = express();
 const ROOT = __dirname;
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
+const isProduction = process.env.NODE_ENV === 'production';
 
-db.initDb();
+if (isProduction) {
+  app.set('trust proxy', 1);
+}
+
+let wss;
+let broadcast;
 
 function safeFileId(id) {
   return String(id || '').replace(/[^a-zA-Z0-9_-]/g, '');
 }
 
-function broadcast(message) {
-  const payload = JSON.stringify(message);
-  wss.clients.forEach(client => {
-    if (client.readyState === 1) client.send(payload);
+async function start() {
+  await db.initDb();
+
+  app.use(express.json({ limit: '50mb' }));
+
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: isProduction,
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    }
+  }));
+
+  app.use(attachUser);
+
+  app.get('/api/health', (req, res) => {
+    res.json({
+      ok: true,
+      storage: 'sqlite',
+      dataDir: db.getDataDir()
+    });
+  });
+
+  registerAuthRoutes(app);
+  registerDataRoutes(app, (msg) => broadcast(msg));
+  registerFileRoutes(app);
+  registerAdminRoutes(app, (msg) => broadcast(msg));
+  registerProRoutes(app);
+
+  app.get('/admin.html', requireAdminPage, (req, res) => {
+    res.sendFile(path.join(ROOT, 'admin.html'));
+  });
+
+  app.use(express.static(ROOT, {
+    index: 'index.html'
+  }));
+
+  const server = http.createServer(app);
+  wss = new WebSocketServer({ server, path: '/ws' });
+
+  broadcast = function broadcastMessage(message) {
+    const payload = JSON.stringify(message);
+    wss.clients.forEach(client => {
+      if (client.readyState === 1) client.send(payload);
+    });
+  };
+
+  wss.on('connection', (ws) => {
+    const store = db.getStore();
+    ws.send(JSON.stringify({ type: 'connected', version: store.version }));
+    ws.on('error', () => {});
+  });
+
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log('');
+    console.log('  Гид PRO — сервер с базой данных SQLite');
+    console.log('  Порт:       ' + PORT);
+    console.log('  База:       ' + path.join(db.getDataDir(), 'gost17025.db'));
+    console.log('  Режим:      ' + (isProduction ? 'production' : 'development'));
+    console.log('');
   });
 }
 
-app.use(express.json({ limit: '50mb' }));
-
-app.get('/api/health', (req, res) => {
-  res.json({ ok: true, storage: 'sqlite' });
-});
-
-app.get('/api/data', (req, res) => {
-  const store = db.getStore();
-  res.json({ version: store.version, data: store.data });
-});
-
-app.put('/api/data', (req, res) => {
-  const { data } = req.body || {};
-  if (!data || typeof data !== 'object') {
-    return res.status(400).json({ error: 'Некорректные данные' });
-  }
-  const version = db.saveStore(data);
-  broadcast({ type: 'data-updated', version });
-  res.json({ ok: true, version });
-});
-
-app.get('/api/files/:id', (req, res) => {
-  const id = safeFileId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Некорректный id' });
-  const dataUrl = db.getFile(id);
-  if (!dataUrl) return res.status(404).json({ error: 'Файл не найден' });
-  res.json({ dataUrl });
-});
-
-app.put('/api/files/:id', (req, res) => {
-  const id = safeFileId(req.params.id);
-  const { dataUrl } = req.body || {};
-  if (!id || !dataUrl || typeof dataUrl !== 'string') {
-    return res.status(400).json({ error: 'Некорректный файл' });
-  }
-  db.saveFile(id, dataUrl);
-  res.json({ ok: true });
-});
-
-app.delete('/api/files/:id', (req, res) => {
-  const id = safeFileId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Некорректный id' });
-  db.deleteFile(id);
-  res.json({ ok: true });
-});
-
-app.use(express.static(ROOT));
-
-const server = http.createServer(app);
-const wss = new WebSocketServer({ server, path: '/ws' });
-
-wss.on('connection', (ws) => {
-  const store = db.getStore();
-  ws.send(JSON.stringify({ type: 'connected', version: store.version }));
-
-  ws.on('error', () => {});
-});
-
-server.listen(PORT, '0.0.0.0', () => {
-  console.log('');
-  console.log('  Гид PRO — сервер с базой данных SQLite');
-  console.log('  Компьютер:  http://localhost:' + PORT);
-  console.log('  Телефон:    http://<IP-этого-ПК>:' + PORT);
-  console.log('');
-  console.log('  Откройте этот адрес на телефоне и на ПК — данные синхронизируются мгновенно.');
-  console.log('');
+start().catch(err => {
+  console.error('Не удалось запустить сервер:', err);
+  process.exit(1);
 });
