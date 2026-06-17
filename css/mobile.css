@@ -173,9 +173,9 @@ body {
     display: none !important;
   }
 
-  /* Скрыть боковой rail — навигация через chats.html */
-  body.has-mobile-nav.page-chat .chat-sidebar,
-  body.has-mobile-nav.page-chat .chat-rail {
+  /* Скрыть боковой rail — навигация через chats.html (кроме PRO-раздела) */
+  body.has-mobile-nav.page-chat:not(.page-pro) .chat-sidebar,
+  body.has-mobile-nav.page-chat:not(.page-pro) .chat-rail {
     display: none !important;
   }
 
@@ -195,28 +195,87 @@ body {
     border-radius: 0;
   }
 
-  body.has-mobile-nav.page-pro .chat-sidebar {
+  body.has-mobile-nav.page-pro .pro-topics-panel {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto !important;
     width: 100% !important;
+    min-width: 0 !important;
     max-width: 100% !important;
-    flex: 1 !important;
+    height: 100% !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  body.has-mobile-nav.page-pro .pro-topics-panel .chat-sidebar__body {
+    display: block !important;
+    padding: 12px 16px 8px;
+    flex-shrink: 0;
+  }
+
+  body.has-mobile-nav.page-pro .pro-topics-panel .topic-list {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 16px 16px;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body.has-mobile-nav.page-pro .topic-item {
+    min-height: 56px;
+    padding: 14px 16px;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+    text-align: left;
+    width: 100%;
+    cursor: pointer;
+  }
+
+  body.has-mobile-nav.page-pro .topic-item--active {
+    border-color: var(--color-pro);
+    background: rgba(200, 169, 81, 0.1);
+  }
+
+  body.has-mobile-nav.page-pro .topic-list__empty {
+    padding: 16px;
+    font-size: 0.92rem;
+    color: var(--color-text-muted);
   }
 
   body.has-mobile-nav.page-pro:not(.pro-chat-open) .pro-chat-panel {
-    display: none;
+    display: none !important;
   }
 
   body.has-mobile-nav.page-pro.pro-chat-open .pro-topics-panel {
-    display: none;
+    display: none !important;
   }
 
   body.has-mobile-nav.page-pro.pro-chat-open .pro-chat-panel {
-    display: flex;
+    display: flex !important;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  body.has-mobile-nav.page-pro .pro-chat-back {
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 
 /* --- Карточки / дашборд --- */
-.m-main {
-  padding: 16px 0 24px;
+.page-chats-hub {
+  background: var(--color-bg);
+  min-height: 100vh;
+}
+
+.page-chats-hub .m-main {
+  min-height: calc(100dvh - 48px);
 }
 
 .m-page__title,
@@ -340,6 +399,18 @@ body {
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--color-pro);
+}
+
+.m-card__meta-line {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  line-height: 1.35;
+}
+
+.m-card--empty {
+  opacity: 0.95;
 }
 
 .m-card__dot {
