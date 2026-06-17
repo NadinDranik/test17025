@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Админ-панель — Гид PRO ГОСТ ISO/IEC 17025-2019</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/mobile.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
@@ -238,6 +239,7 @@
 
   <script src="js/app.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/mobile.js"></script>
   <script>
     App.ready.then(() => {
     UI.initPasswordToggles();
@@ -251,6 +253,7 @@
       loginWrap.hidden = true;
       adminContent.hidden = false;
       UI.initHeader('admin');
+      Mobile.init('account');
       initAdminPanel();
     }
 
@@ -444,14 +447,14 @@
 
       document.querySelector('#users-table tbody').innerHTML = users.map(u => `
         <tr>
-          <td><strong>${App.getDisplayName(u)}</strong></td>
-          <td>${u.email}</td>
-          <td>${App.formatDate(u.registeredAt)}</td>
-          <td>${getStatusBadge(u)}</td>
-          <td>${App.formatDate(u.proPaidAt)}</td>
-          <td>${App.formatDate(u.proExpiresAt)}</td>
-          <td>${App.formatDate(u.lastActive)}</td>
-          <td class="admin-actions">
+          <td data-label="Ник"><strong>${App.getDisplayName(u)}</strong></td>
+          <td data-label="Email">${u.email}</td>
+          <td data-label="Регистрация">${App.formatDate(u.registeredAt)}</td>
+          <td data-label="Статус">${getStatusBadge(u)}</td>
+          <td data-label="Оплата">${App.formatDate(u.proPaidAt)}</td>
+          <td data-label="PRO до">${App.formatDate(u.proExpiresAt)}</td>
+          <td data-label="Активность">${App.formatDate(u.lastActive)}</td>
+          <td class="admin-actions" data-label="">
             <button type="button" class="btn btn--sm btn--outline" data-action="account" data-id="${u.id}">Кабинет</button>
             <button type="button" class="btn btn--sm btn--pro" data-action="extend30" data-id="${u.id}">+30 дн.</button>
             <button type="button" class="btn btn--sm btn--outline" data-action="extend90" data-id="${u.id}">+90 дн.</button>
