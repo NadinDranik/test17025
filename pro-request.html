@@ -30,8 +30,8 @@
     <div class="chat-layout__inner">
       <aside class="chat-sidebar chat-sidebar--pro">
         <nav class="chat-rail" aria-label="Чаты">
-          <a href="chat.html" class="chat-rail__tab">Общий</a>
-          <a href="admin-chat.html" class="chat-rail__tab">Админ</a>
+          <a href="chat.html" class="chat-rail__tab" data-chat-id="free">Общий</a>
+          <a href="admin-chat.html" class="chat-rail__tab" data-chat-kind="dm">Админ</a>
           <a href="pro-request.html" class="chat-rail__tab chat-rail__tab--active" aria-current="page">PRO</a>
         </nav>
         <div class="chat-sidebar__body">
@@ -171,6 +171,7 @@
     renderMessages();
 
     window.addEventListener('gost-data-synced', renderMessages);
+    window.addEventListener('gost-unread-changed', () => UI.refreshUnreadBadges());
     });
   </script>
 </body>
