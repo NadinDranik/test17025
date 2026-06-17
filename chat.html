@@ -99,6 +99,10 @@
       const msgs = App.getMessages(CHAT_ID);
       document.getElementById('msg-count').textContent = msgs.length + ' сообщ.';
       await UI.renderMessages(messagesEl, msgs, currentUser, CHAT_ID, 'Пока нет сообщений. Будьте первым!');
+      if (currentUser) {
+        App.markChatRead(currentUser.id, CHAT_ID);
+        UI.refreshUnreadBadges();
+      }
     }
 
     function updateAccessUI() {
