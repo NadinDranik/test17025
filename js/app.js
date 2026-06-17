@@ -16,6 +16,20 @@ const App = (function () {
   const API_OPTS = { credentials: 'include' };
   const CHAT_FREE = 'free';
   const CHAT_ADMIN_SUPPORT = 'admin-support';
+  const CHAT_DM_PREFIX = 'dm:';
+
+  function getAdminDmChatId(userId) {
+    return CHAT_DM_PREFIX + userId;
+  }
+
+  function isAdminDmChat(chatId) {
+    return typeof chatId === 'string' && chatId.startsWith(CHAT_DM_PREFIX);
+  }
+
+  function getDmUserId(chatId) {
+    if (!isAdminDmChat(chatId)) return null;
+    return chatId.slice(CHAT_DM_PREFIX.length);
+  }
 
   const PRO_PAYMENT_INFO = {
     price: '1000',
@@ -105,20 +119,60 @@ const App = (function () {
     );
   }
 
-  function getProWelcomeText() {
-    return 'Здравствуйте! ' + PRO_PAYMENT_INFO.text +
-      ' Отправьте в этот чат чек или скриншот об оплате — после проверки вам откроют PRO-доступ.';
+  function getAdminWelcomeText() {
+    return 'Здравствуйте! Это ваш личный диалог с администратором. Задайте вопрос или, для получения PRO-доступа, отправьте чек об оплате.\n\n' +
+      PRO_PAYMENT_INFO.text;
   }
 
-  function ensureProRequestWelcomeMessage() {
+  function migrateAdminSupportToDm() {
+    const data = load();
+    const shared = data.messages[CHAT_ADMIN_SUPPORT];
+    if (!shared || !shared.length) return;
+    let changed = false;
+    shared.forEach(msg => {
+      const user = data.users.find(u => u.id === msg.userId);
+      if (!user || user.role === 'admin') return;
+      const chatId = getAdminDmChatId(user.id);
+      if (!data.messages[chatId]) data.messages[chatId] = [];
+      if (!data.messages[chatId].some(m => m.id === msg.id)) {
+        data.messages[chatId].push({ ...msg, chatId });
+        changed = true;
+      }
+    });
+    shared.filter(m => {
+      const author = data.users.find(u => u.id === m.userId);
+      return author && author.role === 'admin';
+    }).forEach(adminMsg => {
+      const userIds = new Set(
+        shared.filter(m => {
+          const author = data.users.find(u => u.id === m.userId);
+          return author && author.role !== 'admin';
+        }).map(m => m.userId)
+      );
+      userIds.forEach(uid => {
+        const chatId = getAdminDmChatId(uid);
+        if (!data.messages[chatId]) data.messages[chatId] = [];
+        if (!data.messages[chatId].some(m => m.id === adminMsg.id)) {
+          data.messages[chatId].push({ ...adminMsg });
+          changed = true;
+        }
+      });
+    });
+    if (changed) save(data);
+    delete data.messages[CHAT_ADMIN_SUPPORT];
+    save(data);
+  }
+
+  function ensureAdminDmWelcome(userId) {
     ensureAdmin();
     const data = load();
-    if (!data.messages[CHAT_ADMIN_SUPPORT]) data.messages[CHAT_ADMIN_SUPPORT] = [];
-    const welcomeText = getProWelcomeText();
+    const chatId = getAdminDmChatId(userId);
+    if (!data.messages[chatId]) data.messages[chatId] = [];
+    const welcomeText = getAdminWelcomeText();
     const admin = data.users.find(u => u.role === 'admin');
     if (!admin) return;
 
-    const existing = data.messages[CHAT_ADMIN_SUPPORT].find(m => m.systemType === 'pro_welcome');
+    const existing = data.messages[chatId].find(m => m.systemType === 'pro_welcome');
     if (existing) {
       if (existing.text !== welcomeText) {
         existing.text = welcomeText;
@@ -127,8 +181,8 @@ const App = (function () {
       return;
     }
 
-    data.messages[CHAT_ADMIN_SUPPORT].unshift({
-      id: '__pro_welcome__',
+    data.messages[chatId].unshift({
+      id: '__pro_welcome__' + userId,
       userId: admin.id,
       authorEmail: admin.email,
       authorName: 'Администратор',
@@ -143,38 +197,50 @@ const App = (function () {
     save(data);
   }
 
+  function ensureProRequestWelcomeMessage() {
+    const user = getCurrentUser();
+    if (user && user.role !== 'admin') ensureAdminDmWelcome(user.id);
+  }
+
   function ensureAdminSupportChat() {
     const data = load();
-    if (!data.messages[CHAT_ADMIN_SUPPORT]) {
-      data.messages[CHAT_ADMIN_SUPPORT] = [];
-      save(data);
-    }
     if (!data.proRequests) {
       data.proRequests = [];
       save(data);
     }
+    migrateAdminSupportToDm();
     migrateProRequestsFromChat();
-    ensureProRequestWelcomeMessage();
+  }
+
+  function messagePreview(msg) {
+    if (msg.text) return msg.text.slice(0, 80) + (msg.text.length > 80 ? '…' : '');
+    if (msg.files && msg.files.length) return '📎 ' + msg.files.map(f => f.name).join(', ');
+    return 'новое сообщение';
   }
 
   function notifyAdminNewMessage(chatId, user, msg) {
     const admin = load().users.find(u => u.role === 'admin');
     if (!admin) return;
-    if (chatId === CHAT_ADMIN_SUPPORT) {
-      addProRequest(user, msg);
+    if (isAdminDmChat(chatId)) {
       addNotification(
         admin.id,
-        '🔔 Новая заявка PRO: ' + getDisplayName(user) + ' (' + user.email + ')',
-        'pro_request',
+        '✉️ ' + getDisplayName(user) + ' (' + user.email + '): ' + messagePreview(msg),
+        'private_message',
         msg.id
       );
+      if (msg.files && msg.files.length) {
+        addProRequest(user, msg);
+        addNotification(
+          admin.id,
+          '🔔 Чек об оплате: ' + getDisplayName(user) + ' (' + user.email + ')',
+          'pro_request',
+          msg.id
+        );
+      }
     } else if (chatId === CHAT_FREE) {
-      const preview = msg.text
-        ? msg.text.slice(0, 80) + (msg.text.length > 80 ? '…' : '')
-        : (msg.files && msg.files.length ? '📎 ' + msg.files.map(f => f.name).join(', ') : 'новое сообщение');
       addNotification(
         admin.id,
-        '💬 ' + getDisplayName(user) + ' в общем чате: ' + preview,
+        '💬 ' + getDisplayName(user) + ' в общем чате: ' + messagePreview(msg),
         'chat_message',
         msg.id
       );
@@ -184,25 +250,29 @@ const App = (function () {
   function migrateProRequestsFromChat() {
     const data = load();
     if (!data.proRequests) data.proRequests = [];
-    const msgs = data.messages[CHAT_ADMIN_SUPPORT] || [];
+    const chatIds = Object.keys(data.messages || {}).filter(
+      id => isAdminDmChat(id) || id === CHAT_ADMIN_SUPPORT
+    );
     let changed = false;
-    msgs.forEach(msg => {
-      const user = data.users.find(u => u.id === msg.userId);
-      if (!user || user.role === 'admin') return;
-      if (data.proRequests.some(r => r.messageId === msg.id)) return;
-      data.proRequests.push({
-        id: uid(),
-        userId: user.id,
-        userEmail: user.email,
-        userNickname: msg.authorName || getDisplayName(user),
-        messageId: msg.id,
-        text: msg.text || '',
-        files: msg.files || [],
-        createdAt: msg.createdAt,
-        status: isProActive(user) ? 'processed' : 'pending',
-        processedAt: isProActive(user) ? new Date().toISOString() : null
+    chatIds.forEach(chatId => {
+      (data.messages[chatId] || []).forEach(msg => {
+        const user = data.users.find(u => u.id === msg.userId);
+        if (!user || user.role === 'admin') return;
+        if (data.proRequests.some(r => r.messageId === msg.id)) return;
+        data.proRequests.push({
+          id: uid(),
+          userId: user.id,
+          userEmail: user.email,
+          userNickname: msg.authorName || getDisplayName(user),
+          messageId: msg.id,
+          text: msg.text || '',
+          files: msg.files || [],
+          createdAt: msg.createdAt,
+          status: isProActive(user) ? 'processed' : 'pending',
+          processedAt: isProActive(user) ? new Date().toISOString() : null
+        });
+        changed = true;
       });
-      changed = true;
     });
     if (changed) save(data);
   }
@@ -234,6 +304,36 @@ const App = (function () {
 
   function getPendingProRequestCount() {
     return getProRequests('pending').length;
+  }
+
+  function getAdminInboxConversations() {
+    const data = load();
+    const conversations = [];
+    (data.users || []).forEach(u => {
+      if (u.role === 'admin') return;
+      const chatId = getAdminDmChatId(u.id);
+      const msgs = (data.messages[chatId] || []).slice().sort(
+        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+      );
+      if (!msgs.length) return;
+      const last = msgs[msgs.length - 1];
+      conversations.push({
+        userId: u.id,
+        userEmail: u.email,
+        userNickname: getDisplayName(u),
+        chatId,
+        messageCount: msgs.length,
+        lastMessage: messagePreview(last),
+        lastAt: last.createdAt,
+        lastFromUser: last.userId === u.id,
+        needsReply: last.userId === u.id
+      });
+    });
+    return conversations.sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
+  }
+
+  function getPendingPrivateMessageCount() {
+    return getAdminInboxConversations().filter(c => c.needsReply).length;
   }
 
   async function markProRequestProcessed(requestId) {
@@ -1125,9 +1225,10 @@ const App = (function () {
     isSyncEnabled,
     isServerAvailable,
     getData, getCurrentUser, getSession, login, logout, register,
-    ensureAdmin, ensureAdminSupportChat, ensureProRequestWelcomeMessage, migrateUsers,
+    ensureAdmin, ensureAdminSupportChat, ensureProRequestWelcomeMessage, ensureAdminDmWelcome, migrateUsers,
     ADMIN_EMAIL,
-    CHAT_FREE, CHAT_ADMIN_SUPPORT, PRO_PAYMENT_INFO,
+    CHAT_FREE, CHAT_ADMIN_SUPPORT, CHAT_DM_PREFIX, PRO_PAYMENT_INFO,
+    getAdminDmChatId, isAdminDmChat, getDmUserId,
     getDisplayName, getStatusLabel, normalizeNickname, getLoginUrl, getRedirectAfterLogin,
     isProActive, getSubscriptionStatus, grantPro, extendPro, revokePro,
     setProExpiry, blockUser, updateUser,
@@ -1135,7 +1236,8 @@ const App = (function () {
     getMessages, addMessage, editMessage, deleteMessage, pinMessage,
     searchMessages, getNotifications, getUnreadNotificationCount, markNotificationsRead,
     checkSubscriptionWarnings,
-    getProRequests, getPendingProRequestCount, markProRequestProcessed, markProRequestsProcessedByUser,
+    getProRequests, getPendingProRequestCount, getAdminInboxConversations, getPendingPrivateMessageCount,
+    markProRequestProcessed, markProRequestsProcessedByUser,
     formatDate, formatDateTime, formatFileSize, readFilesAsAttachments,
     hydrateMessageFiles, isImageExt, isVideoExt, getFileExt, ALLOWED_EXT, MAX_FILE_SIZE,
     requireAuth, requireAdmin, requirePro, isAllowedFile,
