@@ -31,7 +31,10 @@ function canAccessProChat(user) {
 
 function canAccessChat(user, chatId) {
   if (!user || user.blocked) return false;
-  if (chatId === 'free' || chatId === 'admin-support') return true;
+  if (chatId === 'free') return true;
+  const { isAdminDmChat, canAccessDmChat } = require('./dm');
+  if (isAdminDmChat(chatId)) return canAccessDmChat(user, chatId);
+  if (chatId === 'admin-support') return false;
   return canAccessProChat(user);
 }
 
