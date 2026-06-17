@@ -34,6 +34,7 @@
           <a href="admin-chat.html" class="chat-rail__tab" data-chat-kind="dm">Админ</a>
           <a href="pro-request.html" class="chat-rail__tab">PRO</a>
         </nav>
+        <nav id="desktop-chats-nav" class="desktop-chats-nav" data-active-chat="free" aria-label="Список чатов"></nav>
         <div class="chat-sidebar__body">
         <h1 class="chat-sidebar__title">Общий чат</h1>
         <p class="chat-sidebar__desc">Бесплатное профессиональное общение участников сообщества.</p>
@@ -88,6 +89,7 @@
 
     UI.initHeader('chats');
     Mobile.init('chats');
+    Mobile.mountDesktopChatsNav('free');
 
     const messagesEl = document.getElementById('messages');
     const composeArea = document.getElementById('compose-area');
