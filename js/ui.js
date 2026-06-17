@@ -54,6 +54,10 @@ const UI = (function () {
       { href: 'chat.html', label: 'Общий чат', id: 'chat' }
     ];
 
+    if (user) {
+      navLinks.push({ href: 'account.html', label: 'Личный кабинет', id: 'account' });
+    }
+
     if (user && App.isProActive(user)) {
       navLinks.push({ href: 'pro.html', label: 'PRO-раздел', id: 'pro' });
     } else if (user) {
