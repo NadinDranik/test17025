@@ -181,7 +181,10 @@ const App = (function () {
       return;
     }
 
-    data.messages[chatId].unshift({
+    const targetUser = data.users.find(u => u.id === userId);
+    const welcomeAt = targetUser?.registeredAt || new Date(0).toISOString();
+
+    data.messages[chatId].push({
       id: '__pro_welcome__' + userId,
       userId: admin.id,
       authorEmail: admin.email,
@@ -189,7 +192,7 @@ const App = (function () {
       text: welcomeText,
       replyTo: null,
       files: [],
-      createdAt: new Date().toISOString(),
+      createdAt: welcomeAt,
       editedAt: null,
       pinned: true,
       systemType: 'pro_welcome'
@@ -853,10 +856,19 @@ const App = (function () {
   }
 
   /* Messages */
+  function sortMessagesChronologically(messages) {
+    return (messages || []).slice().sort((a, b) => {
+      const ta = new Date(a.createdAt).getTime();
+      const tb = new Date(b.createdAt).getTime();
+      if (ta !== tb) return ta - tb;
+      return String(a.id).localeCompare(String(b.id));
+    });
+  }
+
   function getMessages(chatId) {
     const data = load();
     if (!data.messages[chatId]) data.messages[chatId] = [];
-    return data.messages[chatId].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    return sortMessagesChronologically(data.messages[chatId]);
   }
 
   function addMessage(chatId, userId, text, replyTo, files) {
@@ -1391,7 +1403,7 @@ const App = (function () {
     isProActive, getSubscriptionStatus, grantPro, extendPro, revokePro,
     setProExpiry, blockUser, updateUser,
     getProTopics, createProTopic, updateProTopic, deleteProTopic,
-    getMessages, addMessage, editMessage, deleteMessage, pinMessage,
+    getMessages, sortMessagesChronologically, addMessage, editMessage, deleteMessage, pinMessage,
     searchMessages, getNotifications, getUnreadNotificationCount, markNotificationsRead,
     getChatUnreadCount, getTotalUnreadMessages, getBellUnreadCount, getAccessibleChatIds, markChatRead,
     getChatLabel, getChatHref, getUnreadChatsSummary, getProUnreadTotal,

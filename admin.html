@@ -571,7 +571,7 @@
     });
 
     function renderModChatList(chatId, containerId, delPrefix) {
-      const msgs = App.getMessages(chatId).slice(-20).reverse();
+      const msgs = App.getMessages(chatId).slice(-20);
       const container = document.getElementById(containerId);
       container.innerHTML = msgs.length
         ? msgs.map(m => {

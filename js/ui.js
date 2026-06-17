@@ -535,9 +535,9 @@ const UI = (function () {
       container.innerHTML = empty;
       return;
     }
-    const pinned = msgs.filter(m => m.pinned);
-    const regular = msgs.filter(m => !m.pinned);
-    const sorted = [...pinned, ...regular];
+    const sorted = (typeof App.sortMessagesChronologically === 'function')
+      ? App.sortMessagesChronologically(msgs)
+      : msgs.slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     const hydrated = await Promise.all(sorted.map(m => App.hydrateMessageFiles(m)));
     container.innerHTML = hydrated.map(m => renderMessage(m, currentUser, chatId, msgs)).join('');
     container.scrollTop = container.scrollHeight;
