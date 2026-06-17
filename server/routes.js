@@ -3,6 +3,7 @@ const { hashPassword, verifyPassword, sanitizeUser, sanitizeUsers } = require('.
 const db = require('./db');
 const { mergeStore } = require('./validate-store');
 const { expireSubscriptions } = require('./roles');
+const { buildAccountProfile, appendProHistory } = require('./account');
 const {
   requireAuth,
   requireAdmin,
@@ -205,6 +206,13 @@ function registerAdminRoutes(app, broadcast) {
       const now = new Date().toISOString();
       user.proPaidAt = now;
       user.proExpiresAt = new Date(Date.now() + d * 86400000).toISOString();
+      appendProHistory(store, userId, {
+        type: 'grant',
+        days: d,
+        proPaidAt: user.proPaidAt,
+        proExpiresAt: user.proExpiresAt,
+        note: `PRO выдан на ${d} дн.`
+      });
       store.proRequests?.forEach(r => {
         if (r.userId === userId && r.status === 'pending') {
           r.status = 'processed';
@@ -241,6 +249,13 @@ function registerAdminRoutes(app, broadcast) {
       base.setDate(base.getDate() + d);
       user.proPaidAt = new Date().toISOString();
       user.proExpiresAt = base.toISOString();
+      appendProHistory(store, userId, {
+        type: 'extend',
+        days: d,
+        proPaidAt: user.proPaidAt,
+        proExpiresAt: user.proExpiresAt,
+        note: `PRO продлён на ${d} дн.`
+      });
       store.notifications.unshift({
         id: uid(),
         userId,
@@ -271,6 +286,13 @@ function registerAdminRoutes(app, broadcast) {
         user.proExpiresAt = null;
         user.proPaidAt = null;
       }
+      appendProHistory(store, userId, {
+        type: 'set_expiry',
+        days: null,
+        proPaidAt: user.proPaidAt,
+        proExpiresAt: user.proExpiresAt,
+        note: dateStr ? `Дата окончания: ${dateStr}` : 'PRO отключён'
+      });
       return store;
     });
 
@@ -286,6 +308,13 @@ function registerAdminRoutes(app, broadcast) {
       if (!user || user.role === 'admin') return store;
       user.proExpiresAt = null;
       user.proPaidAt = null;
+      appendProHistory(store, userId, {
+        type: 'revoke',
+        days: null,
+        proPaidAt: null,
+        proExpiresAt: null,
+        note: 'PRO-доступ отключён администратором'
+      });
       return store;
     });
 
@@ -382,6 +411,13 @@ function registerAdminRoutes(app, broadcast) {
     });
 
     res.json({ ok: true });
+  });
+
+  router.get('/users/:userId/account', (req, res) => {
+    const store = db.getStore();
+    const profile = buildAccountProfile(req.params.userId, store.data);
+    if (!profile) return res.status(404).json({ error: 'Пользователь не найден' });
+    res.json(profile);
   });
 
   app.use('/api/admin', router);
