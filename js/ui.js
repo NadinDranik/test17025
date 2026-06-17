@@ -313,6 +313,34 @@ const UI = (function () {
     }
 
     updateAdminTabBadges(user);
+    updateChatRailBadges(user);
+  }
+
+  function updateChatRailBadges(user) {
+    if (!user) return;
+    document.querySelectorAll('.chat-rail__tab[data-chat-id]').forEach(tab => {
+      updateTabBadge(tab, user.id, tab.dataset.chatId);
+    });
+    document.querySelectorAll('.chat-rail__tab[data-chat-kind="dm"]').forEach(tab => {
+      updateTabBadge(tab, user.id, App.getAdminDmChatId(user.id));
+    });
+  }
+
+  function updateTabBadge(tab, userId, chatId) {
+    const count = App.getChatUnreadCount(userId, chatId);
+    let badge = tab.querySelector('.chat-rail__badge');
+    if (count > 0) {
+      const text = count > 99 ? '99+' : String(count);
+      if (badge) badge.textContent = text;
+      else {
+        badge = document.createElement('span');
+        badge.className = 'chat-rail__badge';
+        badge.textContent = text;
+        tab.appendChild(badge);
+      }
+    } else if (badge) {
+      badge.remove();
+    }
   }
 
   function updateAdminTabBadges(user) {
@@ -459,10 +487,14 @@ const UI = (function () {
       ? (reply.text ? reply.text.slice(0, 80) : (reply.files && reply.files[0] ? '📎 ' + reply.files[0].name : '…'))
       : '';
 
-    const actions = (isOwn || isAdmin) ? `
+    const isSystem = !!msg.systemType;
+    const canManage = isOwn || isAdmin;
+    const canDelete = canManage && (!isSystem || isAdmin);
+
+    const actions = canManage ? `
       <div class="msg__actions">
         ${isOwn && msg.text ? `<button type="button" class="msg__btn" data-action="edit" data-id="${msg.id}">Изменить</button>` : ''}
-        <button type="button" class="msg__btn msg__btn--danger" data-action="delete" data-id="${msg.id}">Удалить</button>
+        ${canDelete ? `<button type="button" class="msg__btn msg__btn--danger" data-action="delete" data-id="${msg.id}">Удалить</button>` : ''}
         ${isAdmin ? `<button type="button" class="msg__btn" data-action="pin" data-id="${msg.id}">${msg.pinned ? 'Открепить' : 'Закрепить'}</button>` : ''}
         <button type="button" class="msg__btn" data-action="reply" data-id="${msg.id}">Ответить</button>
       </div>` : `<div class="msg__actions">
@@ -499,6 +531,10 @@ const UI = (function () {
     const hydrated = await Promise.all(sorted.map(m => App.hydrateMessageFiles(m)));
     container.innerHTML = hydrated.map(m => renderMessage(m, currentUser, chatId, msgs)).join('');
     container.scrollTop = container.scrollHeight;
+    if (currentUser && chatId) {
+      App.markChatRead(currentUser.id, chatId);
+      refreshUnreadBadges();
+    }
   }
 
   function escapeAttr(str) {
@@ -512,7 +548,7 @@ const UI = (function () {
   }
 
   function bindMessageActions(container, chatIdOrFn, currentUser, onUpdate) {
-    container.addEventListener('click', e => {
+    container.addEventListener('click', async e => {
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
       const chatId = typeof chatIdOrFn === 'function' ? chatIdOrFn() : chatIdOrFn;
@@ -522,19 +558,30 @@ const UI = (function () {
       const msgs = App.getMessages(chatId);
       const msg = msgs.find(m => m.id === id);
       if (!msg) return;
+      const user = App.getCurrentUser();
+      if (!user) return;
 
       if (action === 'delete') {
-        if (confirm('Удалить сообщение?')) {
-          App.deleteMessage(chatId, id);
-          onUpdate();
+        if (msg.userId !== user.id && user.role !== 'admin') {
+          alert('Можно удалять только свои сообщения');
+          return;
         }
+        if (!confirm('Удалить сообщение' + (msg.files?.length ? ' и прикреплённые файлы' : '') + '?')) return;
+        const result = await App.deleteMessage(chatId, id, user.id);
+        if (!result.ok) {
+          alert(result.error || 'Не удалось удалить сообщение');
+          return;
+        }
+        onUpdate();
+        refreshUnreadBadges();
       } else if (action === 'edit') {
         const newText = prompt('Редактировать сообщение:', msg.text);
         if (newText !== null && newText.trim()) {
-          App.editMessage(chatId, id, currentUser.id, newText);
+          App.editMessage(chatId, id, user.id, newText);
           onUpdate();
         }
       } else if (action === 'pin') {
+        if (user.role !== 'admin') return;
         App.pinMessage(chatId, id, !msg.pinned);
         onUpdate();
       } else if (action === 'reply') {
