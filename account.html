@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Личный кабинет — Гид PRO ГОСТ ISO/IEC 17025-2019</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+</head>
+<body class="page-account">
+
+  <header class="header">
+    <div class="container header__inner">
+      <a href="index.html" class="logo">
+        <span class="logo__mark">17025</span>
+        <span class="logo__text">Гид PRO</span>
+      </a>
+      <nav class="nav" aria-label="Основная навигация"></nav>
+      <div class="header__actions"></div>
+      <button class="burger" aria-label="Открыть меню" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="account-page">
+    <div class="container">
+      <div class="account-header">
+        <h1>Личный кабинет</h1>
+        <p class="account-header__desc">Управление профилем и подпиской PRO</p>
+      </div>
+
+      <div id="account-loading" class="account-loading">Загрузка данных…</div>
+      <div id="account-error" class="account-error" hidden></div>
+
+      <div id="account-content" hidden>
+        <div class="account-grid">
+          <!-- Профиль -->
+          <section class="account-card account-card--profile">
+            <h2>Профиль</h2>
+            <div class="account-profile-head">
+              <div class="account-avatar" id="acc-avatar">?</div>
+              <div>
+                <p class="account-nick" id="acc-nickname">—</p>
+                <p class="account-email" id="acc-email">—</p>
+                <span class="badge" id="acc-status-badge">Free</span>
+              </div>
+            </div>
+            <dl class="account-meta">
+              <div class="account-meta__row">
+                <dt>Дата регистрации</dt>
+                <dd id="acc-registered">—</dd>
+              </div>
+              <div class="account-meta__row">
+                <dt>Начало подписки PRO</dt>
+                <dd id="acc-pro-start">—</dd>
+              </div>
+              <div class="account-meta__row">
+                <dt>Окончание подписки PRO</dt>
+                <dd id="acc-pro-end">—</dd>
+              </div>
+              <div class="account-meta__row" id="acc-days-row" hidden>
+                <dt>Осталось дней PRO</dt>
+                <dd id="acc-days-left" class="account-days">—</dd>
+              </div>
+            </dl>
+            <div class="account-actions" id="acc-pro-actions"></div>
+          </section>
+
+          <!-- Настройки -->
+          <section class="account-card">
+            <h2>Настройки аккаунта</h2>
+            <form id="nickname-form" class="form">
+              <label class="form__label">
+                Ник (отображается в чате)
+                <input type="text" class="form__input" id="nickname-input" minlength="2" maxlength="30" required>
+              </label>
+              <p class="form__error" id="nickname-error" hidden></p>
+              <button type="submit" class="btn btn--primary btn--sm">Сохранить ник</button>
+            </form>
+            <hr class="account-divider">
+            <form id="password-form" class="form">
+              <label class="form__label">
+                Текущий пароль
+                <input type="password" class="form__input" name="current" required autocomplete="current-password">
+              </label>
+              <label class="form__label">
+                Новый пароль
+                <input type="password" class="form__input" name="new" required minlength="8" autocomplete="new-password">
+              </label>
+              <label class="form__label">
+                Подтверждение пароля
+                <input type="password" class="form__input" name="confirm" required minlength="8" autocomplete="new-password">
+              </label>
+              <p class="form__error" id="password-error" hidden></p>
+              <button type="submit" class="btn btn--outline btn--sm">Сменить пароль</button>
+            </form>
+            <hr class="account-divider">
+            <button type="button" class="btn btn--ghost btn--block" id="btn-account-logout">Выйти из аккаунта</button>
+          </section>
+
+          <!-- История PRO -->
+          <section class="account-card account-card--wide">
+            <h2>История PRO / продлений</h2>
+            <div id="pro-history-list" class="account-list"></div>
+          </section>
+
+          <!-- Заявки PRO -->
+          <section class="account-card account-card--wide">
+            <h2>Заявки на PRO</h2>
+            <div id="pro-requests-list" class="account-list"></div>
+          </section>
+
+          <!-- Связь с администратором -->
+          <section class="account-card account-card--wide">
+            <h2>Связь с администратором</h2>
+            <p class="account-card__desc">Напишите администратору для оформления или продления PRO-доступа.</p>
+            <a href="pro-request.html" class="btn btn--primary" id="btn-write-admin">Написать администратору</a>
+            <h3 class="account-subtitle">Последние сообщения от администратора</h3>
+            <div id="admin-messages-list" class="account-messages"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    App.ready.then(async () => {
+      UI.initPasswordToggles();
+
+      if (!App.getCurrentUser()) {
+        window.location.href = App.getLoginUrl('account.html');
+        return;
+      }
+
+      UI.initHeader('account');
+
+      const loading = document.getElementById('account-loading');
+      const errorEl = document.getElementById('account-error');
+      const content = document.getElementById('account-content');
+
+      function statusBadgeClass(status, blocked) {
+        if (blocked) return 'badge--blocked';
+        if (status === 'pro' || status === 'admin') return 'badge--pro';
+        return 'badge--free';
+      }
+
+      function renderProfile(p) {
+        const u = p.user;
+        document.getElementById('acc-avatar').textContent = (u.nickname || u.email).charAt(0).toUpperCase();
+        document.getElementById('acc-nickname').textContent = u.nickname || u.email.split('@')[0];
+        document.getElementById('acc-email').textContent = u.email;
+        const badge = document.getElementById('acc-status-badge');
+        badge.textContent = p.statusLabel;
+        badge.className = 'badge ' + statusBadgeClass(p.status, p.blocked);
+        document.getElementById('acc-registered').textContent = p.registeredAtFormatted || '—';
+        document.getElementById('acc-pro-start').textContent = p.proPaidAtFormatted || '—';
+        document.getElementById('acc-pro-end').textContent = p.proExpiresAtFormatted || '—';
+
+        const daysRow = document.getElementById('acc-days-row');
+        if (p.proActive && p.daysLeft != null) {
+          daysRow.hidden = false;
+          document.getElementById('acc-days-left').textContent = p.daysLeft + ' дн.';
+        } else {
+          daysRow.hidden = true;
+        }
+
+        const actions = document.getElementById('acc-pro-actions');
+        if (p.blocked) {
+          actions.innerHTML = '<p class="account-blocked">Аккаунт заблокирован. Доступ к чатам ограничен. Обратитесь к администратору.</p>';
+        } else if (p.status === 'admin') {
+          actions.innerHTML = '<a href="admin.html" class="btn btn--primary">Админ-панель</a>';
+        } else if (p.proActive) {
+          actions.innerHTML = '<a href="pro.html" class="btn btn--pro">PRO-раздел</a> <a href="pro-request.html" class="btn btn--outline">Продлить PRO</a>';
+        } else {
+          actions.innerHTML = '<a href="pro-request.html" class="btn btn--pro">Оформить PRO</a>';
+        }
+
+        document.getElementById('nickname-input').value = u.nickname || '';
+
+        const histEl = document.getElementById('pro-history-list');
+        histEl.innerHTML = p.proHistory.length
+          ? p.proHistory.map(h => `<div class="account-list-item">
+              <strong>${UI.escapeHtml(h.typeLabel)}</strong>
+              <span>${h.createdAtFormatted || '—'}</span>
+              ${h.note ? `<p>${UI.escapeHtml(h.note)}</p>` : ''}
+              ${h.proExpiresAtFormatted ? `<p class="account-list-item__meta">PRO до: ${h.proExpiresAtFormatted}</p>` : ''}
+            </div>`).join('')
+          : '<p class="account-empty">История продлений пока пуста</p>';
+
+        const reqEl = document.getElementById('pro-requests-list');
+        reqEl.innerHTML = p.proRequests.length
+          ? p.proRequests.map(r => `<div class="account-list-item">
+              <strong>${r.status === 'pending' ? 'Ожидает обработки' : 'Обработана'}</strong>
+              <span>${r.createdAtFormatted || '—'}</span>
+              ${r.text ? `<p>${UI.escapeHtml(r.text)}</p>` : ''}
+            </div>`).join('')
+          : '<p class="account-empty">Заявок пока нет</p>';
+
+        const msgEl = document.getElementById('admin-messages-list');
+        msgEl.innerHTML = p.adminMessages.length
+          ? p.adminMessages.map(m => `<div class="account-msg">
+              <time>${m.createdAtFormatted || '—'}</time>
+              <p>${UI.escapeHtml(m.text || '(без текста)')}</p>
+            </div>`).join('')
+          : '<p class="account-empty">Сообщений от администратора пока нет</p>';
+      }
+
+      async function loadAccount() {
+        loading.hidden = false;
+        errorEl.hidden = true;
+        try {
+          const profile = await App.fetchAccountProfile();
+          loading.hidden = true;
+          content.hidden = false;
+          renderProfile(profile);
+        } catch (e) {
+          loading.hidden = true;
+          errorEl.textContent = e.message || 'Не удалось загрузить данные';
+          errorEl.hidden = false;
+        }
+      }
+
+      document.getElementById('nickname-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const err = document.getElementById('nickname-error');
+        err.hidden = true;
+        try {
+          const profile = await App.updateAccountNickname(document.getElementById('nickname-input').value.trim());
+          renderProfile(profile);
+          UI.initHeader('account');
+          App.toastAccount('Ник сохранён');
+        } catch (ex) {
+          err.textContent = ex.message;
+          err.hidden = false;
+        }
+      });
+
+      document.getElementById('password-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const err = document.getElementById('password-error');
+        err.hidden = true;
+        const fd = new FormData(e.target);
+        if (fd.get('new') !== fd.get('confirm')) {
+          err.textContent = 'Пароли не совпадают';
+          err.hidden = false;
+          return;
+        }
+        try {
+          await App.changeAccountPassword(fd.get('current'), fd.get('new'));
+          e.target.reset();
+          App.toastAccount('Пароль изменён');
+        } catch (ex) {
+          err.textContent = ex.message;
+          err.hidden = false;
+        }
+      });
+
+      document.getElementById('btn-account-logout').addEventListener('click', async () => {
+        await App.logout();
+        window.location.href = 'index.html';
+      });
+
+      await loadAccount();
+    });
+  </script>
+</body>
+</html>
