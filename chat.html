@@ -30,8 +30,8 @@
     <div class="chat-layout__inner">
       <aside class="chat-sidebar">
         <nav class="chat-rail" aria-label="Чаты">
-          <a href="chat.html" class="chat-rail__tab chat-rail__tab--active" aria-current="page">Общий</a>
-          <a href="admin-chat.html" class="chat-rail__tab">Админ</a>
+          <a href="chat.html" class="chat-rail__tab chat-rail__tab--active" data-chat-id="free" aria-current="page">Общий</a>
+          <a href="admin-chat.html" class="chat-rail__tab" data-chat-kind="dm">Админ</a>
           <a href="pro-request.html" class="chat-rail__tab">PRO</a>
         </nav>
         <div class="chat-sidebar__body">
@@ -99,10 +99,6 @@
       const msgs = App.getMessages(CHAT_ID);
       document.getElementById('msg-count').textContent = msgs.length + ' сообщ.';
       await UI.renderMessages(messagesEl, msgs, currentUser, CHAT_ID, 'Пока нет сообщений. Будьте первым!');
-      if (currentUser) {
-        App.markChatRead(currentUser.id, CHAT_ID);
-        UI.refreshUnreadBadges();
-      }
     }
 
     function updateAccessUI() {
@@ -167,6 +163,7 @@
       updateAccessUI();
       renderMessages();
     });
+    window.addEventListener('gost-unread-changed', () => UI.refreshUnreadBadges());
     });
   </script>
 </body>
