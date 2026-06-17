@@ -319,6 +319,9 @@
       renderTopics();
       if (activeTopicId) renderMessages();
     });
+    window.addEventListener('gost-unread-changed', () => {
+      renderTopics();
+    });
     });
   </script>
 </body>
