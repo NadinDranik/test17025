@@ -29,6 +29,7 @@
   <main class="chat-layout">
     <div class="chat-layout__inner pro-layout">
       <aside class="chat-sidebar chat-sidebar--pro pro-topics-panel">
+        <nav id="desktop-chats-nav" class="desktop-chats-nav" aria-label="Список чатов"></nav>
         <div class="chat-sidebar__body">
         <h1 class="chat-sidebar__title">PRO-чаты</h1>
         <p class="chat-sidebar__desc">Закрытые темы, создаваемые администратором. Выберите тему для общения.</p>
@@ -91,6 +92,7 @@
 
     UI.initHeader('chats');
     Mobile.init('chats');
+    Mobile.mountDesktopChatsNav('');
     const topicListEl = document.getElementById('topic-list');
     const messagesEl = document.getElementById('messages');
     const composeArea = document.getElementById('compose-area');
@@ -166,6 +168,11 @@
 
       renderTopics();
       renderMessages();
+      const navEl = document.getElementById('desktop-chats-nav');
+      if (navEl) {
+        navEl.dataset.activeChat = id;
+        Mobile.refreshDesktopChatsNav();
+      }
     }
 
     async function renderMessages() {
@@ -308,6 +315,8 @@
       const match = window.location.hash.match(/^#t=(.+)$/);
       if (match && App.getProTopics(false).some(t => t.id === decodeURIComponent(match[1]))) {
         selectTopic(decodeURIComponent(match[1]), { skipHistory: true });
+      } else {
+        Mobile.mountDesktopChatsNav('');
       }
     })();
 
