@@ -16,6 +16,7 @@ const {
   registerAdminRoutes,
   registerProRoutes
 } = require('./server/routes');
+const { registerAccountRoutes } = require('./server/account-routes');
 
 const app = express();
 const ROOT = __dirname;
@@ -66,6 +67,7 @@ async function start() {
   registerFileRoutes(app);
   registerAdminRoutes(app, (msg) => broadcast(msg));
   registerProRoutes(app);
+  registerAccountRoutes(app, (msg) => broadcast(msg));
 
   app.get('/admin.html', requireAdminPage, (req, res) => {
     res.sendFile(path.join(ROOT, 'admin.html'));
