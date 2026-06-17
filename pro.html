@@ -120,14 +120,18 @@
       }
       topicListEl.innerHTML = topics.map(t => {
         const count = App.getMessages(t.id).length;
+        const unread = currentUser ? App.getChatUnreadCount(currentUser.id, t.id) : 0;
         const lastMsg = count ? App.getMessages(t.id)[count - 1] : null;
         const preview = lastMsg
           ? (lastMsg.text ? lastMsg.text.slice(0, 60) : (lastMsg.files?.[0]?.name ? '📎 ' + lastMsg.files[0].name : 'Сообщение'))
           : 'Нет сообщений';
+        const unreadHtml = unread
+          ? `<span class="topic-item__unread">${unread > 99 ? '99+' : unread}</span>`
+          : '';
         return `
         <button type="button" class="topic-item${activeTopicId === t.id ? ' topic-item--active' : ''}${t.pinned ? ' topic-item--pinned' : ''}"
           data-id="${t.id}">
-          <span class="topic-item__title">${t.pinned ? '📌 ' : ''}${UI.escapeHtml(t.title)}</span>
+          <span class="topic-item__title">${t.pinned ? '📌 ' : ''}${UI.escapeHtml(t.title)}${unreadHtml}</span>
           <span class="topic-item__meta">${count ? count + ' сообщ.' : 'Пусто'} · ${UI.escapeHtml(preview)}</span>
         </button>`;
       }).join('');
@@ -169,6 +173,10 @@
       const msgs = App.getMessages(activeTopicId);
       document.getElementById('msg-count').textContent = msgs.length + ' сообщ.';
       await UI.renderMessages(messagesEl, msgs, currentUser, activeTopicId, 'В этой теме пока нет сообщений.');
+      if (currentUser) {
+        App.markChatRead(currentUser.id, activeTopicId);
+        UI.refreshUnreadBadges();
+      }
     }
 
     UI.bindMessageActions(messagesEl, () => activeTopicId, currentUser, () => {
