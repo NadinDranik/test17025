@@ -253,8 +253,9 @@ const Mobile = (function () {
   }
 
   function chatRowHtml(opts) {
+    const tierLabel = opts.tier === 'pro' ? 'PRO' : opts.tier === 'free' ? 'FREE' : opts.tier === 'dm' ? 'ЛС' : '';
     const tier = opts.tier
-      ? `<span class="m-card__tier m-card__tier--${opts.tier}" aria-label="${opts.tier === 'pro' ? 'PRO' : 'FREE'}">${opts.tier === 'pro' ? 'PRO' : 'FREE'}</span>`
+      ? `<span class="m-card__tier m-card__tier--${opts.tier}" aria-label="${tierLabel}">${tierLabel}</span>`
       : '';
     const pin = opts.pinned ? '📌 ' : '';
     return `
@@ -267,9 +268,16 @@ const Mobile = (function () {
       </a>`;
   }
 
+  function getProTopicHref(topicId) {
+    const page = (window.location.pathname.split('/').pop() || 'index.html').split('?')[0];
+    const hash = '#t=' + encodeURIComponent(topicId);
+    return page === 'pro.html' ? hash : 'pro.html' + hash;
+  }
+
   function navListRowHtml(opts) {
+    const tierLabel = opts.tier === 'pro' ? 'PRO' : opts.tier === 'free' ? 'FREE' : opts.tier === 'dm' ? 'ЛС' : '';
     const tier = opts.tier
-      ? `<span class="m-card__tier m-card__tier--${opts.tier}">${opts.tier === 'pro' ? 'PRO' : 'FREE'}</span>`
+      ? `<span class="m-card__tier m-card__tier--${opts.tier}">${tierLabel}</span>`
       : '';
     const pin = opts.pinned ? '📌 ' : '';
     const active = opts.active ? ' desktop-chats-nav__item--active' : '';
@@ -293,7 +301,7 @@ const Mobile = (function () {
     if (isPro) {
       proHtml = topics.length
         ? topics.map(t => navListRowHtml({
-          href: 'pro.html#t=' + encodeURIComponent(t.id),
+          href: getProTopicHref(t.id),
           tier: 'pro',
           title: t.title,
           pinned: t.pinned,
@@ -322,6 +330,7 @@ const Mobile = (function () {
       ${proHtml}
       ${navListRowHtml({
         href: 'admin-chat.html',
+        tier: 'dm',
         title: 'Вопрос администратору',
         unread: getUnreadCount(dmChatId),
         active: activeChatId === dmChatId
@@ -339,7 +348,7 @@ const Mobile = (function () {
     if (isPro) {
       if (topics.length) {
         proCardsHtml = topics.map(t => chatRowHtml({
-          href: 'pro.html#t=' + encodeURIComponent(t.id),
+          href: getProTopicHref(t.id),
           tier: 'pro',
           title: t.title,
           pinned: t.pinned,
@@ -368,11 +377,11 @@ const Mobile = (function () {
 
     container.innerHTML = `
       <div class="m-page m-page--chats">
-        <h1 class="m-page__title">Чаты</h1>
+        <h1 class="m-page__title">Мои чаты</h1>
         <div class="m-cards m-cards--compact">
           ${chatRowHtml({ href: 'chat.html', tier: 'free', title: 'Общий чат', unread: getUnreadCount('free') })}
           ${proCardsHtml}
-          ${chatRowHtml({ href: 'admin-chat.html', title: 'Вопрос администратору', unread: getUnreadCount(dmChatId) })}
+          ${chatRowHtml({ href: 'admin-chat.html', tier: 'dm', title: 'Вопрос администратору', unread: getUnreadCount(dmChatId) })}
         </div>
       </div>`;
   }
@@ -459,6 +468,7 @@ const Mobile = (function () {
     renderChatsHub,
     renderChatsNavList,
     mountDesktopChatsNav,
+    getProTopicHref,
     getEmptyChatText,
     getSupportEmptyText,
     currentPage,
