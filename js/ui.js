@@ -21,17 +21,24 @@ const UI = (function () {
   }
 
   function updateThemeButton() {
-    const btn = document.getElementById('btn-theme');
-    if (!btn) return;
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const icon = btn.querySelector('.btn-theme__icon');
-    if (icon) icon.textContent = isDark ? '☀️' : '🌙';
-    btn.title = isDark ? 'Светлая тема' : 'Тёмная тема';
-    btn.setAttribute('aria-label', btn.title);
+    const icon = isDark ? '☀️' : '🌙';
+    const title = isDark ? 'Светлая тема' : 'Тёмная тема';
+    document.querySelectorAll('#btn-theme .btn-theme__icon, #btn-theme-mobile .mobile-bottom-nav__icon').forEach(el => {
+      el.textContent = icon;
+    });
+    const btn = document.getElementById('btn-theme');
+    if (btn) {
+      btn.title = title;
+      btn.setAttribute('aria-label', title);
+    }
+    const btnMobile = document.getElementById('btn-theme-mobile');
+    if (btnMobile) btnMobile.setAttribute('aria-label', title);
   }
 
   function mountThemeToggle(container) {
     if (!container || container.querySelector('#btn-theme')) return;
+    if (typeof Mobile !== 'undefined' && Mobile.isMobile()) return;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btn-theme';
@@ -123,7 +130,11 @@ const UI = (function () {
     document.getElementById('btn-notifications')?.addEventListener('click', showNotifications);
 
     initBurger();
-    mountThemeToggle(header);
+    if (typeof Mobile === 'undefined' || !Mobile.isMobile()) {
+      mountThemeToggle(header);
+    } else {
+      header.querySelector('#btn-theme')?.remove();
+    }
     if (typeof Mobile !== 'undefined') Mobile.init(activePage);
   }
 
@@ -181,33 +192,77 @@ const UI = (function () {
   function showNotifications() {
     const user = App.getCurrentUser();
     if (!user) return;
+
+    const chatUnread = App.getUnreadChatsSummary(user.id);
     const notifUnread = App.getNotifications(user.id).filter(n => !n.read);
-    const msgUnread = App.getTotalUnreadMessages(user.id);
-    if (!notifUnread.length && !msgUnread) {
+
+    if (!chatUnread.length && !notifUnread.length) {
+      closeNotificationsPanel();
       alert('Нет новых уведомлений и сообщений.');
       return;
     }
-    let parts = [];
-    if (msgUnread) {
-      parts.push('Непрочитанных сообщений в чатах: ' + msgUnread);
+
+    let panel = document.getElementById('notif-panel');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = 'notif-panel';
+      panel.className = 'notif-panel';
+      panel.hidden = true;
+      document.body.appendChild(panel);
+      document.addEventListener('click', onNotificationsOutsideClick);
+    }
+
+    let html = '';
+    if (chatUnread.length) {
+      html += '<div class="notif-panel__section"><div class="notif-panel__title">Новые сообщения</div><ul class="notif-panel__list">';
+      html += chatUnread.map(c => `
+        <li>
+          <a href="${c.href}" class="notif-panel__item" data-chat-id="${escapeAttr(c.chatId)}">
+            <span class="notif-panel__label">${escapeAttr(c.label)}</span>
+            <span class="notif-panel__count">${c.count > 99 ? '99+' : c.count}</span>
+          </a>
+        </li>`).join('');
+      html += '</ul></div>';
     }
     if (notifUnread.length) {
-      parts.push(notifUnread.slice(0, 10).map(n =>
-        App.formatDateTime(n.createdAt) + '\n' + n.text
-      ).join('\n\n---\n\n'));
+      html += '<div class="notif-panel__section"><div class="notif-panel__title">Системные</div><ul class="notif-panel__list notif-panel__list--system">';
+      html += notifUnread.slice(0, 8).map(n => `
+        <li class="notif-panel__system">
+          <time>${App.formatDateTime(n.createdAt)}</time>
+          <p>${escapeHtml(n.text)}</p>
+        </li>`).join('');
+      html += '</ul></div>';
       App.markNotificationsRead(user.id);
     }
-    alert(parts.join('\n\n---\n\n'));
+    panel.innerHTML = html + '<button type="button" class="notif-panel__close" id="notif-panel-close">Закрыть</button>';
+
+    panel.querySelector('#notif-panel-close')?.addEventListener('click', closeNotificationsPanel);
+    panel.querySelectorAll('.notif-panel__item').forEach(link => {
+      link.addEventListener('click', () => closeNotificationsPanel());
+    });
+
+    const btn = document.getElementById('btn-notifications-mobile') || document.getElementById('btn-notifications');
+    if (btn) {
+      const rect = btn.getBoundingClientRect();
+      panel.style.top = Math.min(rect.bottom + 8, window.innerHeight - 20) + 'px';
+      panel.style.right = Math.max(8, window.innerWidth - rect.right) + 'px';
+      panel.style.left = 'auto';
+    }
+    panel.hidden = false;
     refreshUnreadBadges();
-    if (msgUnread && confirm('Перейти к чатам?')) {
-      window.location.href = 'chats.html';
-      return;
-    }
-    if (user.role === 'admin' && notifUnread.some(n => n.type === 'pro_request')) {
-      if (confirm('Перейти к заявкам PRO в админ-панели?')) {
-        window.location.href = 'admin.html#requests';
-      }
-    }
+  }
+
+  function closeNotificationsPanel() {
+    const panel = document.getElementById('notif-panel');
+    if (panel) panel.hidden = true;
+  }
+
+  function onNotificationsOutsideClick(e) {
+    const panel = document.getElementById('notif-panel');
+    if (!panel || panel.hidden) return;
+    if (panel.contains(e.target)) return;
+    if (e.target.closest('#btn-notifications, #btn-notifications-mobile')) return;
+    panel.hidden = true;
   }
 
   function refreshUnreadBadges() {
@@ -255,6 +310,28 @@ const UI = (function () {
     }
     if (typeof Mobile !== 'undefined' && Mobile.refreshChatsHubBadges) {
       Mobile.refreshChatsHubBadges();
+    }
+
+    updateAdminTabBadges(user);
+  }
+
+  function updateAdminTabBadges(user) {
+    if (!user || user.role !== 'admin') return;
+    const dmUnread = App.getPendingPrivateMessageCount();
+    const dmBadge = document.getElementById('private-messages-badge');
+    if (dmBadge) {
+      dmBadge.textContent = dmUnread > 99 ? '99+' : String(dmUnread);
+      dmBadge.hidden = dmUnread === 0;
+    }
+    const modBadge = document.getElementById('moderation-badge');
+    if (modBadge) {
+      const freeUnread = App.getChatUnreadCount(user.id, App.CHAT_FREE);
+      modBadge.textContent = freeUnread > 99 ? '99+' : String(freeUnread);
+      modBadge.hidden = freeUnread === 0;
+    }
+    const messagesTab = document.querySelector('.admin-tab[data-tab="messages"]');
+    if (messagesTab) {
+      messagesTab.classList.toggle('admin-tab--has-new', dmUnread > 0);
     }
   }
 
@@ -470,7 +547,7 @@ const UI = (function () {
 
   return {
     initHeader, initAuthForms, renderMessage, renderMessages, bindMessageActions,
-    initPasswordToggles, showNotifications,
+    initPasswordToggles, showNotifications, closeNotificationsPanel,
     refreshUnreadBadges, escapeHtml, escapeAttr, applyTheme, mountThemeToggle, toggleTheme,
     showSyncNotice
   };
@@ -488,7 +565,13 @@ if (typeof App !== 'undefined' && App.ready) {
 (function bootTheme() {
   UI.applyTheme();
   function mountAll() {
-    document.querySelectorAll('.header__inner').forEach(UI.mountThemeToggle);
+    document.querySelectorAll('.header__inner').forEach(el => {
+      if (typeof Mobile !== 'undefined' && Mobile.isMobile()) {
+        el.querySelector('#btn-theme')?.remove();
+        return;
+      }
+      UI.mountThemeToggle(el);
+    });
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', mountAll);
