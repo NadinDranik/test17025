@@ -922,17 +922,49 @@ const App = (function () {
     return msg;
   }
 
-  function deleteMessage(chatId, msgId) {
+  async function deleteMessage(chatId, msgId, userId) {
     const data = load();
-    if (!data.messages[chatId]) return;
+    if (!data.messages[chatId]) return { ok: false, error: 'Чат не найден' };
     const msg = data.messages[chatId].find(m => m.id === msgId);
-    if (msg && msg.files) {
-      msg.files.forEach(f => {
-        if (f.id) FileDB.remove(f.id);
-      });
+    if (!msg) return { ok: true };
+
+    const user = userId
+      ? data.users.find(u => u.id === userId)
+      : getCurrentUser();
+    if (!user) return { ok: false, error: 'Нет доступа' };
+    if (msg.userId !== user.id && user.role !== 'admin') {
+      return { ok: false, error: 'Можно удалять только свои сообщения' };
     }
-    data.messages[chatId] = data.messages[chatId].filter(m => m.id !== msgId);
-    save(data);
+
+    if (syncEnabled) {
+      try {
+        const res = await fetch('/api/messages', {
+          method: 'DELETE',
+          ...API_OPTS,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId, messageId: msgId })
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          return { ok: false, error: payload.error || 'Не удалось удалить сообщение' };
+        }
+        if (payload.version) syncVersion = payload.version;
+        await pullFromServer();
+      } catch {
+        return { ok: false, error: 'Ошибка связи с сервером' };
+      }
+    } else {
+      if (msg.files) {
+        await Promise.all(msg.files.map(f => (f.id ? FileDB.remove(f.id) : Promise.resolve())));
+      }
+      data.messages[chatId] = data.messages[chatId].filter(m => m.id !== msgId);
+      if (!save(data)) {
+        return { ok: false, error: 'Не удалось сохранить изменения' };
+      }
+    }
+
+    window.dispatchEvent(new CustomEvent('gost-unread-changed'));
+    return { ok: true };
   }
 
   function pinMessage(chatId, msgId, pinned) {
