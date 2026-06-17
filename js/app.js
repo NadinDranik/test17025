@@ -945,6 +945,73 @@ const App = (function () {
     if (changed) save(data);
   }
 
+  /* Прочитанные чаты (localStorage, per user) */
+  const CHAT_READ_KEY = 'gost17025_chat_read';
+
+  function loadChatReadMap() {
+    try {
+      return JSON.parse(localStorage.getItem(CHAT_READ_KEY)) || {};
+    } catch {
+      return {};
+    }
+  }
+
+  function saveChatReadMap(map) {
+    localStorage.setItem(CHAT_READ_KEY, JSON.stringify(map));
+  }
+
+  function getLastReadAt(userId, chatId) {
+    return loadChatReadMap()[userId]?.[chatId] || null;
+  }
+
+  function markChatRead(userId, chatId) {
+    if (!userId || !chatId) return;
+    const msgs = getMessages(chatId);
+    const at = msgs.length ? msgs[msgs.length - 1].createdAt : new Date().toISOString();
+    const map = loadChatReadMap();
+    if (!map[userId]) map[userId] = {};
+    if (map[userId][chatId] === at) return;
+    map[userId][chatId] = at;
+    saveChatReadMap(map);
+    window.dispatchEvent(new CustomEvent('gost-unread-changed'));
+  }
+
+  function getChatUnreadCount(userId, chatId) {
+    if (!userId || !chatId) return 0;
+    const lastRead = getLastReadAt(userId, chatId);
+    return getMessages(chatId).filter(m =>
+      m.userId !== userId && (!lastRead || m.createdAt > lastRead)
+    ).length;
+  }
+
+  function getAccessibleChatIds(user) {
+    if (!user) return [];
+    const ids = [CHAT_FREE];
+    if (user.role === 'admin') {
+      const data = load();
+      Object.keys(data.messages || {}).forEach(chatId => {
+        if (isAdminDmChat(chatId)) ids.push(chatId);
+      });
+      getProTopics(false).forEach(t => ids.push(t.id));
+    } else {
+      ids.push(getAdminDmChatId(user.id));
+      if (isProActive(user)) {
+        getProTopics(false).forEach(t => ids.push(t.id));
+      }
+    }
+    return [...new Set(ids)];
+  }
+
+  function getTotalUnreadMessages(userId) {
+    const user = load().users.find(u => u.id === userId);
+    if (!user) return 0;
+    return getAccessibleChatIds(user).reduce((sum, id) => sum + getChatUnreadCount(userId, id), 0);
+  }
+
+  function getBellUnreadCount(userId) {
+    return getTotalUnreadMessages(userId) + getUnreadNotificationCount(userId);
+  }
+
   function checkSubscriptionWarnings() {
     const data = load();
     const now = new Date();
@@ -1235,6 +1302,7 @@ const App = (function () {
     getProTopics, createProTopic, updateProTopic, deleteProTopic,
     getMessages, addMessage, editMessage, deleteMessage, pinMessage,
     searchMessages, getNotifications, getUnreadNotificationCount, markNotificationsRead,
+    getChatUnreadCount, getTotalUnreadMessages, getBellUnreadCount, getAccessibleChatIds, markChatRead,
     checkSubscriptionWarnings,
     getProRequests, getPendingProRequestCount, getAdminInboxConversations, getPendingPrivateMessageCount,
     markProRequestProcessed, markProRequestsProcessedByUser,
