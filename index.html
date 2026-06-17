@@ -344,38 +344,14 @@
   <script>
     App.ready.then(() => {
     UI.initAuthForms();
-    UI.initBurger();
+    UI.initHeader('home');
 
-    (function initIndexHeader() {
+    (function initIndexPage() {
       var user = App.getCurrentUser();
       if (user) {
         Mobile.renderHomeDashboard(document.getElementById('user-dashboard'));
       }
       Mobile.init('home');
-      if (!user) return;
-      var actions = document.querySelector('.header__actions');
-      if (!actions) return;
-      var status = App.getSubscriptionStatus(user);
-      var badge = (status === 'pro' || status === 'admin')
-        ? '<span class="user-badge user-badge--pro">PRO</span>'
-        : status === 'expired'
-          ? '<span class="user-badge user-badge--expired">PRO истёк</span>'
-          : '<span class="user-badge">Free</span>';
-      var adminLink = user.role === 'admin'
-        ? '<a href="admin.html" class="btn btn--ghost btn--sm">Админ</a>'
-        : '';
-      actions.innerHTML = badge +
-        '<span class="user-menu__nick">' + App.getDisplayName(user) + '</span>' +
-        '<a href="chat.html" class="btn btn--ghost btn--sm">Чат</a>' +
-        (user.role === 'admin' || App.isProActive(user)
-          ? '<a href="pro.html" class="btn btn--ghost btn--sm">PRO</a>'
-          : '<a href="pro-request.html" class="btn btn--pro btn--sm">PRO</a>') +
-        adminLink +
-        '<button type="button" class="btn btn--ghost btn--sm" id="btn-logout">Выйти</button>';
-      document.getElementById('btn-logout').addEventListener('click', function() {
-        App.logout();
-        window.location.reload();
-      });
     })();
 
     (function initContactsButton() {
