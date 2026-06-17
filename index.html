@@ -6,6 +6,7 @@
   <meta name="description" content="Профессиональное сообщество специалистов аккредитованных лабораторий. ГОСТ ISO/IEC 17025-2019, критерии аккредитации, подготовка к проверкам.">
   <title>Гид PRO ГОСТ ISO/IEC 17025-2019</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/mobile.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
@@ -37,6 +38,8 @@
   </header>
 
   <main>
+
+    <div id="user-dashboard" hidden></div>
 
     <!-- Первый экран -->
     <section class="hero">
@@ -337,6 +340,7 @@
 
   <script src="js/app.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/mobile.js"></script>
   <script>
     App.ready.then(() => {
     UI.initAuthForms();
@@ -344,6 +348,10 @@
 
     (function initIndexHeader() {
       var user = App.getCurrentUser();
+      if (user) {
+        Mobile.renderHomeDashboard(document.getElementById('user-dashboard'));
+      }
+      Mobile.init('home');
       if (!user) return;
       var actions = document.querySelector('.header__actions');
       if (!actions) return;
