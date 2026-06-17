@@ -25,8 +25,6 @@
     </div>
   </header>
 
-  <div id="user-profile-bar" class="user-profile-bar" hidden></div>
-
   <main class="chat-layout">
     <div class="chat-layout__inner">
       <aside class="chat-sidebar">
@@ -38,7 +36,6 @@
         <div class="chat-sidebar__body">
         <h1 class="chat-sidebar__title">Общий чат</h1>
         <p class="chat-sidebar__desc">Бесплатное профессиональное общение участников сообщества.</p>
-        <div class="chat-sidebar__info" id="access-info" data-user-profile></div>
         <div class="search-box">
           <input type="search" class="form__input" id="search-input" placeholder="Поиск по сообщениям и файлам…">
           <button type="button" class="btn btn--outline btn--sm btn--block" id="search-btn">Найти</button>
@@ -92,7 +89,6 @@
     const messagesEl = document.getElementById('messages');
     const composeArea = document.getElementById('compose-area');
     const guestNotice = document.getElementById('guest-notice');
-    const accessInfo = document.getElementById('access-info');
     const msgForm = document.getElementById('msg-form');
     const sendError = document.getElementById('send-error');
 
@@ -104,7 +100,6 @@
 
     function updateAccessUI() {
       currentUser = App.getCurrentUser();
-      UI.refreshUserProfile();
       if (currentUser && App.isUserBlocked(currentUser)) {
         composeArea.hidden = true;
         guestNotice.hidden = false;
@@ -115,7 +110,6 @@
       } else {
         composeArea.hidden = true;
         guestNotice.hidden = false;
-        accessInfo.innerHTML = '<p>Гости могут читать сообщения. Для публикации — войдите в систему.</p>';
       }
     }
 
