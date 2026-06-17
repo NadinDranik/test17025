@@ -36,8 +36,6 @@
     </div>
   </header>
 
-  <div id="user-profile-bar" class="user-profile-bar" hidden></div>
-
   <main>
 
     <!-- Первый экран -->
@@ -346,7 +344,6 @@
 
     (function initIndexHeader() {
       var user = App.getCurrentUser();
-      UI.renderUserProfileBar(user);
       if (!user) return;
       var actions = document.querySelector('.header__actions');
       if (!actions) return;
