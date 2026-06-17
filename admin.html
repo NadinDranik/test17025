@@ -33,18 +33,14 @@
       <div class="admin-login">
         <h1>Вход в админ-панель</h1>
         <p class="admin-login__desc">Доступ только для администратора сообщества.</p>
-        <div class="admin-demo-hint admin-demo-hint--block">
-          <strong>Логин:</strong> admin@gost17025.pro<br>
-          <strong>Пароль:</strong> admin123
-        </div>
         <form id="admin-login-form" class="form">
           <label class="form__label">
             Email
-            <input type="email" class="form__input" name="email" required value="admin@gost17025.pro">
+            <input type="email" class="form__input" name="email" required autocomplete="username">
           </label>
           <label class="form__label">
             Пароль
-            <input type="password" class="form__input" name="password" required placeholder="admin123">
+            <input type="password" class="form__input" name="password" required autocomplete="current-password">
           </label>
           <p class="form__error" id="admin-login-error" hidden></p>
           <button type="submit" class="btn btn--primary btn--block">Войти в админ-панель</button>
@@ -57,7 +53,6 @@
       <div class="admin-header">
         <h1>Административная панель</h1>
         <p>Управление подписчиками, PRO-доступом и темами чатов</p>
-        <p class="admin-demo-hint">Демо-вход: <strong>admin@gost17025.pro</strong> / <strong>admin123</strong></p>
       </div>
 
       <!-- Статистика -->
@@ -252,11 +247,11 @@
       }
     }
 
-    document.getElementById('admin-login-form').addEventListener('submit', function(e) {
+    document.getElementById('admin-login-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       loginError.hidden = true;
       const fd = new FormData(this);
-      const result = App.login(fd.get('email'), fd.get('password'));
+      const result = await App.login(fd.get('email'), fd.get('password'));
       if (!result.ok) {
         loginError.textContent = result.error;
         loginError.hidden = false;
@@ -385,17 +380,17 @@
         : '<p class="table-empty">Нет новых заявок. Когда пользователь напишет в чат оформления PRO, заявка появится здесь.</p>';
 
       list.querySelectorAll('[data-grant-req]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          App.grantPro(btn.dataset.grantReq, 30);
-          App.markProRequestProcessed(btn.dataset.reqId);
+        btn.addEventListener('click', async () => {
+          await App.grantPro(btn.dataset.grantReq, 30);
+          await App.markProRequestProcessed(btn.dataset.reqId);
           toast('PRO выдан на 30 дней');
           refresh();
         });
       });
 
       list.querySelectorAll('[data-done-req]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          App.markProRequestProcessed(btn.dataset.doneReq);
+        btn.addEventListener('click', async () => {
+          await App.markProRequestProcessed(btn.dataset.doneReq);
           toast('Заявка отмечена как обработанная');
           refresh();
         });
@@ -448,17 +443,17 @@
         </tr>`).join('') || '<tr><td colspan="8" class="table-empty">Нет пользователей</td></tr>';
     }
 
-    document.querySelector('#users-table tbody').addEventListener('click', e => {
+    document.querySelector('#users-table tbody').addEventListener('click', async e => {
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
       const id = btn.dataset.id;
       const action = btn.dataset.action;
-      if (action === 'extend30') { App.extendPro(id, 30); toast('PRO продлён на 30 дней'); }
-      if (action === 'extend90') { App.extendPro(id, 90); toast('PRO продлён на 90 дней'); }
-      if (action === 'grant30') { App.grantPro(id, 30); toast('PRO выдан на 30 дней'); }
-      if (action === 'revoke') { if (confirm('Отключить PRO-доступ?')) { App.revokePro(id); toast('PRO отключён'); } }
-      if (action === 'block') { if (confirm('Заблокировать пользователя?')) { App.blockUser(id, true); toast('Пользователь заблокирован'); } }
-      if (action === 'unblock') { App.blockUser(id, false); toast('Пользователь разблокирован'); }
+      if (action === 'extend30') { await App.extendPro(id, 30); toast('PRO продлён на 30 дней'); }
+      if (action === 'extend90') { await App.extendPro(id, 90); toast('PRO продлён на 90 дней'); }
+      if (action === 'grant30') { await App.grantPro(id, 30); toast('PRO выдан на 30 дней'); }
+      if (action === 'revoke') { if (confirm('Отключить PRO-доступ?')) { await App.revokePro(id); toast('PRO отключён'); } }
+      if (action === 'block') { if (confirm('Заблокировать пользователя?')) { await App.blockUser(id, true); toast('Пользователь заблокирован'); } }
+      if (action === 'unblock') { await App.blockUser(id, false); toast('Пользователь разблокирован'); }
       refresh();
     });
 
@@ -477,8 +472,8 @@
       renderList(document.getElementById('free-subs'), users.filter(u => !u.proExpiresAt && !u.blocked), false);
 
       document.querySelectorAll('[data-extend]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          App.extendPro(btn.dataset.extend, 30);
+        btn.addEventListener('click', async () => {
+          await App.extendPro(btn.dataset.extend, 30);
           toast('Подписка продлена');
           refresh();
         });
@@ -504,7 +499,7 @@
         : '<tr><td colspan="5" class="table-empty">PRO-чаты не созданы</td></tr>';
     }
 
-    document.querySelector('#topics-table tbody').addEventListener('click', e => {
+    document.querySelector('#topics-table tbody').addEventListener('click', async e => {
       const btn = e.target.closest('[data-topic]');
       if (!btn) return;
       const id = btn.dataset.id;
@@ -513,16 +508,16 @@
       const topic = topics.find(t => t.id === id);
       if (!topic) return;
 
-      if (action === 'pin') { App.updateProTopic(id, { pinned: !topic.pinned }); toast(topic.pinned ? 'Откреплено' : 'Закреплено'); }
-      if (action === 'hide') { App.updateProTopic(id, { hidden: !topic.hidden }); toast(topic.hidden ? 'Тема показана' : 'Тема скрыта'); }
+      if (action === 'pin') { await App.updateProTopic(id, { pinned: !topic.pinned }); toast(topic.pinned ? 'Откреплено' : 'Закреплено'); }
+      if (action === 'hide') { await App.updateProTopic(id, { hidden: !topic.hidden }); toast(topic.hidden ? 'Тема показана' : 'Тема скрыта'); }
       if (action === 'edit') {
         const title = prompt('Название темы:', topic.title);
         const desc = prompt('Описание:', topic.description);
-        if (title) { App.updateProTopic(id, { title, description: desc || '' }); toast('Тема обновлена'); }
+        if (title) { await App.updateProTopic(id, { title, description: desc || '' }); toast('Тема обновлена'); }
       }
       if (action === 'delete') {
         if (confirm('Удалить тему и все сообщения в ней?')) {
-          App.deleteProTopic(id);
+          await App.deleteProTopic(id);
           toast('Тема удалена');
         }
       }
@@ -563,8 +558,8 @@
       });
 
       container.querySelectorAll('[data-grant]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          App.grantPro(btn.dataset.grant, 30);
+        btn.addEventListener('click', async () => {
+          await App.grantPro(btn.dataset.grant, 30);
           toast('PRO выдан на 30 дней');
           refresh();
         });
@@ -576,32 +571,32 @@
       renderModChatList(App.CHAT_ADMIN_SUPPORT, 'mod-support-messages', 'support');
     }
 
-    document.getElementById('grant-form').addEventListener('submit', e => {
+    document.getElementById('grant-form').addEventListener('submit', async e => {
       e.preventDefault();
-      App.grantPro(document.getElementById('grant-user').value, +document.getElementById('grant-days').value);
+      await App.grantPro(document.getElementById('grant-user').value, +document.getElementById('grant-days').value);
       toast('PRO-доступ выдан');
       refresh();
     });
 
-    document.getElementById('set-date-form').addEventListener('submit', e => {
+    document.getElementById('set-date-form').addEventListener('submit', async e => {
       e.preventDefault();
-      App.setProExpiry(document.getElementById('set-date-user').value, document.getElementById('set-date-value').value);
+      await App.setProExpiry(document.getElementById('set-date-user').value, document.getElementById('set-date-value').value);
       toast('Дата сохранена');
       refresh();
     });
 
-    document.getElementById('revoke-form').addEventListener('submit', e => {
+    document.getElementById('revoke-form').addEventListener('submit', async e => {
       e.preventDefault();
       if (confirm('Отключить PRO-доступ у выбранного пользователя?')) {
-        App.revokePro(document.getElementById('revoke-user').value);
+        await App.revokePro(document.getElementById('revoke-user').value);
         toast('PRO отключён');
         refresh();
       }
     });
 
-    document.getElementById('topic-form').addEventListener('submit', e => {
+    document.getElementById('topic-form').addEventListener('submit', async e => {
       e.preventDefault();
-      App.createProTopic(
+      await App.createProTopic(
         document.getElementById('topic-title').value.trim(),
         document.getElementById('topic-desc').value.trim()
       );
@@ -610,17 +605,17 @@
       refresh();
     });
 
-    document.getElementById('block-form').addEventListener('submit', e => {
+    document.getElementById('block-form').addEventListener('submit', async e => {
       e.preventDefault();
-      App.blockUser(document.getElementById('block-user').value, true);
+      await App.blockUser(document.getElementById('block-user').value, true);
       toast('Пользователь заблокирован');
       refresh();
     });
 
-    document.getElementById('unblock-form').addEventListener('submit', e => {
+    document.getElementById('unblock-form').addEventListener('submit', async e => {
       e.preventDefault();
       const id = document.getElementById('unblock-user').value;
-      if (id) { App.blockUser(id, false); toast('Пользователь разблокирован'); refresh(); }
+      if (id) { await App.blockUser(id, false); toast('Пользователь разблокирован'); refresh(); }
     });
 
     document.getElementById('user-search').addEventListener('input', renderUsers);
