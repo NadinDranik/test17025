@@ -228,34 +228,54 @@ const Mobile = (function () {
 
   function renderChatsHub(container) {
     const user = App.getCurrentUser();
-    if (!container) return;
-    const isPro = user && App.isProActive(user);
-    const topics = isPro ? App.getProTopics() : [];
+    if (!container || !user) return;
 
-    let proSection = '';
+    const isPro = App.isProActive(user) || user.role === 'admin';
+    const topics = isPro ? App.getProTopics(false) : [];
+
+    function topicCard(t) {
+      const count = App.getMessages(t.id).length;
+      const lastMsg = count ? App.getMessages(t.id)[count - 1] : null;
+      const preview = lastMsg
+        ? (lastMsg.text ? lastMsg.text.slice(0, 60) : (lastMsg.files?.[0]?.name ? '📎 ' + lastMsg.files[0].name : 'Сообщение'))
+        : 'Нет сообщений';
+      return `
+        <a href="pro.html#t=${encodeURIComponent(t.id)}" class="m-card m-card--chat m-card--pro">
+          <div class="m-card__head">
+            <h3 class="m-card__title">${t.pinned ? '📌 ' : ''}${UI.escapeHtml(t.title)}</h3>
+            <span class="m-card__badge m-card__badge--pro">Для подписчиков</span>
+            ${getUnreadCount(t.id) ? '<span class="m-card__dot" aria-label="Новые сообщения"></span>' : ''}
+          </div>
+          <p class="m-card__desc">${UI.escapeHtml(t.description || 'Экспертное обсуждение')}</p>
+          <span class="m-card__meta-line">${count ? count + ' сообщ.' : 'Пусто'} · ${UI.escapeHtml(preview)}</span>
+        </a>`;
+    }
+
+    let proCardsHtml = '';
     if (isPro) {
-      const topicCards = topics.length
-        ? topics.map(t => `
-            <a href="pro.html#t=${encodeURIComponent(t.id)}" class="m-card m-card--chat m-card--pro">
-              <div class="m-card__head">
-                <h3 class="m-card__title">${UI.escapeHtml(t.title)}</h3>
-                <span class="m-card__badge m-card__badge--pro">Для подписчиков</span>
-              </div>
-              <p class="m-card__desc">${UI.escapeHtml(t.description || 'Экспертное обсуждение')}</p>
-            </a>`).join('')
-        : '<p class="m-empty">Пока нет активных PRO-чатов. Администратор добавит темы в ближайшее время.</p>';
-      proSection = `
-        <h2 class="m-section-title">PRO-чаты</h2>
-        <div class="m-cards">${topicCards}</div>`;
+      if (topics.length) {
+        proCardsHtml = topics.map(topicCard).join('');
+      } else {
+        proCardsHtml = `
+          <article class="m-card m-card--empty">
+            <h3 class="m-card__title">PRO-чаты</h3>
+            <p class="m-card__desc">Пока нет активных PRO-чатов. Администратор добавит темы в ближайшее время.</p>
+          </article>`;
+      }
     } else {
-      proSection = `
+      proCardsHtml = `
         <article class="m-card m-card--locked">
-          <h3 class="m-card__title">PRO-чаты</h3>
+          <div class="m-card__head">
+            <h3 class="m-card__title">PRO-чаты</h3>
+            <span class="m-card__badge m-card__badge--pro">Для подписчиков</span>
+          </div>
           <p class="m-card__desc">Экспертные обсуждения и закрытые разделы для подписчиков</p>
           <p class="m-card__lock-text">Доступ открыт для подписчиков PRO</p>
           <a href="pro-request.html" class="btn btn--pro btn--block m-card__cta">Оформить доступ</a>
         </article>`;
     }
+
+    const dmChatId = App.getAdminDmChatId(user.id);
 
     container.innerHTML = `
       <div class="m-page m-page--chats">
@@ -269,33 +289,15 @@ const Mobile = (function () {
             </div>
             <p class="m-card__desc">Общение всех участников сообщества</p>
           </a>
-          ${isPro
-            ? `<a href="pro.html" class="m-card m-card--chat m-card--pro">
-                <div class="m-card__head">
-                  <h3 class="m-card__title">PRO-чаты</h3>
-                  <span class="m-card__badge m-card__badge--pro">Для подписчиков</span>
-                </div>
-                <p class="m-card__desc">Экспертные обсуждения и закрытые разделы</p>
-                <span class="m-card__action">Открыть PRO-чаты →</span>
-              </a>`
-            : `<article class="m-card m-card--locked">
-                <div class="m-card__head">
-                  <h3 class="m-card__title">PRO-чаты</h3>
-                  <span class="m-card__badge m-card__badge--pro">Для подписчиков</span>
-                </div>
-                <p class="m-card__desc">Экспертные обсуждения и закрытые разделы для подписчиков</p>
-                <p class="m-card__lock-text">Доступ открыт для подписчиков PRO</p>
-                <a href="pro-request.html" class="btn btn--pro btn--block m-card__cta">Оформить доступ</a>
-              </article>`}
+          ${proCardsHtml}
           <a href="admin-chat.html" class="m-card m-card--chat">
             <div class="m-card__head">
               <h3 class="m-card__title">Вопрос администратору</h3>
-              ${getUnreadCount(user ? App.getAdminDmChatId(user.id) : '') ? '<span class="m-card__dot"></span>' : ''}
+              ${getUnreadCount(dmChatId) ? '<span class="m-card__dot" aria-label="Новые сообщения"></span>' : ''}
             </div>
             <p class="m-card__desc">Личное обращение по доступу, оплате или вопросам работы сообщества</p>
           </a>
         </div>
-        ${isPro && topics.length ? proSection : ''}
       </div>`;
   }
 
@@ -324,7 +326,7 @@ const Mobile = (function () {
   }
 
   function injectChatBack() {
-    if (!isMobile() || !document.body.classList.contains('page-chat')) return;
+    if (!isMobile()) return;
     const header = document.querySelector('.chat-main__header');
     if (!header || header.querySelector('.chat-back')) return;
     const back = document.createElement('a');
