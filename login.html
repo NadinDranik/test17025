@@ -109,11 +109,11 @@
       el.hidden = false;
     }
 
-    document.getElementById('login-form').addEventListener('submit', e => {
+    document.getElementById('login-form').addEventListener('submit', async e => {
       e.preventDefault();
       document.getElementById('login-error').hidden = true;
       const fd = new FormData(e.target);
-      const result = App.login(fd.get('email'), fd.get('password'));
+      const result = await App.login(fd.get('email'), fd.get('password'));
       if (!result.ok) {
         showError('login-error', result.error);
         return;
@@ -121,7 +121,7 @@
       window.location.href = App.getRedirectAfterLogin(result.user, nextPage);
     });
 
-    document.getElementById('register-form').addEventListener('submit', e => {
+    document.getElementById('register-form').addEventListener('submit', async e => {
       e.preventDefault();
       document.getElementById('register-error').hidden = true;
       const fd = new FormData(e.target);
@@ -129,7 +129,7 @@
         showError('register-error', 'Пароли не совпадают');
         return;
       }
-      const result = App.register(fd.get('email'), fd.get('password'), fd.get('nickname'));
+      const result = await App.register(fd.get('email'), fd.get('password'), fd.get('nickname'));
       if (!result.ok) {
         showError('register-error', result.error);
         return;
