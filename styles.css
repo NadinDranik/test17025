@@ -1883,6 +1883,27 @@ ul {
   border-color: var(--color-primary);
 }
 
+.chat-rail__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: #e74c3c;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.chat-rail__tab--active .chat-rail__badge {
+  background: #fff;
+  color: #e74c3c;
+}
+
 .topic-list {
   display: flex;
   flex-direction: column;
