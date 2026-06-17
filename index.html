@@ -236,7 +236,7 @@
               <img src="ТГ.jfif" alt="Telegram" width="52" height="52">
             </a>
           </div>
-          <a href="pro-request.html" class="btn btn--accent btn--write-admin" id="btn-write-admin">Написать мне на сайте</a>
+          <a href="admin-chat.html" class="btn btn--accent btn--write-admin" id="btn-write-admin">Написать мне на сайте</a>
         </div>
       </div>
     </section>
@@ -377,7 +377,7 @@
       var btn = document.getElementById('btn-write-admin');
       if (!btn) return;
       var user = App.getCurrentUser();
-      btn.href = user ? 'pro-request.html' : App.getLoginUrl('pro-request.html');
+      btn.href = user ? 'admin-chat.html' : App.getLoginUrl('admin-chat.html');
     })();
     });
   </script>
