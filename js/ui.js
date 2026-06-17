@@ -56,6 +56,7 @@ const UI = (function () {
 
     if (user) {
       navLinks.push({ href: 'account.html', label: 'Личный кабинет', id: 'account' });
+      navLinks.push({ href: 'admin-chat.html', label: 'Администратор', id: 'admin-chat' });
     }
 
     if (user && App.isProActive(user)) {
@@ -67,7 +68,8 @@ const UI = (function () {
     }
 
     if (user && user.role === 'admin') {
-      navLinks.push({ href: 'admin.html', label: 'Админ-панель', id: 'admin', badge: App.getPendingProRequestCount() });
+      const adminBadge = App.getPendingProRequestCount() + App.getPendingPrivateMessageCount();
+      navLinks.push({ href: 'admin.html', label: 'Админ-панель', id: 'admin', badge: adminBadge });
     }
 
     const navHtml = navLinks.map(l => {
@@ -124,7 +126,7 @@ const UI = (function () {
     if (document.getElementById('sync-notice')) return;
 
     const page = window.location.pathname.split('/').pop() || 'index.html';
-    const onSyncPage = ['chat.html', 'pro.html', 'pro-request.html', 'admin.html'].includes(page);
+    const onSyncPage = ['chat.html', 'pro.html', 'pro-request.html', 'admin-chat.html', 'admin.html'].includes(page);
 
     if (App.isSyncEnabled()) {
       if (!onSyncPage) return;
