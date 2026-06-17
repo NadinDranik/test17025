@@ -4,6 +4,7 @@ const db = require('./db');
 const { mergeStore } = require('./validate-store');
 const { expireSubscriptions } = require('./roles');
 const { buildAccountProfile, appendProHistory } = require('./account');
+const { filterMessagesForUser, getAdminInboxFromStore } = require('./dm');
 const {
   requireAuth,
   requireAdmin,
@@ -26,11 +27,16 @@ function isNicknameTaken(data, nickname, excludeUserId) {
   );
 }
 
-function sanitizeStoreData(data) {
+function sanitizeStoreDataForUser(data, user) {
   return {
     ...data,
-    users: sanitizeUsers(data.users)
+    users: sanitizeUsers(data.users),
+    messages: filterMessagesForUser(data.messages, user)
   };
+}
+
+function sanitizeStoreData(data) {
+  return sanitizeStoreDataForUser(data, { role: 'admin', id: 'admin' });
 }
 
 function registerAuthRoutes(app) {
@@ -128,7 +134,7 @@ function registerDataRoutes(app, broadcast) {
     expireSubscriptions(store.data.users);
     res.json({
       version: store.version,
-      data: sanitizeStoreData(store.data)
+      data: sanitizeStoreDataForUser(store.data, req.user)
     });
   });
 
@@ -418,6 +424,11 @@ function registerAdminRoutes(app, broadcast) {
     const profile = buildAccountProfile(req.params.userId, store.data);
     if (!profile) return res.status(404).json({ error: 'Пользователь не найден' });
     res.json(profile);
+  });
+
+  router.get('/inbox', (req, res) => {
+    const store = db.getStore();
+    res.json(getAdminInboxFromStore(store.data));
   });
 
   app.use('/api/admin', router);
