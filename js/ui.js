@@ -51,7 +51,7 @@ const UI = (function () {
 
     const navLinks = [
       { href: 'index.html', label: 'Главная', id: 'home' },
-      { href: 'chat.html', label: 'Общий чат', id: 'chat' }
+      { href: 'chats.html', label: 'Чаты', id: 'chats' }
     ];
 
     if (user) {
@@ -81,9 +81,9 @@ const UI = (function () {
     if (user) {
       const status = App.getSubscriptionStatus(user);
       const badge = status === 'pro' || status === 'admin'
-        ? '<span class="user-badge user-badge--pro">PRO</span>'
+        ? '<span class="user-badge user-badge--pro">' + (status === 'admin' ? 'Админ' : 'PRO') + '</span>'
         : status === 'expired'
-          ? '<span class="user-badge user-badge--expired">PRO истёк</span>'
+          ? '<span class="user-badge user-badge--expired">Истекла</span>'
           : '<span class="user-badge">Free</span>';
       const unread = App.getUnreadNotificationCount(user.id);
       const notifBadge = unread > 0 ? `<span class="notif-badge">${unread}</span>` : '';
@@ -119,6 +119,7 @@ const UI = (function () {
 
     initBurger();
     mountThemeToggle(header);
+    if (typeof Mobile !== 'undefined') Mobile.init(activePage);
   }
 
   function showSyncNotice() {
@@ -129,6 +130,7 @@ const UI = (function () {
 
     if (App.isSyncEnabled()) {
       if (!onSyncPage) return;
+      if (typeof Mobile !== 'undefined' && Mobile.isMobile()) return;
       const notice = document.createElement('div');
       notice.id = 'sync-notice';
       notice.className = 'sync-notice sync-notice--ok';
@@ -139,10 +141,12 @@ const UI = (function () {
     }
 
     if (!App.isServerAvailable()) {
+      const host = window.location.hostname || '';
+      const isLocal = host === 'localhost' || host === '127.0.0.1';
+      if (typeof Mobile !== 'undefined' && Mobile.isMobile() && !isLocal) return;
       const notice = document.createElement('div');
       notice.id = 'sync-notice';
       notice.className = 'sync-notice';
-      const host = window.location.hostname || '';
       if (host.endsWith('github.io')) {
         notice.innerHTML = '<strong>GitHub Pages не поддерживает чаты и подписчиков.</strong> Здесь только статическая витрина. Для работы сообщества нужен сервер с Node.js — разверните проект на Render, Railway или VPS и открывайте сайт по адресу этого сервера (не github.io).';
       } else if (host === 'localhost' || host === '127.0.0.1') {
@@ -344,7 +348,7 @@ const UI = (function () {
     const welcomeClass = msg.systemType === 'pro_welcome' ? ' msg--welcome' : '';
 
     return `
-      <article class="msg${msg.pinned ? ' msg--pinned' : ''}${welcomeClass}" data-id="${msg.id}">
+      <article class="msg${isOwn ? ' msg--own' : ''}${msg.pinned ? ' msg--pinned' : ''}${welcomeClass}" data-id="${msg.id}">
         ${msg.pinned ? '<span class="msg__pin-label">Закреплено</span>' : ''}
         <header class="msg__header">
           <strong class="msg__author">${escapeAttr(msg.authorName || msg.authorEmail)}</strong>
@@ -359,7 +363,10 @@ const UI = (function () {
 
   async function renderMessages(container, msgs, currentUser, chatId, emptyText) {
     if (!msgs.length) {
-      container.innerHTML = '<p class="chat-empty">' + (emptyText || 'Нет сообщений') + '</p>';
+      const empty = (typeof Mobile !== 'undefined' && Mobile.getEmptyChatText)
+        ? Mobile.getEmptyChatText(chatId)
+        : '<p class="chat-empty">' + (emptyText || 'Нет сообщений') + '</p>';
+      container.innerHTML = empty;
       return;
     }
     const pinned = msgs.filter(m => m.pinned);
@@ -416,7 +423,7 @@ const UI = (function () {
 
   return {
     initHeader, initAuthForms, renderMessage, renderMessages, bindMessageActions,
-    initPasswordToggles,
+    initPasswordToggles, showNotifications,
     updateNotificationBadge, escapeHtml, escapeAttr, applyTheme, mountThemeToggle, toggleTheme,
     showSyncNotice
   };
