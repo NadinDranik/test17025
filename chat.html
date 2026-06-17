@@ -104,7 +104,11 @@
     function updateAccessUI() {
       currentUser = App.getCurrentUser();
       UI.refreshUserProfile();
-      if (currentUser) {
+      if (currentUser && App.isUserBlocked(currentUser)) {
+        composeArea.hidden = true;
+        guestNotice.hidden = false;
+        guestNotice.innerHTML = '<p>Ваш аккаунт <strong>заблокирован</strong>. Отправка сообщений недоступна. <a href="account.html">Личный кабинет</a></p>';
+      } else if (currentUser) {
         composeArea.hidden = false;
         guestNotice.hidden = true;
       } else {
