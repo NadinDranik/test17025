@@ -135,6 +135,7 @@ const Mobile = (function () {
   function refreshChatsHubBadges() {
     const hub = document.getElementById('chats-hub');
     if (hub && hub.innerHTML.trim()) renderChatsHub(hub);
+    refreshDesktopChatsNav();
   }
 
   function bindMobileHeaderEvents(header) {
@@ -266,6 +267,67 @@ const Mobile = (function () {
       </a>`;
   }
 
+  function navListRowHtml(opts) {
+    const tier = opts.tier
+      ? `<span class="m-card__tier m-card__tier--${opts.tier}">${opts.tier === 'pro' ? 'PRO' : 'FREE'}</span>`
+      : '';
+    const pin = opts.pinned ? '📌 ' : '';
+    const active = opts.active ? ' desktop-chats-nav__item--active' : '';
+    return `
+      <a href="${opts.href}" class="desktop-chats-nav__item${active}${opts.modifier || ''}">
+        ${tier}
+        <span class="desktop-chats-nav__title">${pin}${UI.escapeHtml(opts.title)}</span>
+        ${unreadBadgeHtml(opts.unread || 0)}
+      </a>`;
+  }
+
+  function renderChatsNavList(container, activeChatId) {
+    const user = App.getCurrentUser();
+    if (!container || !user) return;
+
+    const isPro = App.isProActive(user) || user.role === 'admin';
+    const topics = isPro ? App.getProTopics(false) : [];
+    const dmChatId = App.getAdminDmChatId(user.id);
+
+    let proHtml = '';
+    if (isPro) {
+      proHtml = topics.length
+        ? topics.map(t => navListRowHtml({
+          href: 'pro.html#t=' + encodeURIComponent(t.id),
+          tier: 'pro',
+          title: t.title,
+          pinned: t.pinned,
+          unread: getUnreadCount(t.id),
+          active: activeChatId === t.id,
+          modifier: ' desktop-chats-nav__item--pro'
+        })).join('')
+        : '<p class="desktop-chats-nav__empty">PRO-чаты пока не созданы</p>';
+    } else {
+      proHtml = `
+        <a href="pro-request.html" class="desktop-chats-nav__item desktop-chats-nav__item--locked">
+          <span class="m-card__tier m-card__tier--pro">PRO</span>
+          <span class="desktop-chats-nav__title">Оформить PRO-доступ</span>
+        </a>`;
+    }
+
+    container.innerHTML = `
+      <div class="desktop-chats-nav__head">Мои чаты</div>
+      ${navListRowHtml({
+        href: 'chat.html',
+        tier: 'free',
+        title: 'Общий чат',
+        unread: getUnreadCount('free'),
+        active: activeChatId === 'free'
+      })}
+      ${proHtml}
+      ${navListRowHtml({
+        href: 'admin-chat.html',
+        title: 'Вопрос администратору',
+        unread: getUnreadCount(dmChatId),
+        active: activeChatId === dmChatId
+      })}`;
+  }
+
   function renderChatsHub(container) {
     const user = App.getCurrentUser();
     if (!container || !user) return;
@@ -312,6 +374,21 @@ const Mobile = (function () {
           ${chatRowHtml({ href: 'admin-chat.html', title: 'Вопрос администратору', unread: getUnreadCount(dmChatId) })}
         </div>
       </div>`;
+  }
+
+  function mountDesktopChatsNav(activeChatId) {
+    if (isMobile()) return;
+    document.querySelectorAll('#desktop-chats-nav').forEach(el => {
+      if (activeChatId) el.dataset.activeChat = activeChatId;
+      renderChatsNavList(el, el.dataset.activeChat || activeChatId || '');
+    });
+  }
+
+  function refreshDesktopChatsNav() {
+    if (isMobile()) return;
+    document.querySelectorAll('#desktop-chats-nav').forEach(el => {
+      renderChatsNavList(el, el.dataset.activeChat || '');
+    });
   }
 
   function getEmptyChatText(chatId) {
@@ -362,10 +439,12 @@ const Mobile = (function () {
     window.addEventListener('gost-data-synced', () => {
       mountCompactHeader();
       mountBottomNav();
+      refreshDesktopChatsNav();
     });
     window.addEventListener('gost-unread-changed', () => {
       mountCompactHeader();
       mountBottomNav();
+      refreshDesktopChatsNav();
     });
   }
 
@@ -377,10 +456,13 @@ const Mobile = (function () {
     subscriptionCardHtml,
     renderHomeDashboard,
     renderChatsHub,
+    renderChatsNavList,
+    mountDesktopChatsNav,
     getEmptyChatText,
     getSupportEmptyText,
     currentPage,
     refreshBottomNavBadges,
-    refreshChatsHubBadges
+    refreshChatsHubBadges,
+    refreshDesktopChatsNav
   };
 })();
