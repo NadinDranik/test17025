@@ -10,8 +10,9 @@ const App = (function () {
   let syncSocket = null;
   let syncSocketTimer = null;
   let lastPushPromise = Promise.resolve();
+  let _currentUser = null;
   const ADMIN_EMAIL = 'admin@gost17025.pro';
-  const ADMIN_PASSWORD = 'admin123';
+  const API_OPTS = { credentials: 'include' };
   const CHAT_FREE = 'free';
   const CHAT_ADMIN_SUPPORT = 'admin-support';
 
@@ -42,7 +43,6 @@ const App = (function () {
     return {
       id: 'admin-1',
       email: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD,
       nickname: 'Администратор',
       role: 'admin',
       registeredAt: new Date().toISOString(),
@@ -53,25 +53,9 @@ const App = (function () {
     };
   }
 
-  /** Гарантирует наличие администратора (исправляет типичную ошибку после регистрации) */
+  /** Администратор управляется только на сервере */
   function ensureAdmin() {
-    const data = load();
-    const idx = data.users.findIndex(u => u.email.toLowerCase() === ADMIN_EMAIL);
-    if (idx === -1) {
-      data.users.unshift(createAdminUser());
-      save(data);
-      return;
-    }
-    const admin = data.users[idx];
-    if (admin.role !== 'admin' || admin.password !== ADMIN_PASSWORD || admin.blocked) {
-      data.users[idx] = {
-        ...createAdminUser(),
-        id: admin.id,
-        registeredAt: admin.registeredAt || new Date().toISOString(),
-        lastActive: admin.lastActive || new Date().toISOString()
-      };
-      save(data);
-    }
+    /* no-op: роль admin и пароль хранятся на сервере */
   }
 
   function migrateUsers() {
@@ -250,15 +234,9 @@ const App = (function () {
     return getProRequests('pending').length;
   }
 
-  function markProRequestProcessed(requestId) {
-    const data = load();
-    const req = data.proRequests?.find(r => r.id === requestId);
-    if (req && req.status === 'pending') {
-      req.status = 'processed';
-      req.processedAt = new Date().toISOString();
-      save(data);
-    }
-    return req;
+  async function markProRequestProcessed(requestId) {
+    await adminRequest('pro-request/processed', 'POST', { requestId });
+    return load().proRequests?.find(r => r.id === requestId) || null;
   }
 
   function markProRequestsProcessedByUser(userId) {
@@ -296,8 +274,26 @@ const App = (function () {
     return (data.users && data.users.length > 1) || msgCount > 0 || (data.proRequests?.length > 0);
   }
 
+  async function fetchAuthMe() {
+    try {
+      const res = await fetch('/api/auth/me', { ...API_OPTS, cache: 'no-store' });
+      if (res.ok) {
+        const payload = await res.json();
+        _currentUser = payload.user || null;
+        if (_currentUser) setSession(_currentUser.id);
+        return _currentUser;
+      }
+    } catch { /* ignore */ }
+    _currentUser = null;
+    return null;
+  }
+
   async function pullFromServer() {
-    const res = await fetch('/api/data', { cache: 'no-store' });
+    const res = await fetch('/api/data', { ...API_OPTS, cache: 'no-store' });
+    if (res.status === 401) {
+      _currentUser = null;
+      throw new Error('Unauthorized');
+    }
     if (!res.ok) throw new Error('API unavailable');
     const payload = await res.json();
     if (payload.version !== syncVersion && payload.data) {
@@ -315,9 +311,16 @@ const App = (function () {
     if (!syncEnabled) return;
     const task = fetch('/api/data', {
       method: 'PUT',
+      ...API_OPTS,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data })
-    }).then(res => (res.ok ? res.json() : null)).then(result => {
+    }).then(res => {
+      if (res.status === 401) {
+        _currentUser = null;
+        return null;
+      }
+      return res.ok ? res.json() : null;
+    }).then(result => {
       if (result?.version) syncVersion = result.version;
     }).catch(err => console.warn('Sync push failed:', err));
     lastPushPromise = task;
@@ -365,6 +368,11 @@ const App = (function () {
     try {
       const health = await fetch('/api/health', { cache: 'no-store' });
       if (!health.ok) throw new Error('API unavailable');
+      await fetchAuthMe();
+      if (!_currentUser) {
+        syncEnabled = false;
+        return;
+      }
       const payload = await pullFromServer();
       const localRaw = localStorage.getItem(STORAGE_KEY);
       const localData = localRaw ? JSON.parse(localRaw) : null;
@@ -429,6 +437,7 @@ const App = (function () {
       return local.then(() =>
         fetch('/api/files/' + encodeURIComponent(id), {
           method: 'PUT',
+          ...API_OPTS,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ dataUrl })
         }).catch(() => {})
@@ -445,7 +454,7 @@ const App = (function () {
 
     function get(id) {
       if (!syncEnabled) return getLocal(id);
-      return fetch('/api/files/' + encodeURIComponent(id))
+      return fetch('/api/files/' + encodeURIComponent(id), { ...API_OPTS })
         .then(res => (res.ok ? res.json() : null))
         .then(payload => {
           if (payload?.dataUrl) {
@@ -464,7 +473,7 @@ const App = (function () {
       }));
       if (!syncEnabled) return local;
       return local.then(() =>
-        fetch('/api/files/' + encodeURIComponent(id), { method: 'DELETE' }).catch(() => {})
+        fetch('/api/files/' + encodeURIComponent(id), { method: 'DELETE', ...API_OPTS }).catch(() => {})
       );
     }
 
@@ -503,10 +512,13 @@ const App = (function () {
   }
 
   function getCurrentUser() {
+    if (_currentUser) return _currentUser;
     const session = getSession();
     if (!session) return null;
     const data = load();
-    return data.users.find(u => u.id === session.userId) || null;
+    const user = data.users.find(u => u.id === session.userId) || null;
+    if (user) _currentUser = user;
+    return user;
   }
 
   function updateUser(userId, patch) {
@@ -549,109 +561,97 @@ const App = (function () {
     if (changed) save(data);
   }
 
-  function register(email, password, nickname) {
-    if (email.toLowerCase() === ADMIN_EMAIL) {
-      return { ok: false, error: 'Этот email зарезервирован для администратора. Используйте форму входа.' };
+  async function register(email, password, nickname) {
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        ...API_OPTS,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, nickname })
+      });
+      const data = await res.json();
+      if (!res.ok) return { ok: false, error: data.error || 'Ошибка регистрации' };
+      _currentUser = data.user;
+      setSession(data.user.id);
+      syncEnabled = true;
+      await pullFromServer();
+      connectSyncSocket();
+      return { ok: true, user: data.user };
+    } catch {
+      return { ok: false, error: 'Сервер недоступен' };
     }
-    const nick = normalizeNickname(nickname);
-    if (!nick || nick.length < 2) {
-      return { ok: false, error: 'Укажите ник (минимум 2 символа)' };
-    }
-    if (nick.length > 30) {
-      return { ok: false, error: 'Ник не должен быть длиннее 30 символов' };
-    }
-    if (isNicknameTaken(nick)) {
-      return { ok: false, error: 'Этот ник уже занят' };
-    }
-    const data = load();
-    const exists = data.users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (exists) return { ok: false, error: 'Пользователь с таким email уже зарегистрирован' };
-
-    const user = {
-      id: uid(),
-      email: email.toLowerCase(),
-      password,
-      nickname: nick,
-      role: 'user',
-      registeredAt: new Date().toISOString(),
-      proPaidAt: null,
-      proExpiresAt: null,
-      blocked: false,
-      lastActive: new Date().toISOString()
-    };
-    data.users.push(user);
-    save(data);
-    setSession(user.id);
-    return { ok: true, user };
   }
 
-  function login(email, password) {
-    expireSubscriptions();
-    const data = load();
-    const user = data.users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (!user || user.password !== password) {
-      return { ok: false, error: 'Неверный email или пароль' };
+  async function login(email, password) {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        ...API_OPTS,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) return { ok: false, error: data.error || 'Ошибка входа' };
+      _currentUser = data.user;
+      setSession(data.user.id);
+      expireSubscriptions();
+      syncEnabled = true;
+      await pullFromServer();
+      connectSyncSocket();
+      touchActivity(data.user.id);
+      return { ok: true, user: data.user };
+    } catch {
+      return { ok: false, error: 'Сервер недоступен' };
     }
-    if (user.blocked) return { ok: false, error: 'Аккаунт заблокирован администратором' };
-    touchActivity(user.id);
-    setSession(user.id);
-    return { ok: true, user };
   }
 
-  function logout() {
+  async function logout() {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', ...API_OPTS });
+    } catch { /* ignore */ }
+    _currentUser = null;
     setSession(null);
   }
 
-  function grantPro(userId, days) {
-    const now = new Date().toISOString();
-    const user = updateUser(userId, {
-      proPaidAt: now,
-      proExpiresAt: new Date(Date.now() + days * 86400000).toISOString()
-    });
-    markProRequestsProcessedByUser(userId);
-    addNotification(userId, 'PRO-доступ активирован до ' + formatDate(user.proExpiresAt));
-    return user;
-  }
-
-  function extendPro(userId, days) {
-    const data = load();
-    const user = data.users.find(u => u.id === userId);
-    if (!user) return null;
-    const base = user.proExpiresAt && new Date(user.proExpiresAt) > new Date()
-      ? new Date(user.proExpiresAt)
-      : new Date();
-    base.setDate(base.getDate() + days);
-    const updated = updateUser(userId, {
-      proPaidAt: new Date().toISOString(),
-      proExpiresAt: base.toISOString()
-    });
-    addNotification(userId, 'PRO-подписка продлена до ' + formatDate(updated.proExpiresAt));
-    return updated;
-  }
-
-  function setProExpiry(userId, dateStr) {
-    const patch = dateStr
-      ? {
-          proExpiresAt: new Date(dateStr).toISOString(),
-          proPaidAt: new Date().toISOString()
-        }
-      : { proExpiresAt: null, proPaidAt: null };
-    const user = updateUser(userId, patch);
-    if (user) {
-      const msg = dateStr
-        ? 'Дата окончания PRO подписки: ' + formatDate(user.proExpiresAt)
-        : 'PRO-доступ отключён';
-      addNotification(userId, msg);
+  async function adminRequest(path, method, body) {
+    const opts = {
+      method: method || 'POST',
+      ...API_OPTS,
+      headers: { 'Content-Type': 'application/json' }
+    };
+    if (body !== undefined && opts.method !== 'DELETE') {
+      opts.body = JSON.stringify(body);
     }
-    return user;
+    const res = await fetch('/api/admin/' + path, opts);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Ошибка запроса');
+    await pullFromServer();
+    return data;
   }
 
-  function revokePro(userId) {
-    return updateUser(userId, { proExpiresAt: null, proPaidAt: null });
+  async function grantPro(userId, days) {
+    await adminRequest('grant-pro', 'POST', { userId, days });
+    return load().users.find(u => u.id === userId) || null;
   }
 
-  function blockUser(userId, blocked) {
-    return updateUser(userId, { blocked });
+  async function extendPro(userId, days) {
+    await adminRequest('extend-pro', 'POST', { userId, days });
+    return load().users.find(u => u.id === userId) || null;
+  }
+
+  async function setProExpiry(userId, dateStr) {
+    await adminRequest('set-pro-expiry', 'POST', { userId, dateStr: dateStr || null });
+    return load().users.find(u => u.id === userId) || null;
+  }
+
+  async function revokePro(userId) {
+    await adminRequest('revoke-pro', 'POST', { userId });
+    return load().users.find(u => u.id === userId) || null;
+  }
+
+  async function blockUser(userId, blocked) {
+    await adminRequest('block-user', 'POST', { userId, blocked });
+    return load().users.find(u => u.id === userId) || null;
   }
 
   /* PRO Topics */
@@ -665,36 +665,19 @@ const App = (function () {
     return topics;
   }
 
-  function createProTopic(title, description) {
-    const data = load();
-    const topic = {
-      id: uid(),
-      title,
-      description: description || '',
-      pinned: false,
-      hidden: false,
-      createdAt: new Date().toISOString()
-    };
-    data.proTopics.push(topic);
-    data.messages[topic.id] = [];
-    save(data);
-    return topic;
+  async function createProTopic(title, description) {
+    await adminRequest('topics', 'POST', { title, description });
+    const topics = load().proTopics;
+    return topics[topics.length - 1] || null;
   }
 
-  function updateProTopic(id, patch) {
-    const data = load();
-    const idx = data.proTopics.findIndex(t => t.id === id);
-    if (idx === -1) return null;
-    data.proTopics[idx] = { ...data.proTopics[idx], ...patch };
-    save(data);
-    return data.proTopics[idx];
+  async function updateProTopic(id, patch) {
+    await adminRequest('topics/' + encodeURIComponent(id), 'PATCH', patch);
+    return load().proTopics.find(t => t.id === id) || null;
   }
 
-  function deleteProTopic(id) {
-    const data = load();
-    data.proTopics = data.proTopics.filter(t => t.id !== id);
-    delete data.messages[id];
-    save(data);
+  async function deleteProTopic(id) {
+    await adminRequest('topics/' + encodeURIComponent(id), 'DELETE');
   }
 
   /* Messages */
@@ -1078,7 +1061,7 @@ const App = (function () {
     isSyncEnabled,
     getData, getCurrentUser, getSession, login, logout, register,
     ensureAdmin, ensureAdminSupportChat, ensureProRequestWelcomeMessage, migrateUsers,
-    ADMIN_EMAIL, ADMIN_PASSWORD,
+    ADMIN_EMAIL,
     CHAT_FREE, CHAT_ADMIN_SUPPORT, PRO_PAYMENT_INFO,
     getDisplayName, getStatusLabel, normalizeNickname, getLoginUrl, getRedirectAfterLogin,
     isProActive, getSubscriptionStatus, grantPro, extendPro, revokePro,
