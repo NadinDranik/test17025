@@ -78,9 +78,10 @@ const Mobile = (function () {
 
     const user = App.getCurrentUser();
     const active = PAGE_TAB[page] || '';
+    const chatUnread = user ? App.getTotalUnreadMessages(user.id) : 0;
     const items = [
       { id: 'home', href: 'index.html', icon: '⌂', label: 'Главная' },
-      { id: 'chats', href: 'chats.html', icon: '💬', label: 'Чаты' },
+      { id: 'chats', href: 'chats.html', icon: '💬', label: 'Чаты', badge: chatUnread },
       { id: 'account', href: user ? 'account.html' : App.getLoginUrl('account.html'), icon: '👤', label: 'Кабинет' },
       { id: 'support', href: user ? 'admin-chat.html' : App.getLoginUrl('admin-chat.html'), icon: '✉️', label: 'Поддержка' }
     ];
@@ -94,19 +95,95 @@ const Mobile = (function () {
       document.body.appendChild(nav);
     }
 
-    nav.innerHTML = items.map(item => `
+    nav.innerHTML = items.map(item => {
+      const badgeHtml = item.badge > 0
+        ? `<span class="mobile-bottom-nav__badge">${item.badge > 99 ? '99+' : item.badge}</span>`
+        : '';
+      return `
       <a href="${item.href}" class="mobile-bottom-nav__item${active === item.id ? ' mobile-bottom-nav__item--active' : ''}">
-        <span class="mobile-bottom-nav__icon" aria-hidden="true">${item.icon}</span>
+        <span class="mobile-bottom-nav__icon-wrap">
+          <span class="mobile-bottom-nav__icon" aria-hidden="true">${item.icon}</span>
+          ${badgeHtml}
+        </span>
         <span class="mobile-bottom-nav__label">${item.label}</span>
-      </a>`).join('');
+      </a>`;
+    }).join('');
 
     document.body.classList.add('has-mobile-nav');
+  }
+
+  function refreshBottomNavBadges() {
+    if (!isMobile()) return;
+    mountBottomNav();
+  }
+
+  function refreshChatsHubBadges() {
+    const hub = document.getElementById('chats-hub');
+    if (hub && hub.innerHTML.trim()) renderChatsHub(hub);
+  }
+
+  let mobileMenuCloseHandler = null;
+
+  function bindMobileHeaderEvents(header) {
+    header.querySelector('[data-action="logout"]')?.addEventListener('click', async () => {
+      await App.logout();
+      window.location.href = 'index.html';
+    });
+    header.querySelector('[data-action="theme"]')?.addEventListener('click', () => {
+      UI.toggleTheme();
+      header.querySelector('.mobile-header-menu')?.setAttribute('hidden', '');
+    });
+    const moreBtn = header.querySelector('.mobile-header-more');
+    const menu = header.querySelector('.mobile-header-menu');
+    if (moreBtn && menu) {
+      moreBtn.addEventListener('click', () => {
+        menu.hidden = !menu.hidden;
+      });
+      if (mobileMenuCloseHandler) {
+        document.removeEventListener('click', mobileMenuCloseHandler);
+      }
+      mobileMenuCloseHandler = (e) => {
+        if (menu.hidden) return;
+        if (!menu.contains(e.target) && e.target !== moreBtn) menu.hidden = true;
+      };
+      document.addEventListener('click', mobileMenuCloseHandler);
+    }
+    header.querySelector('#btn-notifications-mobile')?.addEventListener('click', () => {
+      if (typeof UI !== 'undefined' && UI.showNotifications) UI.showNotifications();
+    });
+  }
+
+  function buildMobileToolbarHtml(user) {
+    if (!user) {
+      return `
+        <div class="mobile-header-toolbar__auth">
+          <a href="${App.getLoginUrl()}" class="mobile-header-btn mobile-header-btn--ghost">Войти</a>
+          <a href="login.html?tab=register" class="mobile-header-btn mobile-header-btn--primary">Регистрация</a>
+        </div>`;
+    }
+
+    const bellCount = App.getBellUnreadCount(user.id);
+    const bellBadge = bellCount > 0
+      ? `<span class="notif-badge">${bellCount > 99 ? '99+' : bellCount}</span>`
+      : '';
+
+    return `
+      <div class="mobile-header-toolbar__user">
+        <a href="account.html" class="mobile-header-login" title="Личный кабинет">${UI.escapeHtml(App.getDisplayName(user))}</a>
+        <button type="button" class="btn-notifications mobile-header-bell" id="btn-notifications-mobile" title="Уведомления и сообщения" aria-label="Уведомления">🔔${bellBadge}</button>
+        <button type="button" class="mobile-header-more" aria-label="Ещё">⋯</button>
+        <div class="mobile-header-menu" hidden>
+          ${user.role === 'admin' ? '<a href="admin.html" class="mobile-header-menu__link">Админ-панель</a>' : ''}
+          <button type="button" class="mobile-header-menu__link" data-action="theme">Тема оформления</button>
+          <button type="button" class="mobile-header-menu__link mobile-header-menu__link--danger" data-action="logout">Выйти</button>
+        </div>
+      </div>`;
   }
 
   function mountCompactHeader() {
     if (!isMobile()) {
       document.body.classList.remove('mobile-shell');
-      document.querySelectorAll('.mobile-header-status, .mobile-header-more, .mobile-header-menu').forEach(el => el.remove());
+      document.querySelectorAll('.mobile-header-toolbar, .mobile-header-status, .mobile-header-more, .mobile-header-menu').forEach(el => el.remove());
       const nav = document.querySelector('.nav');
       const actions = document.querySelector('.header__actions');
       const burger = document.querySelector('.burger');
@@ -121,10 +198,10 @@ const Mobile = (function () {
     if (NO_NAV.has(page)) return;
 
     const header = document.querySelector('.header__inner');
-    if (!header || header.querySelector('.mobile-header-status')) return;
+    if (!header) return;
 
-    const user = App.getCurrentUser();
-    const sub = getSubscriptionInfo(user);
+    document.querySelectorAll('.mobile-header-status').forEach(el => el.remove());
+
     const nav = header.querySelector('.nav');
     const actions = header.querySelector('.header__actions');
     const burger = header.querySelector('.burger');
@@ -132,60 +209,16 @@ const Mobile = (function () {
     if (actions) actions.hidden = true;
     if (burger) burger.hidden = true;
 
-    const statusEl = document.createElement('div');
-    statusEl.className = 'mobile-header-status m-status--' + sub.tone;
-    statusEl.textContent = sub.short;
-
-    const moreBtn = document.createElement('button');
-    moreBtn.type = 'button';
-    moreBtn.className = 'mobile-header-more';
-    moreBtn.setAttribute('aria-label', 'Ещё');
-    moreBtn.textContent = '⋯';
-
-    const menu = document.createElement('div');
-    menu.className = 'mobile-header-menu';
-    menu.hidden = true;
-    menu.innerHTML = buildMoreMenu(user);
-
-    moreBtn.addEventListener('click', () => {
-      menu.hidden = !menu.hidden;
-    });
-    document.addEventListener('click', e => {
-      if (!menu.contains(e.target) && e.target !== moreBtn) menu.hidden = true;
-    });
-
-    header.appendChild(statusEl);
-    header.appendChild(moreBtn);
-    header.appendChild(menu);
-
-    menu.querySelector('[data-action="logout"]')?.addEventListener('click', async () => {
-      await App.logout();
-      window.location.href = 'index.html';
-    });
-    menu.querySelector('[data-action="notifications"]')?.addEventListener('click', () => {
-      menu.hidden = true;
-      if (typeof UI !== 'undefined' && UI.showNotifications) UI.showNotifications();
-    });
-    menu.querySelector('[data-action="theme"]')?.addEventListener('click', () => {
-      UI.toggleTheme();
-      menu.hidden = true;
-    });
-  }
-
-  function buildMoreMenu(user) {
-    if (!user) {
-      return `
-        <a href="${App.getLoginUrl()}" class="mobile-header-menu__link">Войти</a>
-        <a href="login.html?tab=register" class="mobile-header-menu__link">Регистрация</a>`;
+    let toolbar = header.querySelector('.mobile-header-toolbar');
+    if (!toolbar) {
+      toolbar = document.createElement('div');
+      toolbar.className = 'mobile-header-toolbar';
+      header.appendChild(toolbar);
     }
-    let html = `<button type="button" class="mobile-header-menu__link" data-action="notifications">Уведомления</button>`;
-    if (user.role === 'admin') {
-      html += '<a href="admin.html" class="mobile-header-menu__link">Админ-панель</a>';
-    }
-    html += `
-      <button type="button" class="mobile-header-menu__link" data-action="theme">Тема оформления</button>
-      <button type="button" class="mobile-header-menu__link mobile-header-menu__link--danger" data-action="logout">Выйти</button>`;
-    return html;
+
+    const user = App.getCurrentUser();
+    toolbar.innerHTML = buildMobileToolbarHtml(user);
+    bindMobileHeaderEvents(header);
   }
 
   function renderHomeDashboard(container) {
@@ -220,10 +253,12 @@ const Mobile = (function () {
   function getUnreadCount(chatId) {
     const user = App.getCurrentUser();
     if (!user) return 0;
-    const msgs = App.getMessages(chatId) || [];
-    if (!msgs.length) return 0;
-    const last = msgs[msgs.length - 1];
-    return last.userId !== user.id ? 1 : 0;
+    return App.getChatUnreadCount(user.id, chatId);
+  }
+
+  function unreadBadgeHtml(count) {
+    if (!count) return '';
+    return `<span class="m-card__unread">${count > 99 ? '99+' : count}</span>`;
   }
 
   function renderChatsHub(container) {
@@ -235,6 +270,7 @@ const Mobile = (function () {
 
     function topicCard(t) {
       const count = App.getMessages(t.id).length;
+      const unread = getUnreadCount(t.id);
       const lastMsg = count ? App.getMessages(t.id)[count - 1] : null;
       const preview = lastMsg
         ? (lastMsg.text ? lastMsg.text.slice(0, 60) : (lastMsg.files?.[0]?.name ? '📎 ' + lastMsg.files[0].name : 'Сообщение'))
@@ -244,7 +280,7 @@ const Mobile = (function () {
           <div class="m-card__head">
             <h3 class="m-card__title">${t.pinned ? '📌 ' : ''}${UI.escapeHtml(t.title)}</h3>
             <span class="m-card__badge m-card__badge--pro">Для подписчиков</span>
-            ${getUnreadCount(t.id) ? '<span class="m-card__dot" aria-label="Новые сообщения"></span>' : ''}
+            ${unreadBadgeHtml(unread)}
           </div>
           <p class="m-card__desc">${UI.escapeHtml(t.description || 'Экспертное обсуждение')}</p>
           <span class="m-card__meta-line">${count ? count + ' сообщ.' : 'Пусто'} · ${UI.escapeHtml(preview)}</span>
@@ -285,7 +321,7 @@ const Mobile = (function () {
             <div class="m-card__head">
               <h3 class="m-card__title">Общий чат</h3>
               <span class="m-card__badge">Общий</span>
-              ${getUnreadCount('free') ? '<span class="m-card__dot" aria-label="Новые сообщения"></span>' : ''}
+              ${unreadBadgeHtml(getUnreadCount('free'))}
             </div>
             <p class="m-card__desc">Общение всех участников сообщества</p>
           </a>
@@ -293,7 +329,7 @@ const Mobile = (function () {
           <a href="admin-chat.html" class="m-card m-card--chat">
             <div class="m-card__head">
               <h3 class="m-card__title">Вопрос администратору</h3>
-              ${getUnreadCount(dmChatId) ? '<span class="m-card__dot" aria-label="Новые сообщения"></span>' : ''}
+              ${unreadBadgeHtml(getUnreadCount(dmChatId))}
             </div>
             <p class="m-card__desc">Личное обращение по доступу, оплате или вопросам работы сообщества</p>
           </a>
@@ -346,6 +382,14 @@ const Mobile = (function () {
       mountBottomNav();
       injectChatBack();
     });
+    window.addEventListener('gost-data-synced', () => {
+      mountCompactHeader();
+      mountBottomNav();
+    });
+    window.addEventListener('gost-unread-changed', () => {
+      mountCompactHeader();
+      mountBottomNav();
+    });
   }
 
   return {
@@ -358,6 +402,8 @@ const Mobile = (function () {
     renderChatsHub,
     getEmptyChatText,
     getSupportEmptyText,
-    currentPage
+    currentPage,
+    refreshBottomNavBadges,
+    refreshChatsHubBadges
   };
 })();
