@@ -25,15 +25,12 @@
     </div>
   </header>
 
-  <div id="user-profile-bar" class="user-profile-bar" hidden></div>
-
   <main class="chat-layout">
     <div class="chat-layout__inner pro-layout">
       <aside class="chat-sidebar chat-sidebar--pro pro-topics-panel">
         <div class="chat-sidebar__body">
         <h1 class="chat-sidebar__title">PRO-чаты</h1>
         <p class="chat-sidebar__desc">Закрытые темы, создаваемые администратором. Выберите тему для общения.</p>
-        <div class="chat-sidebar__info" data-user-profile></div>
         <div class="search-box">
           <input type="search" class="form__input" id="search-input" placeholder="Поиск по темам и сообщениям…">
           <button type="button" class="btn btn--outline btn--sm btn--block" id="search-btn">Найти</button>
@@ -91,8 +88,6 @@
     const sendError = document.getElementById('send-error');
 
     UI.initHeader('pro');
-    UI.refreshUserProfile();
-
     const topicListEl = document.getElementById('topic-list');
     const messagesEl = document.getElementById('messages');
     const composeArea = document.getElementById('compose-area');
