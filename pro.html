@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PRO-раздел — Гид PRO ГОСТ ISO/IEC 17025-2019</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/mobile.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
@@ -73,6 +74,7 @@
 
   <script src="js/app.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/mobile.js"></script>
   <script src="js/chat-send.js"></script>
   <script>
     App.ready.then(() => {
@@ -87,7 +89,8 @@
     const msgForm = document.getElementById('msg-form');
     const sendError = document.getElementById('send-error');
 
-    UI.initHeader('pro');
+    UI.initHeader('chats');
+    Mobile.init('chats');
     const topicListEl = document.getElementById('topic-list');
     const messagesEl = document.getElementById('messages');
     const composeArea = document.getElementById('compose-area');
