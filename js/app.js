@@ -308,6 +308,8 @@ const App = (function () {
 
   function getAdminInboxConversations() {
     const data = load();
+    const admin = (data.users || []).find(u => u.role === 'admin');
+    const adminId = admin?.id;
     const conversations = [];
     (data.users || []).forEach(u => {
       if (u.role === 'admin') return;
@@ -317,6 +319,7 @@ const App = (function () {
       );
       if (!msgs.length) return;
       const last = msgs[msgs.length - 1];
+      const unreadCount = adminId ? getChatUnreadCount(adminId, chatId) : 0;
       conversations.push({
         userId: u.id,
         userEmail: u.email,
@@ -326,14 +329,60 @@ const App = (function () {
         lastMessage: messagePreview(last),
         lastAt: last.createdAt,
         lastFromUser: last.userId === u.id,
-        needsReply: last.userId === u.id
+        unreadCount,
+        needsReply: unreadCount > 0
       });
     });
-    return conversations.sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
+    return conversations.sort((a, b) => {
+      if ((b.unreadCount || 0) !== (a.unreadCount || 0)) {
+        return (b.unreadCount || 0) - (a.unreadCount || 0);
+      }
+      return new Date(b.lastAt) - new Date(a.lastAt);
+    });
   }
 
   function getPendingPrivateMessageCount() {
-    return getAdminInboxConversations().filter(c => c.needsReply).length;
+    const admin = load().users.find(u => u.role === 'admin');
+    if (!admin) return 0;
+    return getAdminInboxConversations().reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  }
+
+  function getChatLabel(chatId, user) {
+    if (chatId === CHAT_FREE) return 'Общий чат';
+    if (isAdminDmChat(chatId)) {
+      if (user?.role === 'admin') {
+        const uid = getDmUserId(chatId);
+        const u = load().users.find(x => x.id === uid);
+        return u ? getDisplayName(u) : 'Личный диалог';
+      }
+      return 'Вопрос администратору';
+    }
+    const topic = load().proTopics.find(t => t.id === chatId);
+    return topic ? topic.title : 'Чат';
+  }
+
+  function getChatHref(chatId, user) {
+    if (chatId === CHAT_FREE) return 'chat.html';
+    if (isAdminDmChat(chatId)) {
+      if (user?.role === 'admin') {
+        return 'admin.html#dm-' + encodeURIComponent(getDmUserId(chatId));
+      }
+      return 'admin-chat.html';
+    }
+    return 'pro.html#t=' + encodeURIComponent(chatId);
+  }
+
+  function getUnreadChatsSummary(userId) {
+    const user = load().users.find(u => u.id === userId);
+    if (!user) return [];
+    return getAccessibleChatIds(user)
+      .map(chatId => ({
+        chatId,
+        label: getChatLabel(chatId, user),
+        href: getChatHref(chatId, user),
+        count: getChatUnreadCount(userId, chatId)
+      }))
+      .filter(item => item.count > 0);
   }
 
   async function markProRequestProcessed(requestId) {
@@ -1303,6 +1352,7 @@ const App = (function () {
     getMessages, addMessage, editMessage, deleteMessage, pinMessage,
     searchMessages, getNotifications, getUnreadNotificationCount, markNotificationsRead,
     getChatUnreadCount, getTotalUnreadMessages, getBellUnreadCount, getAccessibleChatIds, markChatRead,
+    getChatLabel, getChatHref, getUnreadChatsSummary,
     checkSubscriptionWarnings,
     getProRequests, getPendingProRequestCount, getAdminInboxConversations, getPendingPrivateMessageCount,
     markProRequestProcessed, markProRequestsProcessedByUser,
