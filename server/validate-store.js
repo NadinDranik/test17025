@@ -168,7 +168,8 @@ function mergeStore(serverData, clientData, actor) {
     proTopics: mergeProTopics(serverData.proTopics, clientData.proTopics, actor),
     messages: mergeMessages(serverData.messages, clientData.messages, actor),
     notifications: mergeNotifications(serverData.notifications, clientData.notifications, actor),
-    proRequests: mergeProRequests(serverData.proRequests, clientData.proRequests, actor)
+    proRequests: mergeProRequests(serverData.proRequests, clientData.proRequests, actor),
+    proHistory: serverData.proHistory || []
   };
 }
 
