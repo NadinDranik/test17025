@@ -15,7 +15,8 @@ const DEFAULT_DATA = {
   proTopics: [],
   messages: { free: [], 'admin-support': [] },
   notifications: [],
-  proRequests: []
+  proRequests: [],
+  proHistory: []
 };
 
 let db;
