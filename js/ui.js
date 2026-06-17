@@ -72,8 +72,13 @@ const UI = (function () {
       navLinks.push({ href: 'admin.html', label: 'Админ-панель', id: 'admin', badge: adminBadge });
     }
 
+    const chatUnread = user ? App.getTotalUnreadMessages(user.id) : 0;
+
     const navHtml = navLinks.map(l => {
-      const badge = l.badge > 0 ? `<span class="nav-badge">${l.badge}</span>` : '';
+      let badge = l.badge > 0 ? `<span class="nav-badge">${l.badge}</span>` : '';
+      if (l.id === 'chats' && chatUnread > 0) {
+        badge = `<span class="nav-badge">${chatUnread > 99 ? '99+' : chatUnread}</span>`;
+      }
       return `<a href="${l.href}" class="nav__link${activePage === l.id ? ' nav__link--active' : ''}">${l.label}${badge}</a>`;
     }).join('');
 
@@ -85,13 +90,13 @@ const UI = (function () {
         : status === 'expired'
           ? '<span class="user-badge user-badge--expired">Истекла</span>'
           : '<span class="user-badge">Free</span>';
-      const unread = App.getUnreadNotificationCount(user.id);
-      const notifBadge = unread > 0 ? `<span class="notif-badge">${unread}</span>` : '';
+      const unread = App.getBellUnreadCount(user.id);
+      const notifBadge = unread > 0 ? `<span class="notif-badge">${unread > 99 ? '99+' : unread}</span>` : '';
       actionsHtml = `
         <div class="user-menu">
           ${badge}
           <span class="user-menu__nick">${escapeAttr(App.getDisplayName(user))}</span>
-          <button type="button" class="btn btn--ghost btn--sm btn-notifications" id="btn-notifications" title="Уведомления">
+          <button type="button" class="btn btn--ghost btn--sm btn-notifications" id="btn-notifications" title="Уведомления и сообщения" aria-label="Уведомления">
             🔔${notifBadge}
           </button>
           <button type="button" class="btn btn--ghost btn--sm" id="btn-logout">Выйти</button>
@@ -176,38 +181,80 @@ const UI = (function () {
   function showNotifications() {
     const user = App.getCurrentUser();
     if (!user) return;
-    const unread = App.getNotifications(user.id).filter(n => !n.read);
-    if (!unread.length) {
-      alert('Нет новых уведомлений.');
+    const notifUnread = App.getNotifications(user.id).filter(n => !n.read);
+    const msgUnread = App.getTotalUnreadMessages(user.id);
+    if (!notifUnread.length && !msgUnread) {
+      alert('Нет новых уведомлений и сообщений.');
       return;
     }
-    alert(unread.slice(0, 10).map(n =>
-      App.formatDateTime(n.createdAt) + '\n' + n.text
-    ).join('\n\n---\n\n'));
-    App.markNotificationsRead(user.id);
-    updateNotificationBadge(user.id);
-    if (user.role === 'admin' && unread.some(n => n.type === 'pro_request')) {
+    let parts = [];
+    if (msgUnread) {
+      parts.push('Непрочитанных сообщений в чатах: ' + msgUnread);
+    }
+    if (notifUnread.length) {
+      parts.push(notifUnread.slice(0, 10).map(n =>
+        App.formatDateTime(n.createdAt) + '\n' + n.text
+      ).join('\n\n---\n\n'));
+      App.markNotificationsRead(user.id);
+    }
+    alert(parts.join('\n\n---\n\n'));
+    refreshUnreadBadges();
+    if (msgUnread && confirm('Перейти к чатам?')) {
+      window.location.href = 'chats.html';
+      return;
+    }
+    if (user.role === 'admin' && notifUnread.some(n => n.type === 'pro_request')) {
       if (confirm('Перейти к заявкам PRO в админ-панели?')) {
         window.location.href = 'admin.html#requests';
       }
     }
   }
 
-  function updateNotificationBadge(userId) {
-    const btn = document.getElementById('btn-notifications');
-    if (!btn) return;
-    const unread = App.getUnreadNotificationCount(userId);
-    const existing = btn.querySelector('.notif-badge');
-    if (unread > 0) {
-      if (existing) existing.textContent = unread;
-      else {
-        const span = document.createElement('span');
-        span.className = 'notif-badge';
-        span.textContent = unread;
-        btn.appendChild(span);
+  function refreshUnreadBadges() {
+    const user = App.getCurrentUser();
+    if (!user) return;
+
+    const bellCount = App.getBellUnreadCount(user.id);
+    const chatCount = App.getTotalUnreadMessages(user.id);
+
+    document.querySelectorAll('#btn-notifications, #btn-notifications-mobile').forEach(btn => {
+      const existing = btn.querySelector('.notif-badge');
+      if (bellCount > 0) {
+        const text = bellCount > 99 ? '99+' : String(bellCount);
+        if (existing) existing.textContent = text;
+        else {
+          const span = document.createElement('span');
+          span.className = 'notif-badge';
+          span.textContent = text;
+          btn.appendChild(span);
+        }
+      } else if (existing) {
+        existing.remove();
       }
-    } else if (existing) {
-      existing.remove();
+    });
+
+    document.querySelectorAll('.nav__link').forEach(link => {
+      if (!link.textContent.includes('Чаты')) return;
+      const existing = link.querySelector('.nav-badge');
+      if (chatCount > 0) {
+        const text = chatCount > 99 ? '99+' : String(chatCount);
+        if (existing) existing.textContent = text;
+        else {
+          const span = document.createElement('span');
+          span.className = 'nav-badge';
+          span.textContent = text;
+          link.appendChild(span);
+        }
+      } else if (existing) {
+        existing.remove();
+      }
+    });
+
+    if (typeof Mobile !== 'undefined' && Mobile.refreshBottomNavBadges) {
+      Mobile.refreshBottomNavBadges();
+    }
+    if (typeof Mobile !== 'undefined' && Mobile.refreshChatsHubBadges) {
+      Mobile.refreshChatsHubBadges();
     }
   }
 
@@ -424,13 +471,18 @@ const UI = (function () {
   return {
     initHeader, initAuthForms, renderMessage, renderMessages, bindMessageActions,
     initPasswordToggles, showNotifications,
-    updateNotificationBadge, escapeHtml, escapeAttr, applyTheme, mountThemeToggle, toggleTheme,
+    refreshUnreadBadges, escapeHtml, escapeAttr, applyTheme, mountThemeToggle, toggleTheme,
     showSyncNotice
   };
 })();
 
 if (typeof App !== 'undefined' && App.ready) {
-  App.ready.then(() => UI.showSyncNotice());
+  App.ready.then(() => {
+    UI.showSyncNotice();
+    UI.refreshUnreadBadges();
+    window.addEventListener('gost-data-synced', () => UI.refreshUnreadBadges());
+    window.addEventListener('gost-unread-changed', () => UI.refreshUnreadBadges());
+  });
 }
 
 (function bootTheme() {
