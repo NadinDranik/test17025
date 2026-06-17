@@ -101,13 +101,12 @@
 .home-hero__illustration {
   display: block;
   width: 100%;
-  max-width: 580px;
+  max-width: 620px;
   height: auto;
   border-radius: 14px;
   box-shadow:
     0 28px 56px rgba(0, 0, 0, 0.38),
     0 0 0 1px rgba(255, 255, 255, 0.12);
-  object-fit: cover;
 }
 
 /* --- Секции --- */
