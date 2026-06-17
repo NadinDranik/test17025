@@ -56,18 +56,23 @@ const UI = (function () {
     const header = document.querySelector('.header__inner');
     if (!header) return;
 
+    const dmChatId = user ? App.getAdminDmChatId(user.id) : '';
+    const chatUnread = user ? App.getTotalUnreadMessages(user.id) : 0;
+    const dmUnread = user ? App.getChatUnreadCount(user.id, dmChatId) : 0;
+    const proUnread = user ? App.getProUnreadTotal(user.id) : 0;
+
     const navLinks = [
       { href: 'index.html', label: 'Главная', id: 'home' },
-      { href: 'chats.html', label: 'Чаты', id: 'chats' }
+      { href: 'chats.html', label: 'Чаты', id: 'chats', unread: chatUnread }
     ];
 
     if (user) {
       navLinks.push({ href: 'account.html', label: 'Личный кабинет', id: 'account' });
-      navLinks.push({ href: 'admin-chat.html', label: 'Администратор', id: 'admin-chat' });
+      navLinks.push({ href: 'admin-chat.html', label: 'Администратор', id: 'admin-chat', unread: dmUnread });
     }
 
     if (user && App.isProActive(user)) {
-      navLinks.push({ href: 'pro.html', label: 'PRO-раздел', id: 'pro' });
+      navLinks.push({ href: 'pro.html', label: 'PRO-раздел', id: 'pro', unread: proUnread });
     } else if (user) {
       navLinks.push({ href: 'pro-request.html', label: 'Оформить PRO', id: 'pro-request' });
     } else {
@@ -76,17 +81,13 @@ const UI = (function () {
 
     if (user && user.role === 'admin') {
       const adminBadge = App.getPendingProRequestCount() + App.getPendingPrivateMessageCount();
-      navLinks.push({ href: 'admin.html', label: 'Админ-панель', id: 'admin', badge: adminBadge });
+      navLinks.push({ href: 'admin.html', label: 'Админ-панель', id: 'admin', unread: adminBadge });
     }
 
-    const chatUnread = user ? App.getTotalUnreadMessages(user.id) : 0;
-
     const navHtml = navLinks.map(l => {
-      let badge = l.badge > 0 ? `<span class="nav-badge">${l.badge}</span>` : '';
-      if (l.id === 'chats' && chatUnread > 0) {
-        badge = `<span class="nav-badge">${chatUnread > 99 ? '99+' : chatUnread}</span>`;
-      }
-      return `<a href="${l.href}" class="nav__link${activePage === l.id ? ' nav__link--active' : ''}">${l.label}${badge}</a>`;
+      const count = l.unread || 0;
+      const badge = count > 0 ? `<span class="nav-badge">${count > 99 ? '99+' : count}</span>` : '';
+      return `<a href="${l.href}" class="nav__link${activePage === l.id ? ' nav__link--active' : ''}" data-nav-id="${l.id}">${l.label}${badge}</a>`;
     }).join('');
 
     let actionsHtml;
@@ -288,11 +289,17 @@ const UI = (function () {
       }
     });
 
-    document.querySelectorAll('.nav__link').forEach(link => {
-      if (!link.textContent.includes('Чаты')) return;
+    document.querySelectorAll('.nav__link[data-nav-id]').forEach(link => {
+      const navId = link.dataset.navId;
+      let count = 0;
+      if (navId === 'chats') count = chatCount;
+      else if (navId === 'admin-chat') count = App.getChatUnreadCount(user.id, App.getAdminDmChatId(user.id));
+      else if (navId === 'pro') count = App.getProUnreadTotal(user.id);
+      else if (navId === 'admin') count = App.getPendingProRequestCount() + App.getPendingPrivateMessageCount();
+
       const existing = link.querySelector('.nav-badge');
-      if (chatCount > 0) {
-        const text = chatCount > 99 ? '99+' : String(chatCount);
+      if (count > 0) {
+        const text = count > 99 ? '99+' : String(count);
         if (existing) existing.textContent = text;
         else {
           const span = document.createElement('span');
@@ -310,6 +317,9 @@ const UI = (function () {
     }
     if (typeof Mobile !== 'undefined' && Mobile.refreshChatsHubBadges) {
       Mobile.refreshChatsHubBadges();
+    }
+    if (typeof Mobile !== 'undefined' && Mobile.refreshDesktopChatsNav) {
+      Mobile.refreshDesktopChatsNav();
     }
 
     updateAdminTabBadges(user);
