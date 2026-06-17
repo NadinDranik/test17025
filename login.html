@@ -87,7 +87,7 @@
     if (tabParam === 'register') showTab('register');
 
     const existing = App.getCurrentUser();
-    if (existing) {
+    if (existing && !existing.blocked) {
       window.location.href = App.getRedirectAfterLogin(existing, nextPage);
     }
 
