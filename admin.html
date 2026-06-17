@@ -590,11 +590,17 @@
         : '<p class="table-empty">Нет сообщений</p>';
 
       container.querySelectorAll('[data-del]').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', async () => {
           const [, id] = btn.dataset.del.split(':');
-          App.deleteMessage('free', id);
+          const admin = App.getCurrentUser();
+          const result = await App.deleteMessage('free', id, admin?.id);
+          if (!result.ok) {
+            toast(result.error || 'Не удалось удалить');
+            return;
+          }
           toast('Сообщение удалено');
           renderModeration();
+          UI.refreshUnreadBadges();
         });
       });
     }
@@ -651,10 +657,15 @@
       });
       threadEl.querySelector('[data-dm-account]')?.addEventListener('click', () => showUserAccountModal(user.id));
       threadEl.querySelectorAll('[data-dm-del]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          App.deleteMessage(chatId, btn.dataset.dmDel);
+        btn.addEventListener('click', async () => {
+          const result = await App.deleteMessage(chatId, btn.dataset.dmDel, admin.id);
+          if (!result.ok) {
+            toast(result.error || 'Не удалось удалить');
+            return;
+          }
           toast('Сообщение удалено');
           renderPrivateMessages();
+          UI.refreshUnreadBadges();
         });
       });
       document.getElementById('dm-reply-form').onsubmit = async e => {
