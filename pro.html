@@ -173,10 +173,6 @@
       const msgs = App.getMessages(activeTopicId);
       document.getElementById('msg-count').textContent = msgs.length + ' сообщ.';
       await UI.renderMessages(messagesEl, msgs, currentUser, activeTopicId, 'В этой теме пока нет сообщений.');
-      if (currentUser) {
-        App.markChatRead(currentUser.id, activeTopicId);
-        UI.refreshUnreadBadges();
-      }
     }
 
     UI.bindMessageActions(messagesEl, () => activeTopicId, currentUser, () => {
