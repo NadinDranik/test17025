@@ -21,6 +21,7 @@ const app = express();
 const ROOT = __dirname;
 const PORT = Number(process.env.PORT) || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
+const cookieSecure = process.env.COOKIE_SECURE === 'true';
 
 if (isProduction) {
   app.set('trust proxy', 1);
@@ -43,7 +44,7 @@ async function start() {
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: isProduction,
+      secure: cookieSecure,
       httpOnly: true,
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000
