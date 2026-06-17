@@ -118,21 +118,35 @@ const UI = (function () {
 
   function showSyncNotice() {
     if (document.getElementById('sync-notice')) return;
-    const notice = document.createElement('div');
-    notice.id = 'sync-notice';
-    notice.className = 'sync-notice';
+
+    const page = window.location.pathname.split('/').pop() || 'index.html';
+    const onSyncPage = ['chat.html', 'pro.html', 'pro-request.html', 'admin.html'].includes(page);
+
     if (App.isSyncEnabled()) {
-      notice.classList.add('sync-notice--ok');
+      if (!onSyncPage) return;
+      const notice = document.createElement('div');
+      notice.id = 'sync-notice';
+      notice.className = 'sync-notice sync-notice--ok';
       notice.textContent = 'Подключено к серверу — сообщения синхронизируются между телефоном и компьютером.';
+      document.querySelector('.header')?.insertAdjacentElement('afterend', notice);
       setTimeout(() => notice.remove(), 5000);
-    } else {
-      const host = window.location.hostname || '';
-      const onGithubPages = host.endsWith('github.io');
-      notice.innerHTML = onGithubPages
-        ? '<strong>GitHub Pages не поддерживает чаты и подписчиков.</strong> Здесь только статическая витрина. Для работы сообщества нужен сервер с Node.js — разверните проект на Render, Railway или VPS и открывайте сайт по адресу этого сервера (не github.io).'
-        : 'Синхронизация недоступна. Запустите сервер командой <strong>npm start</strong> и откройте сайт по адресу <strong>http://IP-вашего-ПК:3000</strong> на телефоне и на компьютере (не открывайте файлы напрямую).';
+      return;
     }
-    document.querySelector('.header')?.insertAdjacentElement('afterend', notice);
+
+    if (!App.isServerAvailable()) {
+      const notice = document.createElement('div');
+      notice.id = 'sync-notice';
+      notice.className = 'sync-notice';
+      const host = window.location.hostname || '';
+      if (host.endsWith('github.io')) {
+        notice.innerHTML = '<strong>GitHub Pages не поддерживает чаты и подписчиков.</strong> Здесь только статическая витрина. Для работы сообщества нужен сервер с Node.js — разверните проект на Render, Railway или VPS и открывайте сайт по адресу этого сервера (не github.io).';
+      } else if (host === 'localhost' || host === '127.0.0.1') {
+        notice.innerHTML = 'Синхронизация недоступна. Запустите сервер командой <strong>npm start</strong> и откройте сайт по адресу <strong>http://IP-вашего-ПК:3000</strong> на телефоне и на компьютере (не открывайте файлы напрямую).';
+      } else {
+        notice.textContent = 'Сервер временно недоступен. Попробуйте обновить страницу через минуту.';
+      }
+      document.querySelector('.header')?.insertAdjacentElement('afterend', notice);
+    }
   }
 
   function renderUserProfile(user) {
