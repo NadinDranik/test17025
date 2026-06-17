@@ -2572,6 +2572,123 @@ ul {
   font-size: 0.88rem;
 }
 
+.admin-dm-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: 16px;
+  min-height: 480px;
+}
+
+.admin-dm-inbox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 640px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 8px;
+  background: var(--color-bg);
+}
+
+.admin-dm-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-dm-item--active {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+}
+
+.admin-dm-item--new {
+  border-left: 3px solid var(--color-accent);
+}
+
+.admin-dm-item__email,
+.admin-dm-item__preview {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.admin-dm-item__preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.admin-dm-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  background: var(--color-bg);
+}
+
+.admin-dm-thread__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-dm-thread__email {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.admin-dm-thread__messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.dm-msg {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.dm-msg--own {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+}
+
+.dm-msg__meta {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.admin-dm-reply textarea {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 900px) {
+  .admin-dm-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 .toast {
   position: fixed;
   bottom: 24px;
