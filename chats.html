@@ -37,12 +37,14 @@
         window.location.href = App.getLoginUrl('chats.html');
         return;
       }
+      const hub = document.getElementById('chats-hub');
+      function refreshHub() {
+        Mobile.renderChatsHub(hub);
+      }
       UI.initHeader('chats');
       Mobile.init('chats');
-      Mobile.renderChatsHub(document.getElementById('chats-hub'));
-      window.addEventListener('gost-data-synced', () => {
-        Mobile.renderChatsHub(document.getElementById('chats-hub'));
-      });
+      refreshHub();
+      window.addEventListener('gost-data-synced', refreshHub);
     });
   </script>
 </body>
