@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Чаты — Гид PRO ГОСТ ISO/IEC 17025-2019</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/mobile.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+</head>
+<body class="page-chats-hub">
+
+  <header class="header">
+    <div class="container header__inner">
+      <a href="index.html" class="logo">
+        <span class="logo__mark">17025</span>
+        <span class="logo__text">Гид PRO</span>
+      </a>
+      <nav class="nav" aria-label="Основная навигация"></nav>
+      <div class="header__actions"></div>
+      <button class="burger" aria-label="Открыть меню" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="m-main" id="chats-hub"></main>
+
+  <script src="js/app.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/mobile.js"></script>
+  <script>
+    App.ready.then(() => {
+      if (!App.getCurrentUser()) {
+        window.location.href = App.getLoginUrl('chats.html');
+        return;
+      }
+      UI.initHeader('chats');
+      Mobile.init('chats');
+      Mobile.renderChatsHub(document.getElementById('chats-hub'));
+      window.addEventListener('gost-data-synced', () => {
+        Mobile.renderChatsHub(document.getElementById('chats-hub'));
+      });
+    });
+  </script>
+</body>
+</html>
