@@ -219,6 +219,14 @@
     </div>
   </main>
 
+  <dialog id="user-account-modal" class="account-modal">
+    <div class="account-modal__inner">
+      <button type="button" class="account-modal__close" id="close-account-modal" aria-label="Закрыть">&times;</button>
+      <h2>Личный кабинет пользователя</h2>
+      <div id="user-account-modal-body" class="account-modal__body">Загрузка…</div>
+    </div>
+  </dialog>
+
   <script src="js/app.js"></script>
   <script src="js/ui.js"></script>
   <script>
@@ -431,6 +439,7 @@
           <td>${App.formatDate(u.proExpiresAt)}</td>
           <td>${App.formatDate(u.lastActive)}</td>
           <td class="admin-actions">
+            <button type="button" class="btn btn--sm btn--outline" data-action="account" data-id="${u.id}">Кабинет</button>
             <button type="button" class="btn btn--sm btn--pro" data-action="extend30" data-id="${u.id}">+30 дн.</button>
             <button type="button" class="btn btn--sm btn--outline" data-action="extend90" data-id="${u.id}">+90 дн.</button>
             ${App.isProActive(u)
@@ -448,6 +457,7 @@
       if (!btn) return;
       const id = btn.dataset.id;
       const action = btn.dataset.action;
+      if (action === 'account') { showUserAccountModal(id); return; }
       if (action === 'extend30') { await App.extendPro(id, 30); toast('PRO продлён на 30 дней'); }
       if (action === 'extend90') { await App.extendPro(id, 90); toast('PRO продлён на 90 дней'); }
       if (action === 'grant30') { await App.grantPro(id, 30); toast('PRO выдан на 30 дней'); }
@@ -628,6 +638,39 @@
       document.body.appendChild(el);
       setTimeout(() => el.remove(), 2500);
     }
+
+    async function showUserAccountModal(userId) {
+      const modal = document.getElementById('user-account-modal');
+      const body = document.getElementById('user-account-modal-body');
+      body.textContent = 'Загрузка…';
+      modal.showModal();
+      try {
+        const p = await App.fetchUserAccountProfile(userId);
+        body.innerHTML = `
+          <div class="account-modal__profile">
+            <p><strong>${UI.escapeHtml(p.user.nickname || p.user.email)}</strong> · ${UI.escapeHtml(p.user.email)}</p>
+            <p>Статус: <span class="badge badge--${p.blocked ? 'blocked' : p.status === 'pro' ? 'pro' : 'free'}">${p.statusLabel}</span></p>
+            <dl class="account-meta">
+              <div class="account-meta__row"><dt>Регистрация</dt><dd>${p.registeredAtFormatted || '—'}</dd></div>
+              <div class="account-meta__row"><dt>Начало PRO</dt><dd>${p.proPaidAtFormatted || '—'}</dd></div>
+              <div class="account-meta__row"><dt>Окончание PRO</dt><dd>${p.proExpiresAtFormatted || '—'}</dd></div>
+              ${p.proActive && p.daysLeft != null ? `<div class="account-meta__row"><dt>Осталось</dt><dd>${p.daysLeft} дн.</dd></div>` : ''}
+            </dl>
+          </div>
+          <h3 class="account-subtitle">История PRO</h3>
+          ${p.proHistory.length ? p.proHistory.map(h => `<div class="account-list-item"><strong>${UI.escapeHtml(h.typeLabel)}</strong> · ${h.createdAtFormatted || '—'}${h.note ? `<p>${UI.escapeHtml(h.note)}</p>` : ''}</div>`).join('') : '<p class="account-empty">Нет записей</p>'}
+          <h3 class="account-subtitle">Заявки PRO</h3>
+          ${p.proRequests.length ? p.proRequests.map(r => `<div class="account-list-item"><strong>${r.status === 'pending' ? 'Ожидает' : 'Обработана'}</strong> · ${r.createdAtFormatted || '—'}</div>`).join('') : '<p class="account-empty">Нет заявок</p>'}
+          <h3 class="account-subtitle">Сообщения администратора</h3>
+          ${p.adminMessages.length ? p.adminMessages.map(m => `<div class="account-msg"><time>${m.createdAtFormatted || '—'}</time><p>${UI.escapeHtml(m.text || '')}</p></div>`).join('') : '<p class="account-empty">Нет сообщений</p>'}`;
+      } catch (err) {
+        body.textContent = err.message || 'Ошибка загрузки';
+      }
+    }
+
+    document.getElementById('close-account-modal')?.addEventListener('click', () => {
+      document.getElementById('user-account-modal').close();
+    });
 
     function refresh() {
       renderStats();
