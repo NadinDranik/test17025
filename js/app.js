@@ -86,6 +86,10 @@ const App = (function () {
         u.proPaidAt = u.proExpiresAt && isProActive(u) ? u.registeredAt : null;
         changed = true;
       }
+      if (u.avatarFileId === undefined) {
+        u.avatarFileId = null;
+        changed = true;
+      }
     });
     if (changed) save(data);
   }
@@ -93,6 +97,59 @@ const App = (function () {
   function getDisplayName(user) {
     if (!user) return 'Гость';
     return (user.nickname || '').trim() || user.email.split('@')[0];
+  }
+
+  const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+  const AVATAR_MAX_SIZE = 2 * 1024 * 1024;
+  const avatarUrlCache = new Map();
+
+  function getUserById(userId) {
+    return load().users.find(u => u.id === userId) || null;
+  }
+
+  function getUserInitial(user) {
+    const name = getDisplayName(user);
+    return (name.charAt(0) || '?').toUpperCase();
+  }
+
+  async function getAvatarUrl(user) {
+    if (!user?.avatarFileId) return null;
+    if (avatarUrlCache.has(user.avatarFileId)) return avatarUrlCache.get(user.avatarFileId);
+    const url = await FileDB.get(user.avatarFileId);
+    if (url) avatarUrlCache.set(user.avatarFileId, url);
+    return url || null;
+  }
+
+  async function prefetchAvatarUrls(userIds) {
+    const map = {};
+    const users = load().users;
+    await Promise.all(userIds.map(async (id) => {
+      const user = users.find(u => u.id === id);
+      map[id] = user ? await getAvatarUrl(user) : null;
+    }));
+    return map;
+  }
+
+  function compressAvatar(dataUrl) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 320;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxW) {
+          h = Math.round(h * maxW / w);
+          w = maxW;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.88));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
   }
 
   function getStatusLabel(user) {
@@ -952,7 +1009,8 @@ const App = (function () {
         files: fileMeta,
         createdAt: new Date().toISOString(),
         editedAt: null,
-        pinned: false
+        pinned: false,
+        reactions: {}
       };
       if (replyTo) {
         const parent = data.messages[chatId].find(m => m.id === replyTo);
@@ -1050,6 +1108,31 @@ const App = (function () {
       msg.pinned = pinned;
       save(data);
     }
+  }
+
+  function toggleReaction(chatId, msgId, userId, emoji) {
+    if (!REACTION_EMOJIS.includes(emoji)) {
+      return { ok: false, error: 'Недопустимая реакция' };
+    }
+    const data = load();
+    const msgs = data.messages[chatId];
+    if (!msgs) return { ok: false, error: 'Чат не найден' };
+    const msg = msgs.find(m => m.id === msgId);
+    if (!msg) return { ok: false, error: 'Сообщение не найдено' };
+    if (!msg.reactions) msg.reactions = {};
+
+    const list = msg.reactions[emoji] ? [...msg.reactions[emoji]] : [];
+    const idx = list.indexOf(userId);
+    if (idx >= 0) {
+      list.splice(idx, 1);
+      if (!list.length) delete msg.reactions[emoji];
+      else msg.reactions[emoji] = list;
+    } else {
+      msg.reactions[emoji] = [...list, userId];
+    }
+
+    if (!save(data)) return { ok: false, error: 'Не удалось сохранить реакцию' };
+    return { ok: true };
   }
 
   function searchMessages(query, chatIds) {
@@ -1417,6 +1500,63 @@ const App = (function () {
     return data.profile;
   }
 
+  async function updateAccountAvatar(file) {
+    if (!file) throw new Error('Файл не выбран');
+    const ext = getFileExt(file.name);
+    if (!isImageExt(ext)) throw new Error('Аватар должен быть изображением (JPG, PNG, WebP, GIF)');
+    if (file.size > AVATAR_MAX_SIZE) throw new Error('Максимальный размер аватара — 2 МБ');
+
+    const raw = await readFileAsDataUrl(file);
+    const dataUrl = await compressAvatar(raw);
+    const fileId = 'avatar-' + uid();
+    await FileDB.save(fileId, dataUrl);
+
+    const res = await fetch('/api/account/avatar', {
+      method: 'PATCH',
+      ...API_OPTS,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ avatarFileId: fileId })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      await FileDB.remove(fileId);
+      throw new Error(data.error || 'Не удалось сохранить аватар');
+    }
+
+    avatarUrlCache.set(fileId, dataUrl);
+    if (data.profile?.user) {
+      _currentUser = data.profile.user;
+      const local = load();
+      const u = local.users.find(x => x.id === _currentUser.id);
+      if (u) {
+        u.avatarFileId = _currentUser.avatarFileId;
+        save(local);
+      }
+    }
+    return data.profile;
+  }
+
+  async function removeAccountAvatar() {
+    const res = await fetch('/api/account/avatar', {
+      method: 'PATCH',
+      ...API_OPTS,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ remove: true })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Не удалось удалить аватар');
+    if (data.profile?.user) {
+      _currentUser = data.profile.user;
+      const local = load();
+      const u = local.users.find(x => x.id === _currentUser.id);
+      if (u) {
+        u.avatarFileId = null;
+        save(local);
+      }
+    }
+    return data.profile;
+  }
+
   async function changeAccountPassword(currentPassword, newPassword) {
     const res = await fetch('/api/account/password', {
       method: 'POST',
@@ -1457,11 +1597,13 @@ const App = (function () {
     ADMIN_EMAIL,
     CHAT_FREE, CHAT_ADMIN_SUPPORT, CHAT_DM_PREFIX, PRO_PAYMENT_INFO,
     getAdminDmChatId, isAdminDmChat, getDmUserId,
+    getUserById, getUserInitial, getAvatarUrl, prefetchAvatarUrls,
+    REACTION_EMOJIS,
     getDisplayName, getStatusLabel, normalizeNickname, getLoginUrl, getRedirectAfterLogin,
     isProActive, getSubscriptionStatus, grantPro, extendPro, revokePro,
     setProExpiry, blockUser, updateUser,
     getProTopics, createProTopic, updateProTopic, deleteProTopic,
-    getMessages, sortMessagesChronologically, addMessage, editMessage, deleteMessage, pinMessage,
+    getMessages, sortMessagesChronologically, addMessage, editMessage, deleteMessage, pinMessage, toggleReaction,
     searchMessages, getNotifications, getUnreadNotificationCount, markNotificationsRead,
     getChatUnreadCount, getTotalUnreadMessages, getBellUnreadCount, getAccessibleChatIds, markChatRead,
     getChatLabel, getChatHref, getUnreadChatsSummary, getProUnreadTotal,
@@ -1472,6 +1614,7 @@ const App = (function () {
     hydrateMessageFiles, isImageExt, isVideoExt, getFileExt, ALLOWED_EXT, MAX_FILE_SIZE,
     requireAuth, requireAdmin, requirePro, isAllowedFile,
     fetchAccountProfile, fetchUserAccountProfile, updateAccountNickname,
+    updateAccountAvatar, removeAccountAvatar,
     changeAccountPassword, toastAccount, isUserBlocked
   };
 })();
