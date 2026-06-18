@@ -17,6 +17,7 @@ const {
   registerProRoutes
 } = require('./server/routes');
 const { registerAccountRoutes } = require('./server/account-routes');
+const { sendHtmlWithMeta, createSiteMetaMiddleware } = require('./server/site-meta');
 
 const app = express();
 const ROOT = __dirname;
@@ -70,11 +71,18 @@ async function start() {
   registerAccountRoutes(app, (msg) => broadcast(msg));
 
   app.get('/admin.html', requireAdminPage, (req, res) => {
-    res.sendFile(path.join(ROOT, 'admin.html'));
+    sendHtmlWithMeta(req, res, path.join(ROOT, 'admin.html'));
   });
 
+  app.get('/site.webmanifest', (req, res) => {
+    res.type('application/manifest+json');
+    res.sendFile(path.join(ROOT, 'site.webmanifest'));
+  });
+
+  app.use(createSiteMetaMiddleware(ROOT));
+
   app.use(express.static(ROOT, {
-    index: 'index.html'
+    index: false
   }));
 
   const server = http.createServer(app);
