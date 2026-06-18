@@ -722,43 +722,50 @@ body.logged-in-home #user-dashboard {
     flex-direction: column;
     gap: 8px;
     padding: 12px;
-    background: var(--color-bg);
+    background: linear-gradient(180deg, #fff7f3 0%, #ffece4 48%, #ffdfd2 100%);
   }
 
   .msg {
     max-width: 88%;
     padding: 10px 12px;
     border-radius: 16px;
-    border: none;
-    background: var(--color-bg-white);
-    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(180, 90, 70, 0.08);
     align-self: flex-start;
+    color: var(--color-text);
   }
 
   .msg--own {
     align-self: flex-end;
-    background: var(--color-primary);
-    color: #fff;
+    background: #e4e4e8;
+    color: var(--color-text);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     border-bottom-right-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   }
 
   .msg:not(.msg--own) {
     border-bottom-left-radius: 4px;
   }
 
-  .msg--own .msg__author,
+  .msg--own .msg__author {
+    color: var(--color-primary-dark);
+  }
+
   .msg--own .msg__time,
   .msg--own .msg__text {
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--color-text);
   }
 
   .msg--own .msg__time {
-    opacity: 0.75;
+    opacity: 0.65;
   }
 
   .msg--own .msg__reply {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
+    background: rgba(255, 255, 255, 0.55);
+    color: var(--color-text-muted);
+    border-left-color: var(--color-primary-light);
   }
 
   .msg--pinned,
