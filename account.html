@@ -43,7 +43,16 @@
           <section class="account-card account-card--profile">
             <h2>Профиль</h2>
             <div class="account-profile-head">
-              <div class="account-avatar" id="acc-avatar">?</div>
+              <div class="account-avatar-wrap">
+                <div class="account-avatar" id="acc-avatar">?</div>
+                <div class="account-avatar-actions">
+                  <label class="btn btn--outline btn--sm account-avatar-upload">
+                    Загрузить фото
+                    <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+                  </label>
+                  <button type="button" class="btn btn--ghost btn--sm" id="avatar-remove" hidden>Убрать</button>
+                </div>
+              </div>
               <div>
                 <p class="account-nick" id="acc-nickname">—</p>
                 <p class="account-email" id="acc-email">—</p>
@@ -174,9 +183,26 @@
         return 'Подписка не оформлена';
       }
 
+      async function renderAvatar(u) {
+        const el = document.getElementById('acc-avatar');
+        const removeBtn = document.getElementById('avatar-remove');
+        el.classList.remove('account-avatar--has-img');
+        if (u.avatarFileId) {
+          const url = await App.getAvatarUrl(u);
+          if (url) {
+            el.innerHTML = `<img src="${url}" alt="">`;
+            el.classList.add('account-avatar--has-img');
+            if (removeBtn) removeBtn.hidden = false;
+            return;
+          }
+        }
+        el.textContent = (u.nickname || u.email).charAt(0).toUpperCase();
+        if (removeBtn) removeBtn.hidden = true;
+      }
+
       function renderProfile(p) {
         const u = p.user;
-        document.getElementById('acc-avatar').textContent = (u.nickname || u.email).charAt(0).toUpperCase();
+        renderAvatar(u);
         document.getElementById('acc-nickname').textContent = u.nickname || u.email.split('@')[0];
         document.getElementById('acc-email').textContent = u.email;
         const badge = document.getElementById('acc-status-badge');
@@ -301,6 +327,31 @@
         } catch (ex) {
           err.textContent = ex.message;
           err.hidden = false;
+        }
+      });
+
+      document.getElementById('avatar-input')?.addEventListener('change', async e => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+        try {
+          const profile = await App.updateAccountAvatar(file);
+          await renderAvatar(profile.user);
+          UI.initHeader('account');
+          App.toastAccount('Аватар обновлён');
+        } catch (ex) {
+          App.toastAccount(ex.message || 'Не удалось загрузить аватар');
+        }
+      });
+
+      document.getElementById('avatar-remove')?.addEventListener('click', async () => {
+        try {
+          const profile = await App.removeAccountAvatar();
+          await renderAvatar(profile.user);
+          UI.initHeader('account');
+          App.toastAccount('Аватар удалён');
+        } catch (ex) {
+          App.toastAccount(ex.message || 'Не удалось удалить аватар');
         }
       });
 
