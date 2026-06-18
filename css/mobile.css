@@ -726,27 +726,37 @@ body.logged-in-home #user-dashboard {
   }
 
   .msg {
-    max-width: 88%;
-    padding: 10px 12px;
-    border-radius: 16px;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    background: #ffffff;
-    box-shadow: 0 1px 3px rgba(180, 90, 70, 0.08);
+    max-width: 92%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
     align-self: flex-start;
     color: var(--color-text);
   }
 
   .msg--own {
     align-self: flex-end;
-    background: #e4e4e8;
+  }
+
+  .msg__bubble {
+    padding: 10px 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(180, 90, 70, 0.08);
     color: var(--color-text);
+  }
+
+  .msg:not(.msg--own) .msg__bubble {
+    border-bottom-left-radius: 4px;
+  }
+
+  .msg--own .msg__bubble {
+    background: #e4e4e8;
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-bottom-right-radius: 4px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  }
-
-  .msg:not(.msg--own) {
-    border-bottom-left-radius: 4px;
   }
 
   .msg--own .msg__author {
@@ -768,13 +778,17 @@ body.logged-in-home #user-dashboard {
     border-left-color: var(--color-primary-light);
   }
 
+  .msg--pinned .msg__bubble,
+  .msg--welcome .msg__bubble {
+    background: rgba(200, 169, 81, 0.12);
+    border: 1px solid rgba(200, 169, 81, 0.35);
+    color: var(--color-text);
+  }
+
   .msg--pinned,
   .msg--welcome {
     max-width: 100%;
     align-self: stretch;
-    background: rgba(200, 169, 81, 0.12);
-    border: 1px solid rgba(200, 169, 81, 0.35);
-    color: var(--color-text);
   }
 
   .msg__header {
