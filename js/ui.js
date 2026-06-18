@@ -493,8 +493,8 @@ const UI = (function () {
       ${chips}
       <div class="msg__reaction-add">
         <button type="button" class="msg__btn msg__btn--react" data-action="react-picker" data-id="${msg.id}" title="Добавить реакцию">+</button>
-        <div class="msg__reaction-picker" hidden>${picker}</div>
       </div>
+      <div class="msg__reaction-picker" hidden>${picker}</div>
     </div>`;
   }
 
@@ -609,7 +609,7 @@ const UI = (function () {
     if (!container._reactionPickerBound) {
       container._reactionPickerBound = true;
       document.addEventListener('click', e => {
-        if (!e.target.closest('.msg__reaction-add')) {
+        if (!e.target.closest('.msg__reaction-add') && !e.target.closest('.msg__reaction-picker')) {
           document.querySelectorAll('.msg__reaction-picker').forEach(el => { el.hidden = true; });
         }
       });
@@ -629,7 +629,8 @@ const UI = (function () {
 
       if (action === 'react-picker') {
         if (!msg) return;
-        const picker = btn.parentElement?.querySelector('.msg__reaction-picker');
+        const reactionsEl = btn.closest('.msg__reactions');
+        const picker = reactionsEl?.querySelector('.msg__reaction-picker');
         document.querySelectorAll('.msg__reaction-picker').forEach(el => {
           if (el !== picker) el.hidden = true;
         });
