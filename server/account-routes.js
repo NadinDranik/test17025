@@ -58,6 +58,37 @@ function registerAccountRoutes(app, broadcast) {
     res.json({ ok: true, profile });
   });
 
+  router.patch('/avatar', (req, res) => {
+    const remove = !!req.body?.remove;
+    const avatarFileId = typeof req.body?.avatarFileId === 'string' ? req.body.avatarFileId.trim() : '';
+
+    if (!remove) {
+      if (!avatarFileId || !/^[a-zA-Z0-9_-]+$/.test(avatarFileId)) {
+        return res.status(400).json({ error: 'Некорректный идентификатор аватара' });
+      }
+      if (!db.getFile(avatarFileId)) {
+        return res.status(400).json({ error: 'Файл аватара не найден. Загрузите изображение ещё раз.' });
+      }
+    }
+
+    let oldFileId = null;
+    db.updateStore(data => {
+      const u = data.users.find(x => x.id === req.user.id);
+      if (!u) return data;
+      oldFileId = u.avatarFileId || null;
+      u.avatarFileId = remove ? null : avatarFileId;
+      return data;
+    });
+
+    if (oldFileId && oldFileId !== avatarFileId) {
+      try { db.deleteFile(oldFileId); } catch { /* ignore */ }
+    }
+
+    broadcast({ type: 'data-updated', version: db.getStore().version });
+    const profile = buildAccountProfile(req.user.id, db.getStore().data);
+    res.json({ ok: true, profile });
+  });
+
   router.post('/password', async (req, res) => {
     try {
       const { currentPassword, newPassword } = req.body || {};
