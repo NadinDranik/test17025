@@ -182,7 +182,12 @@ const App = (function () {
     }
 
     const targetUser = data.users.find(u => u.id === userId);
-    const welcomeAt = targetUser?.registeredAt || new Date(0).toISOString();
+    const existingMsgs = data.messages[chatId].filter(m => m.systemType !== 'pro_welcome');
+    let welcomeAt = targetUser?.registeredAt || new Date(0).toISOString();
+    if (existingMsgs.length) {
+      const minOther = Math.min(...existingMsgs.map(getMessageTimestamp));
+      welcomeAt = new Date(minOther - 1).toISOString();
+    }
 
     data.messages[chatId].push({
       id: '__pro_welcome__' + userId,
@@ -224,27 +229,12 @@ const App = (function () {
   function notifyAdminNewMessage(chatId, user, msg) {
     const admin = load().users.find(u => u.role === 'admin');
     if (!admin) return;
-    if (isAdminDmChat(chatId)) {
+    if (isAdminDmChat(chatId) && msg.files && msg.files.length) {
+      addProRequest(user, msg);
       addNotification(
         admin.id,
-        '✉️ ' + getDisplayName(user) + ' (' + user.email + '): ' + messagePreview(msg),
-        'private_message',
-        msg.id
-      );
-      if (msg.files && msg.files.length) {
-        addProRequest(user, msg);
-        addNotification(
-          admin.id,
-          '🔔 Чек об оплате: ' + getDisplayName(user) + ' (' + user.email + ')',
-          'pro_request',
-          msg.id
-        );
-      }
-    } else if (chatId === CHAT_FREE) {
-      addNotification(
-        admin.id,
-        '💬 ' + getDisplayName(user) + ' в общем чате: ' + messagePreview(msg),
-        'chat_message',
+        '🔔 Чек об оплате: ' + getDisplayName(user) + ' (' + user.email + ')',
+        'pro_request',
         msg.id
       );
     }
@@ -856,10 +846,63 @@ const App = (function () {
   }
 
   /* Messages */
+  function getMessageTimestamp(msg) {
+    if (!msg) return 0;
+    const parsed = new Date(msg.createdAt).getTime();
+    if (!Number.isNaN(parsed)) return parsed;
+    const idPart = String(msg.id || '').match(/^([a-z0-9]+)/i);
+    if (idPart) {
+      const fromId = parseInt(idPart[1], 36);
+      if (!Number.isNaN(fromId)) return fromId;
+    }
+    return 0;
+  }
+
+  function isUnreadCountableMessage(msg, userId) {
+    if (!msg || msg.userId === userId) return false;
+    if (msg.systemType) return false;
+    return true;
+  }
+
+  function repairChatMessageOrder(chatId) {
+    const data = load();
+    const msgs = data.messages[chatId];
+    if (!msgs || msgs.length < 2) return;
+
+    let changed = false;
+    const byId = new Map(msgs.map(m => [m.id, m]));
+
+    msgs.forEach(m => {
+      if (!m.replyTo) return;
+      const parent = byId.get(m.replyTo);
+      if (!parent) return;
+      const parentTime = getMessageTimestamp(parent);
+      const msgTime = getMessageTimestamp(m);
+      if (msgTime <= parentTime) {
+        m.createdAt = new Date(parentTime + 1).toISOString();
+        changed = true;
+      }
+    });
+
+    const welcome = msgs.find(m => m.systemType === 'pro_welcome');
+    if (welcome) {
+      const others = msgs.filter(m => m.id !== welcome.id);
+      if (others.length) {
+        const minOther = Math.min(...others.map(getMessageTimestamp));
+        if (getMessageTimestamp(welcome) >= minOther) {
+          welcome.createdAt = new Date(minOther - 1).toISOString();
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) save(data);
+  }
+
   function sortMessagesChronologically(messages) {
     return (messages || []).slice().sort((a, b) => {
-      const ta = new Date(a.createdAt).getTime();
-      const tb = new Date(b.createdAt).getTime();
+      const ta = getMessageTimestamp(a);
+      const tb = getMessageTimestamp(b);
       if (ta !== tb) return ta - tb;
       return String(a.id).localeCompare(String(b.id));
     });
@@ -868,6 +911,7 @@ const App = (function () {
   function getMessages(chatId) {
     const data = load();
     if (!data.messages[chatId]) data.messages[chatId] = [];
+    repairChatMessageOrder(chatId);
     return sortMessagesChronologically(data.messages[chatId]);
   }
 
@@ -910,6 +954,16 @@ const App = (function () {
         editedAt: null,
         pinned: false
       };
+      if (replyTo) {
+        const parent = data.messages[chatId].find(m => m.id === replyTo);
+        if (parent) {
+          const parentTime = getMessageTimestamp(parent);
+          const replyTime = getMessageTimestamp(msg);
+          if (replyTime <= parentTime) {
+            msg.createdAt = new Date(parentTime + 1).toISOString();
+          }
+        }
+      }
       data.messages[chatId].push(msg);
       if (!save(data)) {
         fileMeta.forEach(f => FileDB.remove(f.id));
@@ -1083,7 +1137,7 @@ const App = (function () {
     if (!userId || !chatId) return 0;
     const lastRead = getLastReadAt(userId, chatId);
     return getMessages(chatId).filter(m =>
-      m.userId !== userId && (!lastRead || m.createdAt > lastRead)
+      isUnreadCountableMessage(m, userId) && (!lastRead || m.createdAt > lastRead)
     ).length;
   }
 
@@ -1112,6 +1166,10 @@ const App = (function () {
   }
 
   function getBellUnreadCount(userId) {
+    const user = load().users.find(u => u.id === userId);
+    if (user?.role === 'admin') {
+      return getPendingProRequestCount() + getPendingPrivateMessageCount();
+    }
     return getTotalUnreadMessages(userId) + getUnreadNotificationCount(userId);
   }
 

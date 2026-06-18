@@ -58,15 +58,6 @@
       <!-- Статистика -->
       <div class="admin-stats" id="stats"></div>
 
-      <!-- Оповещение о новых заявках -->
-      <div class="admin-alert" id="admin-alert-pro" hidden>
-        <div class="admin-alert__content">
-          <strong>🔔 Поступили новые заявки на PRO!</strong>
-          <span>Ожидают обработки: <strong id="admin-alert-count">0</strong></span>
-        </div>
-        <button type="button" class="btn btn--pro btn--sm" id="btn-go-requests">Открыть заявки</button>
-      </div>
-
       <!-- Вкладки -->
       <div class="admin-tabs">
         <button type="button" class="admin-tab" data-tab="requests">
@@ -78,7 +69,7 @@
         <button type="button" class="admin-tab admin-tab--active" data-tab="users">Пользователи</button>
         <button type="button" class="admin-tab" data-tab="pro">PRO-подписки</button>
         <button type="button" class="admin-tab" data-tab="topics">PRO-чаты</button>
-        <button type="button" class="admin-tab" data-tab="moderation">Модерация <span class="tab-badge" id="moderation-badge" hidden>0</span></button>
+        <button type="button" class="admin-tab" data-tab="moderation">Модерация</button>
       </div>
 
       <!-- Заявки PRO -->
@@ -293,8 +284,6 @@
     }
 
     function initAdminPanel() {
-    App.checkSubscriptionWarnings();
-
     const data = App.getData();
     const nonAdminUsers = data.users.filter(u => u.role !== 'admin');
 
@@ -319,8 +308,6 @@
     });
 
     let selectedDmUserId = null;
-
-    document.getElementById('btn-go-requests')?.addEventListener('click', () => switchTab('requests'));
 
     if (window.location.hash === '#requests') {
       switchTab('requests');
@@ -354,8 +341,8 @@
       const topics = App.getProTopics(true);
 
       document.getElementById('stats').innerHTML = `
-        <div class="stat-card stat-card--alert${pending ? ' stat-card--pulse' : ''}" id="stat-pending" title="Открыть заявки PRO">
-          <span class="stat-card__num">${pending}</span><span class="stat-card__label">Новых заявок PRO</span>
+        <div class="stat-card" id="stat-pending" title="Открыть заявки PRO">
+          <span class="stat-card__num">${pending}</span><span class="stat-card__label">Заявок PRO</span>
         </div>
         <div class="stat-card"><span class="stat-card__num">${users.length}</span><span class="stat-card__label">Пользователей</span></div>
         <div class="stat-card stat-card--pro"><span class="stat-card__num">${active.length}</span><span class="stat-card__label">Активных PRO</span></div>
@@ -376,16 +363,9 @@
         badge.hidden = count === 0;
       }
 
-      const alert = document.getElementById('admin-alert-pro');
-      const alertCount = document.getElementById('admin-alert-count');
-      if (alert) alert.hidden = count === 0;
-      if (alertCount) alertCount.textContent = count;
-
       const requestsTab = document.querySelector('.admin-tab[data-tab="requests"]');
-      if (requestsTab && count > 0) {
-        requestsTab.classList.add('admin-tab--has-new');
-      } else if (requestsTab) {
-        requestsTab.classList.remove('admin-tab--has-new');
+      if (requestsTab) {
+        requestsTab.classList.toggle('admin-tab--has-new', count > 0);
       }
 
       const list = document.getElementById('pro-requests-list');
@@ -520,17 +500,11 @@
     }
 
     function renderTopics() {
-      const admin = App.getCurrentUser();
       const topics = App.getProTopics(true);
       document.querySelector('#topics-table tbody').innerHTML = topics.length
-        ? topics.map(t => {
-          const unread = admin ? App.getChatUnreadCount(admin.id, t.id) : 0;
-          const unreadHtml = unread
-            ? ` <span class="tab-badge tab-badge--inline">${unread > 99 ? '99+' : unread}</span>`
-            : '';
-          return `
+        ? topics.map(t => `
           <tr>
-            <td>${t.pinned ? '📌 ' : ''}${t.title}${unreadHtml}</td>
+            <td>${t.pinned ? '📌 ' : ''}${t.title}</td>
             <td>${t.description || '—'}</td>
             <td>${App.formatDate(t.createdAt)}</td>
             <td>${t.hidden ? '<span class="badge badge--blocked">Скрыта</span>' : '<span class="badge badge--pro">Видна</span>'}</td>
@@ -540,8 +514,7 @@
               <button type="button" class="btn btn--sm btn--outline" data-topic="edit" data-id="${t.id}">Изменить</button>
               <button type="button" class="btn btn--sm btn--danger" data-topic="delete" data-id="${t.id}">Удалить</button>
             </td>
-          </tr>`;
-        }).join('')
+          </tr>`).join('')
         : '<tr><td colspan="5" class="table-empty">PRO-чаты не созданы</td></tr>';
     }
 

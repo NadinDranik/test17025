@@ -355,22 +355,25 @@ const UI = (function () {
 
   function updateAdminTabBadges(user) {
     if (!user || user.role !== 'admin') return;
+    const pendingRequests = App.getPendingProRequestCount();
     const dmUnread = App.getPendingPrivateMessageCount();
+
+    const reqBadge = document.getElementById('pro-requests-badge');
+    if (reqBadge) {
+      reqBadge.textContent = pendingRequests > 99 ? '99+' : String(pendingRequests);
+      reqBadge.hidden = pendingRequests === 0;
+    }
+
     const dmBadge = document.getElementById('private-messages-badge');
     if (dmBadge) {
       dmBadge.textContent = dmUnread > 99 ? '99+' : String(dmUnread);
       dmBadge.hidden = dmUnread === 0;
     }
-    const modBadge = document.getElementById('moderation-badge');
-    if (modBadge) {
-      const freeUnread = App.getChatUnreadCount(user.id, App.CHAT_FREE);
-      modBadge.textContent = freeUnread > 99 ? '99+' : String(freeUnread);
-      modBadge.hidden = freeUnread === 0;
-    }
-    const messagesTab = document.querySelector('.admin-tab[data-tab="messages"]');
-    if (messagesTab) {
-      messagesTab.classList.toggle('admin-tab--has-new', dmUnread > 0);
-    }
+
+    document.querySelector('.admin-tab[data-tab="requests"]')
+      ?.classList.toggle('admin-tab--has-new', pendingRequests > 0);
+    document.querySelector('.admin-tab[data-tab="messages"]')
+      ?.classList.toggle('admin-tab--has-new', dmUnread > 0);
   }
 
   function initAuthForms() {
@@ -539,7 +542,7 @@ const UI = (function () {
       ? App.sortMessagesChronologically(msgs)
       : msgs.slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     const hydrated = await Promise.all(sorted.map(m => App.hydrateMessageFiles(m)));
-    container.innerHTML = hydrated.map(m => renderMessage(m, currentUser, chatId, msgs)).join('');
+    container.innerHTML = hydrated.map(m => renderMessage(m, currentUser, chatId, sorted)).join('');
     container.scrollTop = container.scrollHeight;
     if (currentUser && chatId) {
       App.markChatRead(currentUser.id, chatId);

@@ -41,6 +41,7 @@
       const hub = document.getElementById('chats-hub');
       function refreshHub() {
         Mobile.renderChatsHub(hub);
+        UI.refreshUnreadBadges();
       }
       UI.initHeader('chats');
       Mobile.init('chats');

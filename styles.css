@@ -2449,7 +2449,8 @@ ul {
 
 .tab-badge,
 .nav-badge,
-.notif-badge {
+.notif-badge,
+.m-card__unread {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2461,6 +2462,15 @@ ul {
   color: #fff;
   font-size: 0.7rem;
   font-weight: 700;
+  flex-shrink: 0;
+}
+
+.m-card__row .m-card__unread {
+  margin-left: auto;
+}
+
+.tab-badge,
+.nav-badge {
   margin-left: 6px;
 }
 
