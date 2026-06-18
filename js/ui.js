@@ -461,10 +461,49 @@ const UI = (function () {
     });
   }
 
-  function renderMessage(msg, currentUser, chatId, allMessages) {
+  function renderAvatarHtml(user, msg, avatarUrls) {
+    const author = user || { nickname: msg.authorName, email: msg.authorEmail };
+    const initial = App.getUserInitial(author);
+    const url = user && avatarUrls ? avatarUrls[msg.userId] : null;
+    if (url) {
+      return `<img class="msg-avatar msg-avatar--img" src="${escapeAttr(url)}" alt="" loading="lazy">`;
+    }
+    return `<span class="msg-avatar msg-avatar--initial" aria-hidden="true">${escapeHtml(initial)}</span>`;
+  }
+
+  function renderReactionsHtml(msg, currentUser) {
+    const reactions = msg.reactions || {};
+    const chips = Object.entries(reactions)
+      .filter(([, users]) => users && users.length)
+      .map(([emoji, userIds]) => {
+        const active = currentUser && userIds.includes(currentUser.id);
+        return `<button type="button" class="msg__reaction${active ? ' msg__reaction--active' : ''}" data-action="react" data-id="${msg.id}" data-emoji="${emoji}">${emoji}<span>${userIds.length}</span></button>`;
+      })
+      .join('');
+
+    if (!currentUser) {
+      return chips ? `<div class="msg__reactions">${chips}</div>` : '';
+    }
+
+    const picker = App.REACTION_EMOJIS.map(emoji =>
+      `<button type="button" class="msg__reaction-pick" data-action="react" data-id="${msg.id}" data-emoji="${emoji}">${emoji}</button>`
+    ).join('');
+
+    return `<div class="msg__reactions">
+      ${chips}
+      <div class="msg__reaction-add">
+        <button type="button" class="msg__btn msg__btn--react" data-action="react-picker" data-id="${msg.id}" title="Добавить реакцию">+</button>
+        <div class="msg__reaction-picker" hidden>${picker}</div>
+      </div>
+    </div>`;
+  }
+
+  function renderMessage(msg, currentUser, chatId, allMessages, avatarUrls) {
     const isOwn = currentUser && msg.userId === currentUser.id;
     const isAdmin = currentUser && currentUser.role === 'admin';
     const reply = msg.replyTo ? allMessages.find(m => m.id === msg.replyTo) : null;
+    const authorUser = App.getUserById(msg.userId);
+    const avatarHtml = renderAvatarHtml(authorUser, msg, avatarUrls);
 
     let filesHtml = '';
     if (msg.files && msg.files.length) {
@@ -504,29 +543,34 @@ const UI = (function () {
     const canManage = isOwn || isAdmin;
     const canDelete = canManage && (!isSystem || isAdmin);
 
-    const actions = canManage ? `
+    const actions = currentUser ? `
       <div class="msg__actions">
         ${isOwn && msg.text ? `<button type="button" class="msg__btn" data-action="edit" data-id="${msg.id}">Изменить</button>` : ''}
         ${canDelete ? `<button type="button" class="msg__btn msg__btn--danger" data-action="delete" data-id="${msg.id}">Удалить</button>` : ''}
         ${isAdmin ? `<button type="button" class="msg__btn" data-action="pin" data-id="${msg.id}">${msg.pinned ? 'Открепить' : 'Закрепить'}</button>` : ''}
         <button type="button" class="msg__btn" data-action="reply" data-id="${msg.id}">Ответить</button>
-      </div>` : `<div class="msg__actions">
-        <button type="button" class="msg__btn" data-action="reply" data-id="${msg.id}">Ответить</button>
-      </div>`;
+      </div>` : '';
 
     const welcomeClass = msg.systemType === 'pro_welcome' ? ' msg--welcome' : '';
+    const reactionsHtml = isSystem ? '' : renderReactionsHtml(msg, currentUser);
 
     return `
       <article class="msg${isOwn ? ' msg--own' : ''}${msg.pinned ? ' msg--pinned' : ''}${welcomeClass}" data-id="${msg.id}">
-        ${msg.pinned ? '<span class="msg__pin-label">Закреплено</span>' : ''}
-        <header class="msg__header">
-          <strong class="msg__author">${escapeAttr(msg.authorName || msg.authorEmail)}</strong>
-          <time class="msg__time">${App.formatDateTime(msg.createdAt)}${msg.editedAt ? ' (ред.)' : ''}</time>
-        </header>
-        ${reply ? `<div class="msg__reply">↩ ${escapeAttr(reply.authorName || reply.authorEmail)}: ${escapeHtml(replyLabel)}${replyLabel.length >= 80 ? '…' : ''}</div>` : ''}
-        ${textHtml}
-        ${filesHtml}
-        ${currentUser ? actions : ''}
+        <div class="msg__layout">
+          ${avatarHtml}
+          <div class="msg__bubble">
+            ${msg.pinned ? '<span class="msg__pin-label">Закреплено</span>' : ''}
+            <header class="msg__header">
+              <strong class="msg__author">${escapeAttr(msg.authorName || msg.authorEmail)}</strong>
+              <time class="msg__time">${App.formatDateTime(msg.createdAt)}${msg.editedAt ? ' (ред.)' : ''}</time>
+            </header>
+            ${reply ? `<div class="msg__reply">↩ ${escapeAttr(reply.authorName || reply.authorEmail)}: ${escapeHtml(replyLabel)}${replyLabel.length >= 80 ? '…' : ''}</div>` : ''}
+            ${textHtml}
+            ${filesHtml}
+            ${reactionsHtml}
+            ${actions}
+          </div>
+        </div>
       </article>`;
   }
 
@@ -542,7 +586,8 @@ const UI = (function () {
       ? App.sortMessagesChronologically(msgs)
       : msgs.slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     const hydrated = await Promise.all(sorted.map(m => App.hydrateMessageFiles(m)));
-    container.innerHTML = hydrated.map(m => renderMessage(m, currentUser, chatId, sorted)).join('');
+    const avatarUrls = await App.prefetchAvatarUrls([...new Set(sorted.map(m => m.userId))]);
+    container.innerHTML = hydrated.map(m => renderMessage(m, currentUser, chatId, sorted, avatarUrls)).join('');
     container.scrollTop = container.scrollHeight;
     if (currentUser && chatId) {
       App.markChatRead(currentUser.id, chatId);
@@ -561,6 +606,15 @@ const UI = (function () {
   }
 
   function bindMessageActions(container, chatIdOrFn, currentUser, onUpdate) {
+    if (!container._reactionPickerBound) {
+      container._reactionPickerBound = true;
+      document.addEventListener('click', e => {
+        if (!e.target.closest('.msg__reaction-add')) {
+          document.querySelectorAll('.msg__reaction-picker').forEach(el => { el.hidden = true; });
+        }
+      });
+    }
+
     container.addEventListener('click', async e => {
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
@@ -570,9 +624,34 @@ const UI = (function () {
       const action = btn.dataset.action;
       const msgs = App.getMessages(chatId);
       const msg = msgs.find(m => m.id === id);
-      if (!msg) return;
       const user = App.getCurrentUser();
       if (!user) return;
+
+      if (action === 'react-picker') {
+        if (!msg) return;
+        const picker = btn.parentElement?.querySelector('.msg__reaction-picker');
+        document.querySelectorAll('.msg__reaction-picker').forEach(el => {
+          if (el !== picker) el.hidden = true;
+        });
+        if (picker) picker.hidden = !picker.hidden;
+        return;
+      }
+
+      if (action === 'react') {
+        if (!msg) return;
+        const emoji = btn.dataset.emoji;
+        if (!emoji) return;
+        document.querySelectorAll('.msg__reaction-picker').forEach(el => { el.hidden = true; });
+        const result = App.toggleReaction(chatId, id, user.id, emoji);
+        if (!result.ok) {
+          alert(result.error || 'Не удалось поставить реакцию');
+          return;
+        }
+        onUpdate();
+        return;
+      }
+
+      if (!msg) return;
 
       if (action === 'delete') {
         if (msg.userId !== user.id && user.role !== 'admin') {
