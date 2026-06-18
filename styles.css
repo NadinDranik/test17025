@@ -1828,6 +1828,43 @@ ul {
   align-items: center;
   gap: 6px;
   margin-top: 8px;
+  position: relative;
+  width: 100%;
+}
+
+.msg__reaction-add {
+  position: relative;
+}
+
+.msg__btn--react {
+  min-width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px dashed var(--color-border);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.msg__reaction-picker {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+}
+
+.msg--own .msg__reaction-picker {
+  left: 0;
+  right: 0;
 }
 
 .msg__reaction {
@@ -1850,38 +1887,6 @@ ul {
 .msg__reaction span {
   font-size: 0.72rem;
   color: var(--color-text-muted);
-}
-
-.msg__reaction-add {
-  position: relative;
-}
-
-.msg__btn--react {
-  min-width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  border: 1px dashed var(--color-border);
-  font-size: 1rem;
-  line-height: 1;
-}
-
-.msg__reaction-picker {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 0;
-  z-index: 20;
-  display: flex;
-  gap: 4px;
-  padding: 6px;
-  border-radius: 12px;
-  background: var(--color-bg-white);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-md);
-}
-
-.msg--own .msg__reaction-picker {
-  left: auto;
-  right: 0;
 }
 
 .msg__reaction-pick {
