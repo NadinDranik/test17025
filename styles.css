@@ -54,7 +54,17 @@
 }
 
 [data-theme="dark"] .msg {
-  background: #243044;
+  background: #fff;
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .msg--own {
+  background: #4a4f58;
+  color: #f2f2f4;
+}
+
+[data-theme="dark"] .chat-messages {
+  background: linear-gradient(180deg, #3d2e32 0%, #35282c 50%, #2f2428 100%);
 }
 
 [data-theme="dark"] .msg--pinned {
@@ -1523,6 +1533,7 @@ ul {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background: linear-gradient(180deg, #fff7f3 0%, #ffece4 48%, #ffdfd2 100%);
 }
 
 .chat-empty {
