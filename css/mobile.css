@@ -817,6 +817,15 @@ body.logged-in-home #user-dashboard {
     margin: 0;
   }
 
+  .msg__bubble {
+    overflow: visible;
+  }
+
+  .msg__reaction-picker {
+    z-index: 50;
+    max-width: 100%;
+  }
+
   .msg__actions {
     margin-top: 6px;
     flex-wrap: wrap;
