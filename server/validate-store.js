@@ -17,12 +17,14 @@ function mergeUserRecord(serverUser, clientUser, actor) {
     merged.proExpiresAt = clientUser.proExpiresAt ?? merged.proExpiresAt;
     merged.lastActive = clientUser.lastActive ?? merged.lastActive;
     merged.registeredAt = clientUser.registeredAt ?? merged.registeredAt;
+    merged.avatarFileId = clientUser.avatarFileId ?? merged.avatarFileId;
     return merged;
   }
 
   if (actor.id === serverUser.id) {
     merged.nickname = clientUser.nickname ?? merged.nickname;
     merged.lastActive = clientUser.lastActive ?? merged.lastActive;
+    merged.avatarFileId = clientUser.avatarFileId ?? merged.avatarFileId;
   }
 
   return merged;
@@ -65,6 +67,23 @@ function mergeProRequests(serverList, clientList, actor) {
   return Array.from(byId.values());
 }
 
+function mergeReactions(serverReactions, clientReactions, actorId) {
+  const server = serverReactions || {};
+  const client = clientReactions || {};
+  const result = {};
+  const emojis = new Set([...Object.keys(server), ...Object.keys(client)]);
+
+  emojis.forEach(emoji => {
+    const users = new Set(server[emoji] || []);
+    const clientUsers = new Set(client[emoji] || []);
+    if (users.has(actorId) && !clientUsers.has(actorId)) users.delete(actorId);
+    if (!users.has(actorId) && clientUsers.has(actorId)) users.add(actorId);
+    if (users.size) result[emoji] = [...users];
+  });
+
+  return result;
+}
+
 function mergeMessagesForChat(serverMsgs, clientMsgs, actor, chatId) {
   const server = serverMsgs || [];
   const client = clientMsgs || [];
@@ -91,15 +110,23 @@ function mergeMessagesForChat(serverMsgs, clientMsgs, actor, chatId) {
       return;
     }
 
+    let merged = { ...sm };
+
     if (sm.userId === actor.id && cm.userId === actor.id) {
-      byId.set(cm.id, {
+      merged = {
         ...sm,
         text: cm.text,
         editedAt: cm.editedAt,
         files: cm.files,
         pinned: sm.pinned
-      });
+      };
     }
+
+    if (cm.reactions) {
+      merged.reactions = mergeReactions(sm.reactions, cm.reactions, actor.id);
+    }
+
+    byId.set(cm.id, merged);
   });
 
   if (actor.role === 'admin') {
