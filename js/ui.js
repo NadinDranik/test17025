@@ -477,25 +477,94 @@ const UI = (function () {
       .filter(([, users]) => users && users.length)
       .map(([emoji, userIds]) => {
         const active = currentUser && userIds.includes(currentUser.id);
-        return `<button type="button" class="msg__reaction${active ? ' msg__reaction--active' : ''}" data-action="react" data-id="${msg.id}" data-emoji="${emoji}">${emoji}<span>${userIds.length}</span></button>`;
+        return `<button type="button" class="msg__reaction${active ? ' msg__reaction--active' : ''}" data-action="react" data-id="${msg.id}" data-emoji="${emoji}" title="Нажмите для реакции, на счётчик — кто поставил">${emoji}<span class="msg__reaction-count" data-action="reaction-users" data-id="${msg.id}" data-emoji="${emoji}">${userIds.length}</span></button>`;
       })
       .join('');
 
-    if (!currentUser) {
-      return chips ? `<div class="msg__reactions">${chips}</div>` : '';
-    }
+    return chips ? `<div class="msg__reactions">${chips}</div>` : '';
+  }
 
+  function getMessageViewCount(msg) {
+    return msg.views ? Object.keys(msg.views).length : 0;
+  }
+
+  function formatMessageText(text) {
+    const escaped = escapeHtml(text);
+    return linkifyHtml(escaped);
+  }
+
+  function linkifyHtml(html) {
+    return html.replace(
+      /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi,
+      (url) => {
+        let href = url;
+        if (!/^https?:\/\//i.test(href)) href = 'https://' + href;
+        const safeHref = escapeAttr(href);
+        return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer" class="msg__link">${url}</a>`;
+      }
+    );
+  }
+
+  let reactionPopoverEl = null;
+
+  function ensureReactionPopover() {
+    if (reactionPopoverEl) return reactionPopoverEl;
+    reactionPopoverEl = document.createElement('div');
+    reactionPopoverEl.id = 'msg-reaction-popover';
+    reactionPopoverEl.className = 'msg-reaction-popover';
+    reactionPopoverEl.hidden = true;
+    document.body.appendChild(reactionPopoverEl);
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.msg-reaction-popover') && !e.target.closest('[data-action="react-picker"]')) {
+        hideReactionPopover();
+      }
+    });
+    return reactionPopoverEl;
+  }
+
+  function showReactionPopover(anchorBtn, msgId, chatId, onUpdate) {
+    const pop = ensureReactionPopover();
     const picker = App.REACTION_EMOJIS.map(emoji =>
-      `<button type="button" class="msg__reaction-pick" data-action="react" data-id="${msg.id}" data-emoji="${emoji}">${emoji}</button>`
+      `<button type="button" class="msg__reaction-pick" data-action="react" data-id="${msgId}" data-emoji="${emoji}">${emoji}</button>`
     ).join('');
+    pop.innerHTML = picker;
+    pop.hidden = false;
+    const rect = anchorBtn.getBoundingClientRect();
+    const popHeight = pop.offsetHeight || 52;
+    pop.style.top = `${Math.max(8, rect.top - popHeight - 8)}px`;
+    pop.style.left = `${Math.min(Math.max(8, rect.left), window.innerWidth - 230)}px`;
+    pop.dataset.chatId = chatId;
+    pop._onUpdate = onUpdate;
+  }
 
-    return `<div class="msg__reactions">
-      ${chips}
-      <div class="msg__reaction-add">
-        <button type="button" class="msg__btn msg__btn--react" data-action="react-picker" data-id="${msg.id}" title="Добавить реакцию">+</button>
-      </div>
-      <div class="msg__reaction-picker" hidden>${picker}</div>
-    </div>`;
+  function hideReactionPopover() {
+    if (reactionPopoverEl) reactionPopoverEl.hidden = true;
+  }
+
+  let detailsPopoverEl = null;
+
+  function ensureDetailsPopover() {
+    if (detailsPopoverEl) return detailsPopoverEl;
+    detailsPopoverEl = document.createElement('div');
+    detailsPopoverEl.id = 'msg-details-popover';
+    detailsPopoverEl.className = 'msg-details-popover';
+    detailsPopoverEl.hidden = true;
+    document.body.appendChild(detailsPopoverEl);
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.msg-details-popover') && !e.target.closest('[data-action="reaction-users"]') && !e.target.closest('[data-action="view-users"]')) {
+        detailsPopoverEl.hidden = true;
+      }
+    });
+    return detailsPopoverEl;
+  }
+
+  function showDetailsPopover(anchor, title, items) {
+    const pop = ensureDetailsPopover();
+    pop.innerHTML = `<p class="msg-details-popover__title">${escapeHtml(title)}</p><ul class="msg-details-popover__list">${items.map(n => `<li>${escapeHtml(n)}</li>`).join('')}</ul>`;
+    pop.hidden = false;
+    const rect = anchor.getBoundingClientRect();
+    pop.style.top = `${Math.min(rect.bottom + 6, window.innerHeight - 120)}px`;
+    pop.style.left = `${Math.min(rect.left, window.innerWidth - 240)}px`;
   }
 
   function renderMessage(msg, currentUser, chatId, allMessages, avatarUrls) {
@@ -532,7 +601,7 @@ const UI = (function () {
     }
 
     const textHtml = msg.text
-      ? `<p class="msg__text">${escapeHtml(msg.text)}</p>`
+      ? `<p class="msg__text">${formatMessageText(msg.text)}</p>`
       : '';
 
     const replyLabel = reply
@@ -542,17 +611,31 @@ const UI = (function () {
     const isSystem = !!msg.systemType;
     const canManage = isOwn || isAdmin;
     const canDelete = canManage && (!isSystem || isAdmin);
+    const canEdit = !isSystem && msg.text && (isOwn || isAdmin);
+    const viewCount = getMessageViewCount(msg);
 
     const actions = currentUser ? `
       <div class="msg__actions">
-        ${isOwn && msg.text ? `<button type="button" class="msg__btn" data-action="edit" data-id="${msg.id}">Изменить</button>` : ''}
+        ${!isSystem ? `<button type="button" class="msg__btn msg__btn--icon" data-action="react-picker" data-id="${msg.id}" title="Реакция">😊</button>` : ''}
+        ${canEdit ? `<button type="button" class="msg__btn" data-action="edit" data-id="${msg.id}">Изменить</button>` : ''}
         ${canDelete ? `<button type="button" class="msg__btn msg__btn--danger" data-action="delete" data-id="${msg.id}">Удалить</button>` : ''}
         ${isAdmin ? `<button type="button" class="msg__btn" data-action="pin" data-id="${msg.id}">${msg.pinned ? 'Открепить' : 'Закрепить'}</button>` : ''}
         <button type="button" class="msg__btn" data-action="reply" data-id="${msg.id}">Ответить</button>
-      </div>` : '';
+      </div>
+      ${canEdit ? `<div class="msg__edit" hidden>
+        <textarea class="msg__edit-input form__input" rows="3"></textarea>
+        <div class="msg__edit-actions">
+          <button type="button" class="btn btn--sm btn--primary" data-action="edit-save" data-id="${msg.id}">Сохранить</button>
+          <button type="button" class="btn btn--sm btn--outline" data-action="edit-cancel" data-id="${msg.id}">Отмена</button>
+        </div>
+      </div>` : ''}` : '';
 
     const welcomeClass = msg.systemType === 'pro_welcome' ? ' msg--welcome' : '';
     const reactionsHtml = isSystem ? '' : renderReactionsHtml(msg, currentUser);
+    const metaHtml = !isSystem && (viewCount > 0 || isOwn) ? `
+      <div class="msg__meta">
+        ${(viewCount > 0 || isOwn) ? `<button type="button" class="msg__meta-btn" data-action="view-users" data-id="${msg.id}" title="Кто просмотрел">👁 ${viewCount || 0}</button>` : ''}
+      </div>` : '';
 
     return `
       <article class="msg${isOwn ? ' msg--own' : ''}${msg.pinned ? ' msg--pinned' : ''}${welcomeClass}" data-id="${msg.id}">
@@ -568,6 +651,7 @@ const UI = (function () {
             ${textHtml}
             ${filesHtml}
             ${reactionsHtml}
+            ${metaHtml}
             ${actions}
           </div>
         </div>
@@ -589,6 +673,7 @@ const UI = (function () {
     const avatarUrls = await App.prefetchAvatarUrls([...new Set(sorted.map(m => m.userId))]);
     container.innerHTML = hydrated.map(m => renderMessage(m, currentUser, chatId, sorted, avatarUrls)).join('');
     container.scrollTop = container.scrollHeight;
+    setupMessageViewTracking(container, chatId, currentUser);
     if (currentUser && chatId) {
       App.markChatRead(currentUser.id, chatId);
       refreshUnreadBadges();
@@ -605,13 +690,76 @@ const UI = (function () {
     return d.innerHTML.replace(/\n/g, '<br>');
   }
 
-  function bindMessageActions(container, chatIdOrFn, currentUser, onUpdate) {
-    if (!container._reactionPickerBound) {
-      container._reactionPickerBound = true;
-      document.addEventListener('click', e => {
-        if (!e.target.closest('.msg__reaction-add') && !e.target.closest('.msg__reaction-picker')) {
-          document.querySelectorAll('.msg__reaction-picker').forEach(el => { el.hidden = true; });
+  function setupMessageViewTracking(container, chatId, currentUser) {
+    if (!currentUser || !chatId) return;
+    if (container._viewObserver) {
+      container._viewObserver.disconnect();
+      container._viewObserver = null;
+    }
+    const pending = new Set();
+    let timer = null;
+    const flush = () => {
+      if (!pending.size) return;
+      const ids = [...pending];
+      pending.clear();
+      App.recordMessageViews(chatId, ids, currentUser.id);
+    };
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && entry.target.dataset.id) {
+          pending.add(entry.target.dataset.id);
         }
+      });
+      clearTimeout(timer);
+      timer = setTimeout(flush, 400);
+    }, { threshold: 0.55 });
+    container.querySelectorAll('.msg').forEach(el => observer.observe(el));
+    container._viewObserver = observer;
+  }
+
+  function startInlineEdit(article, text) {
+    const textEl = article.querySelector('.msg__text');
+    const editEl = article.querySelector('.msg__edit');
+    const actionsEl = article.querySelector('.msg__actions');
+    if (!editEl) return;
+    article.classList.add('msg--editing');
+    if (textEl) textEl.hidden = true;
+    if (actionsEl) actionsEl.hidden = true;
+    editEl.hidden = false;
+    const input = editEl.querySelector('.msg__edit-input');
+    if (input) input.value = text || '';
+    if (input) {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+  }
+
+  function cancelInlineEdit(article) {
+    const textEl = article.querySelector('.msg__text');
+    const editEl = article.querySelector('.msg__edit');
+    const actionsEl = article.querySelector('.msg__actions');
+    article.classList.remove('msg--editing');
+    if (textEl) textEl.hidden = false;
+    if (actionsEl) actionsEl.hidden = false;
+    if (editEl) editEl.hidden = true;
+  }
+  function bindMessageActions(container, chatIdOrFn, currentUser, onUpdate) {
+    if (!window._msgReactionPopoverBound) {
+      window._msgReactionPopoverBound = true;
+      ensureReactionPopover();
+      reactionPopoverEl.addEventListener('click', async e => {
+        const btn = e.target.closest('[data-action="react"]');
+        if (!btn) return;
+        const chatId = reactionPopoverEl.dataset.chatId;
+        const user = App.getCurrentUser();
+        if (!chatId || !user) return;
+        hideReactionPopover();
+        const result = await App.toggleReaction(chatId, btn.dataset.id, user.id, btn.dataset.emoji);
+        if (!result.ok) {
+          alert(result.error || 'Не удалось поставить реакцию');
+          return;
+        }
+        if (typeof reactionPopoverEl._onUpdate === 'function') reactionPopoverEl._onUpdate();
       });
     }
 
@@ -629,21 +777,37 @@ const UI = (function () {
 
       if (action === 'react-picker') {
         if (!msg) return;
-        const reactionsEl = btn.closest('.msg__reactions');
-        const picker = reactionsEl?.querySelector('.msg__reaction-picker');
-        document.querySelectorAll('.msg__reaction-picker').forEach(el => {
-          if (el !== picker) el.hidden = true;
-        });
-        if (picker) picker.hidden = !picker.hidden;
+        e.stopPropagation();
+        showReactionPopover(btn, id, chatId, onUpdate);
+        return;
+      }
+
+      if (action === 'reaction-users') {
+        if (!msg) return;
+        e.stopPropagation();
+        const emoji = btn.dataset.emoji;
+        const userIds = (msg.reactions && msg.reactions[emoji]) || [];
+        const names = App.getMessageUserNames(userIds);
+        showDetailsPopover(btn, `${emoji} — реакции`, names.length ? names : ['Пока никто']);
+        return;
+      }
+
+      if (action === 'view-users') {
+        if (!msg) return;
+        e.stopPropagation();
+        const userIds = msg.views ? Object.keys(msg.views) : [];
+        const names = App.getMessageUserNames(userIds);
+        showDetailsPopover(btn, 'Просмотрели', names.length ? names : ['Пока никто']);
         return;
       }
 
       if (action === 'react') {
         if (!msg) return;
+        if (e.target.closest('[data-action="reaction-users"]')) return;
         const emoji = btn.dataset.emoji;
         if (!emoji) return;
-        document.querySelectorAll('.msg__reaction-picker').forEach(el => { el.hidden = true; });
-        const result = App.toggleReaction(chatId, id, user.id, emoji);
+        hideReactionPopover();
+        const result = await App.toggleReaction(chatId, id, user.id, emoji);
         if (!result.ok) {
           alert(result.error || 'Не удалось поставить реакцию');
           return;
@@ -668,11 +832,21 @@ const UI = (function () {
         onUpdate();
         refreshUnreadBadges();
       } else if (action === 'edit') {
-        const newText = prompt('Редактировать сообщение:', msg.text);
-        if (newText !== null && newText.trim()) {
-          App.editMessage(chatId, id, user.id, newText);
-          onUpdate();
+        const article = btn.closest('.msg');
+        if (article) startInlineEdit(article, msg.text);
+      } else if (action === 'edit-cancel') {
+        const article = btn.closest('.msg');
+        if (article) cancelInlineEdit(article);
+      } else if (action === 'edit-save') {
+        const article = btn.closest('.msg');
+        const input = article?.querySelector('.msg__edit-input');
+        if (!input) return;
+        const result = await App.editMessage(chatId, id, user.id, input.value);
+        if (!result.ok) {
+          alert(result.error || 'Не удалось сохранить');
+          return;
         }
+        onUpdate();
       } else if (action === 'pin') {
         if (user.role !== 'admin') return;
         App.pinMessage(chatId, id, !msg.pinned);
