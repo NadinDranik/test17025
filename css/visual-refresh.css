@@ -3,6 +3,7 @@
    ============================================= */
 
 :root {
+  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --color-error: #c45c5c;
   --color-success: #3d7a5c;
   --color-surface: #ffffff;
@@ -18,6 +19,17 @@
   --radius-xl: 16px;
   --shadow-card: 0 2px 8px rgba(15, 39, 64, 0.06);
   --shadow-card-hover: 0 8px 24px rgba(15, 39, 64, 0.1);
+  --vr-surface: rgba(255, 255, 255, 0.92);
+  --vr-panel-bg: rgba(255, 255, 255, 0.97);
+  --vr-accent-line: linear-gradient(90deg, var(--color-accent) 0%, transparent 100%);
+  --vr-shadow: 0 1px 2px rgba(15, 39, 64, 0.04), 0 8px 32px rgba(15, 39, 64, 0.07);
+  --vr-shadow-hover: 0 4px 12px rgba(15, 39, 64, 0.08), 0 16px 48px rgba(15, 39, 64, 0.1);
+  --vr-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme="dark"] {
+  --vr-surface: rgba(26, 35, 50, 0.94);
+  --vr-panel-bg: rgba(26, 35, 50, 0.98);
 }
 
 html {
@@ -25,9 +37,98 @@ html {
 }
 
 body {
+  font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+}
+
+/* --- Общий фон (чаты, кабинет, вход) --- */
+.page-chat,
+.page-chats-hub,
+.page-pro,
+.page-pro-request,
+.page-account,
+.page-login,
+.page-legal {
+  position: relative;
+}
+
+.page-chat::before,
+.page-chats-hub::before,
+.page-pro::before,
+.page-pro-request::before,
+.page-account::before,
+.page-login::before,
+.page-legal::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(200, 169, 81, 0.09) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 95% 5%, rgba(42, 82, 128, 0.07) 0%, transparent 50%),
+    linear-gradient(168deg, #e8edf4 0%, var(--color-bg) 38%, #eef2f7 100%);
+  pointer-events: none;
+}
+
+.page-chat::after,
+.page-chats-hub::after,
+.page-pro::after,
+.page-pro-request::after,
+.page-account::after,
+.page-login::after,
+.page-legal::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.32;
+  background-image:
+    linear-gradient(rgba(26, 58, 92, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 58, 92, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, transparent 88%);
+}
+
+[data-theme="dark"] .page-chat::before,
+[data-theme="dark"] .page-chats-hub::before,
+[data-theme="dark"] .page-pro::before,
+[data-theme="dark"] .page-pro-request::before,
+[data-theme="dark"] .page-account::before,
+[data-theme="dark"] .page-login::before,
+[data-theme="dark"] .page-legal::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(212, 184, 106, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 95% 5%, rgba(74, 142, 201, 0.1) 0%, transparent 50%),
+    linear-gradient(168deg, #0a0e14 0%, var(--color-bg) 50%, #121820 100%);
+}
+
+[data-theme="dark"] .page-chat::after,
+[data-theme="dark"] .page-chats-hub::after,
+[data-theme="dark"] .page-pro::after,
+[data-theme="dark"] .page-pro-request::after,
+[data-theme="dark"] .page-account::after,
+[data-theme="dark"] .page-login::after,
+[data-theme="dark"] .page-legal::after {
+  opacity: 0.14;
+}
+
+/* --- Логотип --- */
+.logo__mark {
+  box-shadow: 0 2px 8px rgba(26, 58, 92, 0.22);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.logo:hover .logo__mark {
+  box-shadow: 0 4px 14px rgba(26, 58, 92, 0.3);
+  transform: scale(1.03);
+}
+
+@keyframes vr-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* --- Focus / доступность --- */
@@ -114,6 +215,209 @@ body {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
+/* --- Главная страница --- */
+.page-home {
+  font-family: var(--font-sans);
+}
+
+.page-home .home-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 56px 56px;
+  pointer-events: none;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, transparent 90%);
+}
+
+.page-home .home-hero__title {
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  animation: vr-fade-up 0.6s var(--vr-ease) both;
+}
+
+.page-home .home-hero__badge {
+  animation: vr-fade-up 0.5s var(--vr-ease) both;
+  backdrop-filter: blur(6px);
+}
+
+.page-home .home-hero__subtitle,
+.page-home .home-hero__lead {
+  animation: vr-fade-up 0.6s var(--vr-ease) 0.08s both;
+}
+
+.page-home .home-hero__actions {
+  animation: vr-fade-up 0.6s var(--vr-ease) 0.14s both;
+}
+
+.page-home .home-hero__visual {
+  animation: vr-fade-up 0.7s var(--vr-ease) 0.1s both;
+}
+
+.page-home .home-hero__illustration {
+  transition: transform 0.4s var(--vr-ease), box-shadow 0.4s ease;
+}
+
+.page-home .home-hero__illustration:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow:
+    0 32px 64px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 0 80px rgba(200, 169, 81, 0.12);
+}
+
+.page-home .home-section__title {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  position: relative;
+  padding-bottom: 16px;
+}
+
+.page-home .home-section__title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 2px;
+}
+
+.page-home .home-audience-card,
+.page-home .home-benefit-card,
+.page-home .home-task-card,
+.page-home .home-tier-card,
+.page-home .home-stage-card,
+.page-home .home-flow {
+  position: relative;
+  overflow: hidden;
+  animation: vr-fade-up 0.45s var(--vr-ease) both;
+}
+
+.page-home .home-audience-card::before,
+.page-home .home-benefit-card::before,
+.page-home .home-stage-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--vr-accent-line);
+  opacity: 0.55;
+}
+
+.page-home .home-audience-card:nth-child(1),
+.page-home .home-benefit-card:nth-child(1),
+.page-home .home-task-card:nth-child(1) { animation-delay: 0.04s; }
+.page-home .home-audience-card:nth-child(2),
+.page-home .home-benefit-card:nth-child(2),
+.page-home .home-task-card:nth-child(2) { animation-delay: 0.08s; }
+.page-home .home-audience-card:nth-child(3),
+.page-home .home-benefit-card:nth-child(3),
+.page-home .home-task-card:nth-child(3) { animation-delay: 0.12s; }
+.page-home .home-audience-card:nth-child(4),
+.page-home .home-task-card:nth-child(4) { animation-delay: 0.16s; }
+.page-home .home-audience-card:nth-child(5),
+.page-home .home-task-card:nth-child(5) { animation-delay: 0.2s; }
+.page-home .home-audience-card:nth-child(6) { animation-delay: 0.24s; }
+
+.page-home .home-audience-card__icon,
+.page-home .home-benefit-card__icon {
+  transition: transform 0.25s ease;
+}
+
+.page-home .home-audience-card:hover .home-audience-card__icon,
+.page-home .home-benefit-card:hover .home-benefit-card__icon {
+  transform: scale(1.08);
+}
+
+.page-home .home-tier-card--pro {
+  background: linear-gradient(160deg, rgba(253, 243, 215, 0.25) 0%, var(--color-bg-white) 55%);
+}
+
+.page-home .home-flow__step {
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.page-home .home-flow__step:hover {
+  border-color: var(--color-primary-light);
+  background: rgba(42, 82, 128, 0.04);
+}
+
+.page-home .home-cta {
+  position: relative;
+  overflow: hidden;
+}
+
+.page-home .home-cta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 50% 80% at 0% 50%, rgba(200, 169, 81, 0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 80% at 100% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.page-home .home-cta__title {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.page-home .home-contacts {
+  animation: vr-fade-up 0.5s var(--vr-ease) both;
+}
+
+.page-home .home-section--alt {
+  position: relative;
+}
+
+.page-home .home-section--alt::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.4;
+  background-image:
+    linear-gradient(rgba(26, 58, 92, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 58, 92, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+/* Дашборд на главной (авторизованный пользователь) */
+body.logged-in-home #user-dashboard .m-card {
+  background: var(--vr-surface);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(216, 223, 232, 0.8);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  animation: vr-fade-up 0.4s var(--vr-ease) both;
+}
+
+body.logged-in-home #user-dashboard .m-card:nth-child(2) { animation-delay: 0.05s; }
+body.logged-in-home #user-dashboard .m-card:nth-child(3) { animation-delay: 0.1s; }
+
+/* Мобильная навигация */
+.mobile-bottom-nav {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-top: 1px solid rgba(216, 223, 232, 0.8);
+  box-shadow: 0 -4px 24px rgba(15, 39, 64, 0.06);
+}
+
+[data-theme="dark"] .mobile-bottom-nav {
+  background: rgba(26, 35, 50, 0.94) !important;
+}
+
+.mobile-bottom-nav__item--active {
+  color: var(--color-primary);
+}
+
 /* --- Карточки разделов --- */
 .about-card,
 .pricing-card,
@@ -138,13 +442,218 @@ body {
   background: var(--color-bg-alt);
 }
 
+/* --- Чаты: общий стиль --- */
+.page-chat .chat-layout,
+.page-pro .chat-layout,
+.page-pro-request .chat-layout {
+  animation: vr-fade-up 0.45s var(--vr-ease) both;
+}
+
+.page-chat .chat-sidebar,
+.page-pro .chat-sidebar,
+.page-pro-request .chat-sidebar {
+  background: var(--vr-surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(216, 223, 232, 0.75);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--vr-shadow);
+}
+
+.page-chat .chat-sidebar--pro,
+.page-pro .chat-sidebar--pro {
+  border-color: rgba(200, 169, 81, 0.4);
+  box-shadow: 0 4px 24px rgba(200, 169, 81, 0.1), var(--vr-shadow);
+}
+
+.page-chat .chat-sidebar__title,
+.page-pro .chat-sidebar__title {
+  font-weight: 900;
+  letter-spacing: -0.015em;
+}
+
+.page-chat .chat-sidebar__info,
+.page-pro .chat-sidebar__info {
+  border-left: 3px solid var(--color-primary-light);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.page-chat .chat-main,
+.page-pro .chat-main,
+.page-pro-request .chat-main {
+  background: var(--vr-panel-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(216, 223, 232, 0.75);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--vr-shadow);
+  overflow: hidden;
+}
+
+.page-chat .chat-main__header h2,
+.page-pro .chat-main__header h2,
+.page-pro-request .chat-main__header h2 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.page-chat .search-box .form__input,
+.page-pro .search-box .form__input {
+  border-radius: var(--radius-lg);
+}
+
+.page-chat .topic-item,
+.page-pro .topic-item {
+  border-radius: var(--radius);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.page-chat .topic-item:hover,
+.page-pro .topic-item:hover {
+  transform: translateX(3px);
+  box-shadow: var(--shadow-sm);
+}
+
+.page-chat .topic-item--active,
+.page-pro .topic-item--active {
+  box-shadow: 0 2px 10px rgba(26, 58, 92, 0.12);
+}
+
+.page-chat .topic-item--pinned,
+.page-pro .topic-item--pinned {
+  border-left: 3px solid var(--color-accent);
+}
+
+/* Хаб чатов (мобильный список) */
+.page-chats-hub .m-page__title,
+.page-chats-hub .m-dashboard__greeting {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  animation: vr-fade-up 0.4s var(--vr-ease) both;
+}
+
+.page-chats-hub .m-card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  background: var(--vr-surface);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(216, 223, 232, 0.8);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+  animation: vr-fade-up 0.4s var(--vr-ease) both;
+}
+
+.page-chats-hub .m-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: var(--color-primary-light);
+  opacity: 0.5;
+}
+
+.page-chats-hub .m-card--chat[data-tier="pro"]::before,
+.page-chats-hub .m-card:has(.m-card__tier--pro)::before {
+  background: var(--color-accent);
+  opacity: 1;
+}
+
+.page-chats-hub .m-card:has(.m-card__tier--dm)::before {
+  background: var(--color-primary);
+  opacity: 0.8;
+}
+
+.page-chats-hub .m-card:nth-child(1) { animation-delay: 0.04s; }
+.page-chats-hub .m-card:nth-child(2) { animation-delay: 0.08s; }
+.page-chats-hub .m-card:nth-child(3) { animation-delay: 0.12s; }
+.page-chats-hub .m-card:nth-child(4) { animation-delay: 0.16s; }
+.page-chats-hub .m-card:nth-child(5) { animation-delay: 0.2s; }
+
+.page-chats-hub .m-card--link:hover,
+.page-chats-hub .m-card--chat:hover {
+  border-color: rgba(42, 82, 128, 0.2);
+}
+
+.page-chats-hub .m-card__title {
+  font-weight: 700;
+}
+
+.page-chats-hub .m-card__unread {
+  box-shadow: 0 1px 4px rgba(192, 57, 43, 0.3);
+}
+
+/* PRO-заявка: баннер оплаты */
+.page-pro-request .payment-banner {
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--color-accent);
+  box-shadow: var(--shadow-card);
+}
+
+/* Десктоп: навигация чатов в сайдбаре */
+@media (min-width: 993px) {
+  .desktop-chats-nav__item {
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .desktop-chats-nav__item:hover {
+    transform: translateX(2px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .desktop-chats-nav__item--active {
+    box-shadow: 0 2px 8px rgba(26, 58, 92, 0.1);
+  }
+
+  .chat-rail {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 16px;
+    background: rgba(244, 246, 249, 0.7);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+
+  [data-theme="dark"] .chat-rail {
+    background: rgba(15, 20, 28, 0.5);
+  }
+
+  .chat-rail__tab {
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    font-weight: 600;
+    transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .chat-rail__tab:hover {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: var(--color-border);
+    color: var(--color-primary-dark);
+  }
+
+  .chat-rail__tab--active {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 8px rgba(26, 58, 92, 0.25);
+    color: #fff;
+  }
+
+  .chat-rail__tab--active:hover {
+    color: #fff;
+  }
+}
+
 /* --- Чаты: десктопные пузыри --- */
 @media (min-width: 993px) {
   .chat-messages {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    background: linear-gradient(180deg, #fff7f3 0%, #ffece4 48%, #ffdfd2 100%);
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255, 220, 200, 0.35) 0%, transparent 55%),
+      linear-gradient(180deg, #fff7f3 0%, #ffece4 48%, #ffdfd2 100%);
   }
 
   .msg {
@@ -165,9 +674,14 @@ body {
     padding: 12px 16px;
     border-radius: 16px;
     border: 1px solid rgba(0, 0, 0, 0.06);
-    box-shadow: 0 1px 3px rgba(180, 90, 70, 0.08);
+    box-shadow: 0 2px 6px rgba(180, 90, 70, 0.1);
     background: #ffffff;
     color: var(--color-text);
+    transition: box-shadow 0.15s ease;
+  }
+
+  .msg:hover .msg__bubble {
+    box-shadow: 0 3px 10px rgba(180, 90, 70, 0.14);
   }
 
   .msg:not(.msg--own) .msg__bubble {
@@ -250,6 +764,13 @@ body {
     height: 44px;
     border-radius: 50%;
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(26, 58, 92, 0.22);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+
+  .chat-form__send:hover {
+    box-shadow: 0 4px 14px rgba(26, 58, 92, 0.3);
+    transform: scale(1.05);
   }
 
   .page-chats-hub .m-cards--compact {
@@ -304,17 +825,28 @@ body {
 
 /* --- Личный кабинет --- */
 .page-account {
-  background: var(--color-bg-alt);
+  background: transparent;
+}
+
+.page-account .account-card {
+  background: var(--vr-surface);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(216, 223, 232, 0.75);
+  animation: vr-fade-up 0.45s var(--vr-ease) both;
+}
+
+.page-account .account-card:nth-child(2) { animation-delay: 0.06s; }
+.page-account .account-card:nth-child(3) { animation-delay: 0.12s; }
+
+.page-account .account-card--subscription {
+  border-top: 3px solid var(--color-accent);
+  background: linear-gradient(160deg, rgba(253, 243, 215, 0.2) 0%, var(--vr-surface) 50%);
 }
 
 .account-card {
   background: var(--color-surface);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
-}
-
-.account-card--subscription {
-  border-top: 3px solid var(--color-accent);
 }
 
 .account-card--profile .account-avatar {
@@ -373,21 +905,681 @@ body {
   box-shadow: var(--focus-ring);
 }
 
-/* --- Админка --- */
-.admin-table th {
-  font-size: 0.8125rem;
+/* --- Админка: визуальный апгрейд --- */
+.page-admin {
+  --admin-font: var(--font-sans);
+  --admin-surface: var(--vr-surface);
+  --admin-panel-bg: var(--vr-panel-bg);
+  --admin-accent-line: var(--vr-accent-line);
+  --admin-shadow: var(--vr-shadow);
+  --admin-shadow-hover: var(--vr-shadow-hover);
+  font-family: var(--admin-font);
+}
+
+.page-admin::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(200, 169, 81, 0.09) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 95% 5%, rgba(42, 82, 128, 0.07) 0%, transparent 50%),
+    linear-gradient(168deg, #e8edf4 0%, var(--color-bg) 38%, #eef2f7 100%);
+  pointer-events: none;
+}
+
+.page-admin::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgba(26, 58, 92, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 58, 92, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, transparent 85%);
+}
+
+[data-theme="dark"] .page-admin::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(212, 184, 106, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 95% 5%, rgba(74, 142, 201, 0.1) 0%, transparent 50%),
+    linear-gradient(168deg, #0a0e14 0%, var(--color-bg) 50%, #121820 100%);
+}
+
+[data-theme="dark"] .page-admin::after {
+  opacity: 0.15;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+}
+
+[data-theme="dark"] .page-admin::after {
+  opacity: 0.15;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+}
+
+/* --- Авторизация --- */
+.page-login .auth-card,
+.page-login .auth-panel {
+  position: relative;
+  border-radius: var(--radius-xl);
+  background: var(--vr-surface);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(200, 169, 81, 0.2);
+  box-shadow: var(--vr-shadow);
+  overflow: hidden;
+  animation: vr-fade-up 0.5s var(--vr-ease) both;
+}
+
+.page-login .auth-panel::before,
+.page-login .auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-accent) 0%, var(--color-primary-light) 50%, var(--color-accent) 100%);
+}
+
+.page-login .auth-panel h1,
+.page-login .auth-card h1 {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.page-login .auth-tabs {
+  gap: 6px;
+  padding: 5px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius-lg) + 4px);
+  backdrop-filter: blur(10px);
+  margin-bottom: 20px;
+}
+
+.page-login .auth-tab {
+  border-radius: var(--radius);
+  font-weight: 600;
+  transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.page-login .auth-tab--active {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(26, 58, 92, 0.25);
+}
+
+.page-login .form__input {
+  border-radius: var(--radius-lg);
+}
+
+/* Вход */
+.page-admin .admin-login {
+  position: relative;
+  max-width: 440px;
+  padding: 40px 36px 36px;
+  border: 1px solid rgba(200, 169, 81, 0.25);
+  border-radius: var(--radius-xl);
+  background: var(--admin-surface);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--admin-shadow);
+  overflow: hidden;
+  animation: admin-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.page-admin .admin-login::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-accent) 0%, var(--color-primary-light) 50%, var(--color-accent) 100%);
+}
+
+.page-admin .admin-login h1 {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.page-admin .admin-login .btn--primary {
+  margin-top: 4px;
+}
+
+/* Шапка панели */
+.page-admin .admin-header {
+  position: relative;
+  padding-bottom: 20px;
+  margin-bottom: 32px;
+  animation: admin-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
+}
+
+.page-admin .admin-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 72px;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 2px;
+}
+
+.page-admin .admin-header h1 {
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+}
+
+.page-admin .admin-header p {
+  font-size: 0.9375rem;
+  max-width: 52ch;
+}
+
+/* Статистика */
+.page-admin .admin-stats {
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.page-admin .stat-card {
+  position: relative;
+  padding: 22px 18px;
+  border-radius: var(--radius-xl);
+  background: var(--admin-surface);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(216, 223, 232, 0.8);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+  animation: admin-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.page-admin .stat-card:nth-child(1) { animation-delay: 0.08s; }
+.page-admin .stat-card:nth-child(2) { animation-delay: 0.12s; }
+.page-admin .stat-card:nth-child(3) { animation-delay: 0.16s; }
+.page-admin .stat-card:nth-child(4) { animation-delay: 0.2s; }
+.page-admin .stat-card:nth-child(5) { animation-delay: 0.24s; }
+
+.page-admin .stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--admin-accent-line);
+  opacity: 0.6;
+}
+
+.page-admin .stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--admin-shadow-hover);
+  border-color: rgba(42, 82, 128, 0.18);
+}
+
+.page-admin #stat-pending {
+  cursor: pointer;
+}
+
+.page-admin #stat-pending:hover {
+  border-color: rgba(200, 169, 81, 0.5);
+}
+
+.page-admin .stat-card--pro::before {
+  background: linear-gradient(90deg, var(--color-accent) 0%, rgba(200, 169, 81, 0.3) 100%);
+  opacity: 1;
+}
+
+.page-admin .stat-card--pro {
+  border-color: rgba(200, 169, 81, 0.35);
+  background: linear-gradient(145deg, rgba(253, 243, 215, 0.35) 0%, var(--admin-surface) 60%);
+}
+
+.page-admin .stat-card--warn {
+  border-color: rgba(231, 76, 60, 0.25);
+}
+
+.page-admin .stat-card--warn::before {
+  background: linear-gradient(90deg, #e74c3c 0%, transparent 100%);
+  opacity: 0.7;
+}
+
+.page-admin .stat-card__num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.page-admin .stat-card__label {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+}
+
+/* Вкладки */
+.page-admin .admin-tabs {
+  gap: 6px;
+  padding: 5px;
+  margin-bottom: 28px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius-lg) + 4px);
+  backdrop-filter: blur(10px);
+  animation: admin-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+[data-theme="dark"] .page-admin .admin-tabs {
+  background: rgba(15, 20, 28, 0.5);
+}
+
+.page-admin .admin-tab {
+  position: relative;
+  padding: 10px 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-family: var(--admin-font);
+  font-weight: 600;
+  font-size: 0.84rem;
+  letter-spacing: 0.01em;
   color: var(--color-text-muted);
-  background: var(--color-bg);
+  background: transparent;
+  transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.admin-table tr:hover td {
-  background: rgba(42, 82, 128, 0.04);
+.page-admin .admin-tab:hover {
+  color: var(--color-primary-dark);
+  background: rgba(255, 255, 255, 0.7);
+  border-color: var(--color-border);
 }
 
-.admin-tab--active {
-  border-bottom: 2px solid var(--color-accent);
+[data-theme="dark"] .page-admin .admin-tab:hover {
+  background: rgba(36, 48, 68, 0.6);
+  color: var(--color-text);
+}
+
+.page-admin .admin-tab--active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 10px rgba(26, 58, 92, 0.28);
+}
+
+.page-admin .admin-tab--active:hover {
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+}
+
+.page-admin .admin-tab--has-new {
+  border-color: rgba(231, 76, 60, 0.35);
+  color: #c0392b;
+}
+
+.page-admin .admin-tab--has-new.admin-tab--active {
+  color: #fff;
+  background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+  border-color: #c0392b;
+}
+
+.page-admin .tab-badge {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  box-shadow: 0 1px 4px rgba(192, 57, 43, 0.35);
+  animation: admin-badge-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes admin-badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* Панели */
+.page-admin .admin-panel {
+  padding: 28px;
+  border-radius: var(--radius-xl);
+  background: var(--admin-panel-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(216, 223, 232, 0.7);
+  box-shadow: var(--admin-shadow);
+  animation: admin-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+}
+
+.page-admin .admin-panel__desc {
+  padding: 12px 16px;
+  background: rgba(42, 82, 128, 0.05);
+  border-left: 3px solid var(--color-primary-light);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.page-admin .admin-subtitle {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Карточки действий */
+.page-admin .admin-card {
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.9) 0%, rgba(244, 246, 249, 0.95) 100%);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+[data-theme="dark"] .page-admin .admin-card {
+  background: linear-gradient(160deg, rgba(36, 48, 68, 0.6) 0%, rgba(26, 35, 50, 0.9) 100%);
+}
+
+.page-admin .admin-card:hover {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-1px);
+}
+
+.page-admin .admin-card--warn {
+  border-color: rgba(231, 76, 60, 0.3);
+  background: linear-gradient(160deg, rgba(253, 242, 242, 0.9) 0%, rgba(255, 255, 255, 0.95) 100%);
+}
+
+.page-admin .admin-card h3 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Таблицы */
+.page-admin .table-wrap {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.page-admin .admin-table th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  background: linear-gradient(180deg, rgba(244, 246, 249, 0.95) 0%, rgba(238, 241, 246, 0.95) 100%);
+  padding: 12px 14px;
+  border-bottom: 2px solid var(--color-border);
+}
+
+[data-theme="dark"] .page-admin .admin-table th {
+  background: rgba(20, 28, 40, 0.8);
+}
+
+.page-admin .admin-table td {
+  padding: 12px 14px;
+  transition: background 0.15s ease;
+}
+
+.page-admin .admin-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.page-admin .admin-table tbody tr:hover td {
+  background: rgba(42, 82, 128, 0.05);
+}
+
+.page-admin .admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Заявки PRO */
+.page-admin .pro-request {
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  background: var(--admin-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.page-admin .pro-request:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.page-admin .pro-request--new {
+  border-color: rgba(231, 76, 60, 0.35);
+  border-left: 4px solid #e74c3c;
+  background: linear-gradient(135deg, rgba(253, 251, 251, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%);
+  box-shadow: 0 2px 12px rgba(231, 76, 60, 0.08);
+}
+
+.page-admin .pro-request__nick {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Подписчики */
+.page-admin .subs-item {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  background: rgba(244, 246, 249, 0.8);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.page-admin .subs-item:hover {
+  border-color: var(--color-border);
+  background: var(--color-bg-white);
+}
+
+/* Модерация */
+.page-admin .mod-msg {
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  background: var(--admin-surface);
+  border: 1px solid var(--color-border);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.page-admin .mod-msg:hover {
+  border-color: rgba(42, 82, 128, 0.2);
+  box-shadow: var(--shadow-card);
+}
+
+/* Личные сообщения */
+.page-admin .admin-dm-inbox {
+  border-radius: var(--radius-lg);
+  padding: 10px;
+  background: rgba(244, 246, 249, 0.6);
+  border: 1px solid var(--color-border);
+}
+
+.page-admin .admin-dm-item {
+  border-radius: var(--radius);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.page-admin .admin-dm-item:hover {
+  transform: translateX(2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.page-admin .admin-dm-item--active {
+  box-shadow: 0 2px 12px rgba(26, 58, 92, 0.12);
+  border-color: var(--color-primary);
+}
+
+.page-admin .admin-dm-thread {
+  border-radius: var(--radius-lg);
+  background: var(--admin-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+
+.page-admin .dm-msg {
+  border-radius: 12px 12px 12px 4px;
+  transition: box-shadow 0.15s ease;
+}
+
+.page-admin .dm-msg--own {
+  border-radius: 12px 12px 4px 12px;
+  background: linear-gradient(135deg, rgba(26, 58, 92, 0.06) 0%, rgba(42, 82, 128, 0.04) 100%);
+  border-color: rgba(42, 82, 128, 0.2);
+}
+
+.page-admin .admin-dm-reply {
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.page-admin .admin-dm-reply textarea {
+  border-radius: var(--radius-lg);
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Бейджи */
+.page-admin .badge {
+  letter-spacing: 0.02em;
+  font-size: 0.7rem;
+  padding: 4px 11px;
+}
+
+.page-admin .badge--admin {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  box-shadow: 0 1px 4px rgba(26, 58, 92, 0.25);
+}
+
+/* Пустые состояния */
+.page-admin .table-empty {
+  padding: 40px 24px;
+  font-size: 0.9rem;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+/* Toast */
+.page-admin .toast {
+  border-radius: var(--radius-lg);
+  padding: 14px 22px;
+  font-weight: 600;
+  font-family: var(--admin-font);
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+  border-left: 4px solid var(--color-accent);
+  box-shadow: 0 8px 32px rgba(15, 39, 64, 0.25);
+  animation: admin-toast-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes admin-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Модальное окно */
+.page-admin .account-modal {
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(200, 169, 81, 0.2);
+  box-shadow: 0 24px 64px rgba(15, 39, 64, 0.22);
+  overflow: hidden;
+}
+
+.page-admin .account-modal::backdrop {
+  background: rgba(15, 39, 64, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.page-admin .account-modal__inner h2 {
+  font-family: var(--font-serif);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--color-primary-dark);
+  padding-right: 2rem;
+}
+
+.page-admin .account-modal__close {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.page-admin .account-modal__close:hover {
+  background: rgba(42, 82, 128, 0.08);
+  color: var(--color-primary-dark);
+}
+
+/* Toolbar */
+.page-admin .admin-panel__toolbar .form__input {
+  border-radius: var(--radius-lg);
+}
+
+/* Анимации */
+@keyframes admin-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-admin .stat-card,
+  .page-admin .admin-header,
+  .page-admin .admin-tabs,
+  .page-admin .admin-panel,
+  .page-admin .admin-login,
+  .page-admin .tab-badge,
+  .page-home .home-hero__title,
+  .page-home .home-hero__badge,
+  .page-home .home-hero__subtitle,
+  .page-home .home-hero__lead,
+  .page-home .home-hero__actions,
+  .page-home .home-hero__visual,
+  .page-home .home-audience-card,
+  .page-home .home-benefit-card,
+  .page-home .home-task-card,
+  .page-home .home-tier-card,
+  .page-home .home-stage-card,
+  .page-home .home-flow,
+  .page-home .home-contacts,
+  .page-chats-hub .m-card,
+  .page-chats-hub .m-page__title,
+  .page-chat .chat-layout,
+  .page-account .account-card,
+  .page-login .auth-panel,
+  .page-login .auth-card,
+  .m-card,
+  .account-card,
+  .about-card {
+    animation: none;
+  }
+
+  .page-admin .stat-card:hover,
+  .page-admin .admin-card:hover,
+  .page-admin .admin-dm-item:hover,
+  .page-home .home-hero__illustration:hover,
+  .page-chat .topic-item:hover,
+  .page-chats-hub .m-card--link:hover,
+  .page-chats-hub .m-card--chat:hover {
+    transform: none;
+  }
 }
 
 @media (max-width: 992px) {
@@ -491,10 +1683,28 @@ body {
 .m-card:nth-child(3) { animation-delay: 0.08s; }
 .m-card:nth-child(4) { animation-delay: 0.12s; }
 
-/* --- Авторизация --- */
-.page-login .auth-card {
+/* --- Юридические страницы --- */
+.page-legal .legal-content {
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
+  background: var(--vr-surface);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--vr-shadow);
+  animation: vr-fade-up 0.45s var(--vr-ease) both;
+}
+
+.page-legal .legal-content h1 {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.page-legal .legal-content h1::after {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 2px;
+  margin-top: 12px;
 }
 
 /* --- PRO-акцент --- */
