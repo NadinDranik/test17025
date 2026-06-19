@@ -67,6 +67,13 @@ function mergeProRequests(serverList, clientList, actor) {
   return Array.from(byId.values());
 }
 
+function mergeViews(serverViews, clientViews, actorId) {
+  const server = serverViews || {};
+  const client = clientViews || {};
+  if (!client[actorId]) return server;
+  return { ...server, [actorId]: client[actorId] };
+}
+
 function mergeReactions(serverReactions, clientReactions, actorId) {
   const server = serverReactions || {};
   const client = clientReactions || {};
@@ -124,6 +131,10 @@ function mergeMessagesForChat(serverMsgs, clientMsgs, actor, chatId) {
 
     if (cm.reactions) {
       merged.reactions = mergeReactions(sm.reactions, cm.reactions, actor.id);
+    }
+
+    if (cm.views) {
+      merged.views = mergeViews(sm.views, cm.views, actor.id);
     }
 
     byId.set(cm.id, merged);
