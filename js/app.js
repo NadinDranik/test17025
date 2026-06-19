@@ -1010,7 +1010,8 @@ const App = (function () {
         createdAt: new Date().toISOString(),
         editedAt: null,
         pinned: false,
-        reactions: {}
+        reactions: {},
+        views: {}
       };
       if (replyTo) {
         const parent = data.messages[chatId].find(m => m.id === replyTo);
@@ -1041,19 +1042,24 @@ const App = (function () {
     });
   }
 
-  function editMessage(chatId, msgId, userId, newText) {
+  async function editMessage(chatId, msgId, userId, newText) {
     const data = load();
     const msgs = data.messages[chatId];
-    if (!msgs) return null;
+    if (!msgs) return { ok: false, error: 'Чат не найден' };
     const msg = msgs.find(m => m.id === msgId);
-    if (!msg) return null;
+    if (!msg) return { ok: false, error: 'Сообщение не найдено' };
     const user = data.users.find(u => u.id === userId);
-    if (!user) return null;
-    if (msg.userId !== userId && user.role !== 'admin') return null;
-    msg.text = newText.trim();
+    if (!user) return { ok: false, error: 'Нет доступа' };
+    if (msg.userId !== userId && user.role !== 'admin') {
+      return { ok: false, error: 'Нет прав на редактирование' };
+    }
+    const trimmed = newText.trim();
+    if (!trimmed) return { ok: false, error: 'Текст не может быть пустым' };
+    msg.text = trimmed;
     msg.editedAt = new Date().toISOString();
-    save(data);
-    return msg;
+    if (!save(data)) return { ok: false, error: 'Не удалось сохранить' };
+    await awaitSync();
+    return { ok: true, msg };
   }
 
   async function deleteMessage(chatId, msgId, userId) {
@@ -1110,7 +1116,7 @@ const App = (function () {
     }
   }
 
-  function toggleReaction(chatId, msgId, userId, emoji) {
+  async function toggleReaction(chatId, msgId, userId, emoji) {
     if (!REACTION_EMOJIS.includes(emoji)) {
       return { ok: false, error: 'Недопустимая реакция' };
     }
@@ -1132,7 +1138,36 @@ const App = (function () {
     }
 
     if (!save(data)) return { ok: false, error: 'Не удалось сохранить реакцию' };
+    await awaitSync();
     return { ok: true };
+  }
+
+  function recordMessageViews(chatId, msgIds, userId) {
+    if (!msgIds || !msgIds.length || !userId) return { ok: true };
+    const data = load();
+    const msgs = data.messages[chatId];
+    if (!msgs) return { ok: false };
+    const now = new Date().toISOString();
+    const idSet = new Set(msgIds);
+    let changed = false;
+    msgs.forEach(msg => {
+      if (!idSet.has(msg.id) || msg.userId === userId) return;
+      if (!msg.views) msg.views = {};
+      if (!msg.views[userId]) {
+        msg.views[userId] = now;
+        changed = true;
+      }
+    });
+    if (changed) save(data);
+    return { ok: true };
+  }
+
+  function getMessageUserNames(userIds) {
+    const data = load();
+    return (userIds || []).map(id => {
+      const u = data.users.find(x => x.id === id);
+      return u ? getDisplayName(u) : 'Участник';
+    });
   }
 
   function searchMessages(query, chatIds) {
@@ -1604,6 +1639,7 @@ const App = (function () {
     setProExpiry, blockUser, updateUser,
     getProTopics, createProTopic, updateProTopic, deleteProTopic,
     getMessages, sortMessagesChronologically, addMessage, editMessage, deleteMessage, pinMessage, toggleReaction,
+    recordMessageViews, getMessageUserNames,
     searchMessages, getNotifications, getUnreadNotificationCount, markNotificationsRead,
     getChatUnreadCount, getTotalUnreadMessages, getBellUnreadCount, getAccessibleChatIds, markChatRead,
     getChatLabel, getChatHref, getUnreadChatsSummary, getProUnreadTotal,
