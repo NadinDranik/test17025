@@ -39,7 +39,25 @@
         <nav id="desktop-chats-nav" class="desktop-chats-nav" aria-label="Список чатов"></nav>
         <div class="chat-sidebar__body">
         <h1 class="chat-sidebar__title">Оформление PRO</h1>
-        <p class="chat-sidebar__desc">Для доступа к PRO-чатам необходимо оплатить <strong>1000 ₽ в месяц</strong> и подтвердить оплату в личном диалоге с администратором.</p>
+        <p class="chat-sidebar__desc">Выберите тариф и оплатите онлайн — доступ активируется автоматически.</p>
+
+        <div class="payment-plans" id="payment-plans">
+          <div class="payment-plan payment-plan--free">
+            <h2 class="payment-plan__title">Free</h2>
+            <p class="payment-plan__price">0 ₽</p>
+            <p class="payment-plan__desc">Общий чат и личный диалог с администратором</p>
+          </div>
+          <div class="payment-plan payment-plan--pro payment-plan--selected" id="plan-pro">
+            <h2 class="payment-plan__title">PRO</h2>
+            <p class="payment-plan__price" id="plan-pro-price">1000 ₽ / мес</p>
+            <p class="payment-plan__desc">Закрытые PRO-чаты и разделы платформы</p>
+            <button type="button" class="btn btn--pro btn--block" id="btn-pay-online">Оплатить онлайн</button>
+            <p class="form__error" id="pay-online-error" hidden></p>
+          </div>
+        </div>
+
+        <details class="payment-manual">
+          <summary>Оплата по реквизитам (СБП)</summary>
         <div class="payment-info">
           <h2 class="payment-info__title">Реквизиты для оплаты</h2>
           <dl class="payment-info__list">
@@ -58,6 +76,7 @@
             Пришлите чек или скрин об оплате — и вам предоставят доступ к PRO-чатам.
           </p>
         </div>
+        </details>
         <div class="admin-contacts admin-contacts--compact">
           <a href="https://max.ru/u/f9LHodD0cOKDAVR-vHKW32GuSxfr27ol4LzzwpkZqgYd4JicavrrOAmBw48" class="admin-contact-icon admin-contact-icon--sm" target="_blank" rel="noopener noreferrer" title="MAX">
             <img src="мах.jfif" alt="MAX" width="40" height="40">
@@ -66,7 +85,7 @@
             <img src="ТГ.jfif" alt="Telegram" width="40" height="40">
           </a>
         </div>
-        <p class="chat-sidebar__note">После проверки оплаты администратор активирует ваш PRO-доступ.</p>
+        <p class="chat-sidebar__note">После онлайн-оплаты доступ активируется автоматически. При оплате по реквизитам — после проверки администратором.</p>
         </div>
       </aside>
 
@@ -134,6 +153,41 @@
     Mobile.init('chats');
     Mobile.mountDesktopChatsNav('');
     App.ensureAdminDmWelcome(currentUser.id);
+
+    const payBtn = document.getElementById('btn-pay-online');
+    const payError = document.getElementById('pay-online-error');
+    const planPriceEl = document.getElementById('plan-pro-price');
+
+    App.fetchPaymentPlans().then(plansData => {
+      const proPlan = (plansData.plans || []).find(p => p.id === 'pro_monthly');
+      if (proPlan) {
+        planPriceEl.textContent = proPlan.price + ' ₽ / ' + (proPlan.days >= 30 ? 'мес' : proPlan.days + ' дн.');
+      }
+      if (!plansData.paymentsEnabled) {
+        payBtn.disabled = true;
+        payBtn.textContent = 'Онлайн-оплата скоро';
+        payBtn.title = 'Настройте Prodamus в .env на сервере';
+      }
+    }).catch(() => {});
+
+    payBtn?.addEventListener('click', async () => {
+      payError.hidden = true;
+      payBtn.disabled = true;
+      payBtn.textContent = 'Создаём платёж…';
+      try {
+        const result = await App.createPayment('pro_monthly');
+        if (result.paymentUrl) {
+          window.location.href = result.paymentUrl;
+          return;
+        }
+        throw new Error('Не получена ссылка на оплату');
+      } catch (err) {
+        payError.textContent = err.message || 'Ошибка оплаты';
+        payError.hidden = false;
+        payBtn.disabled = false;
+        payBtn.textContent = 'Оплатить онлайн';
+      }
+    });
 
     const messagesEl = document.getElementById('messages');
     const msgForm = document.getElementById('msg-form');
