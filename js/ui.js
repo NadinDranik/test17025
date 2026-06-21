@@ -647,6 +647,12 @@ const UI = (function () {
     }
   }
 
+  function isEmojiOnlyMessage(text) {
+    return typeof EmojiPicker !== 'undefined' && EmojiPicker.isEmojiOnly
+      ? EmojiPicker.isEmojiOnly(text)
+      : false;
+  }
+
   function renderMessage(msg, currentUser, chatId, allMessages, avatarUrls) {
     const isOwn = currentUser && msg.userId === currentUser.id;
     const isAdmin = currentUser && currentUser.role === 'admin';
@@ -677,8 +683,10 @@ const UI = (function () {
     }
 
     const textHtml = msg.text
-      ? `<p class="msg__text">${formatMessageText(msg.text)}</p>`
+      ? `<span class="msg__text">${formatMessageText(msg.text)}</span>`
       : '';
+
+    const emojiOnly = !filesHtml && !reply && isEmojiOnlyMessage(msg.text);
 
     const replyLabel = reply
       ? (reply.text ? reply.text.slice(0, 80) : (reply.files && reply.files[0] ? '📎 ' + reply.files[0].name : '…'))
@@ -716,26 +724,27 @@ const UI = (function () {
     const authorHtml = isSystem || isOwn ? '' : `<span class="msg__author" style="color:${authorColor(authorName)}">${escapeAttr(authorName)}</span>`;
     const editedHtml = msg.editedAt ? '<span class="msg__edited">изменено</span>' : '';
     const checksHtml = isOwn && !isSystem ? '<span class="msg__checks" aria-label="Доставлено">✓✓</span>' : '';
-    const footerHtml = !isSystem ? `<footer class="msg__footer">${editedHtml}<time class="msg__time">${formatMessageTime(msg.createdAt)}</time>${checksHtml}</footer>` : '';
+    const footerHtml = !isSystem && !emojiOnly ? `<footer class="msg__footer">${editedHtml}<time class="msg__time">${formatMessageTime(msg.createdAt)}</time>${checksHtml}</footer>` : '';
+    const emojiFooterHtml = emojiOnly ? `<footer class="msg__footer msg__footer--overlay">${editedHtml}<time class="msg__time">${formatMessageTime(msg.createdAt)}</time>${checksHtml}</footer>` : '';
 
     const replyHtml = reply
       ? `<div class="msg__reply"><span class="msg__reply-author">${escapeAttr(reply.authorName || reply.authorEmail)}</span><span class="msg__reply-text">${escapeHtml(replyLabel)}${replyLabel.length >= 80 ? '…' : ''}</span></div>`
       : '';
 
+    const bubbleInner = emojiOnly
+      ? `<div class="msg__emoji-only">${textHtml}${emojiFooterHtml}</div>`
+      : `<div class="msg__inner">${authorHtml}${replyHtml}<div class="msg__text-row">${textHtml}${footerHtml}</div>${filesHtml}${reactionsHtml}${metaHtml}${actions}</div>`;
+
+    const extraBelow = emojiOnly ? `${reactionsHtml}${metaHtml}${actions}` : '';
+
     return `
-      <article class="msg${isOwn ? ' msg--own' : ''}${msg.pinned ? ' msg--pinned' : ''}${welcomeClass}" data-id="${msg.id}">
+      <article class="msg${isOwn ? ' msg--own' : ''}${msg.pinned ? ' msg--pinned' : ''}${welcomeClass}${emojiOnly ? ' msg--emoji-only' : ''}" data-id="${msg.id}">
         <div class="msg__layout">
           ${avatarHtml}
           <div class="msg__bubble">
             ${msg.pinned ? '<span class="msg__pin-label">📌 Закреплено</span>' : ''}
-            ${authorHtml}
-            ${replyHtml}
-            ${textHtml}
-            ${filesHtml}
-            ${footerHtml}
-            ${reactionsHtml}
-            ${metaHtml}
-            ${actions}
+            ${bubbleInner}
+            ${extraBelow}
           </div>
         </div>
       </article>`;
