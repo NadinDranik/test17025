@@ -292,11 +292,11 @@ ul {
 }
 
 .header__inner {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
   height: 72px;
-  gap: 24px;
+  gap: 16px 24px;
 }
 
 .logo {
@@ -333,13 +333,19 @@ ul {
 
 .nav {
   display: flex;
-  gap: 28px;
+  justify-content: center;
+  align-items: center;
+  gap: 6px 20px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .nav__link {
   color: var(--color-text-muted);
   font-size: 0.9rem;
   font-weight: 500;
+  white-space: nowrap;
+  padding: 6px 2px;
 }
 
 .nav__link:hover {
@@ -1308,6 +1314,11 @@ ul {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-decoration: none;
+}
+
+.user-menu__nick:hover {
+  color: var(--color-primary);
 }
 
 .user-menu__email {
@@ -2196,6 +2207,12 @@ ul {
 
   .desktop-chats-nav__item--locked {
     opacity: 0.85;
+  }
+
+  .desktop-chats-nav__lock {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    line-height: 1;
   }
 
   .desktop-chats-nav__title {
