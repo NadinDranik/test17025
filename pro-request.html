@@ -7,12 +7,11 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="css/mobile.css">
   <link rel="stylesheet" href="css/visual-refresh.css">
-  <link rel="stylesheet" href="css/telegram-style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Merriweather:wght@700;900&display=swap" rel="stylesheet">
 </head>
-<body class="page-chat page-pro-request">
+<body class="page-account page-pro-request">
 
   <header class="header">
     <div class="container header__inner">
@@ -28,19 +27,14 @@
     </div>
   </header>
 
-  <main class="chat-layout">
-    <div class="chat-layout__inner">
-      <aside class="chat-sidebar chat-sidebar--pro">
-        <nav class="chat-rail" aria-label="Чаты">
-          <a href="chat.html" class="chat-rail__tab" data-chat-id="free">Общий</a>
-          <a href="admin-chat.html" class="chat-rail__tab" data-chat-kind="dm">Админ</a>
-          <a href="pro-request.html" class="chat-rail__tab chat-rail__tab--active" aria-current="page">PRO</a>
-        </nav>
-        <nav id="desktop-chats-nav" class="desktop-chats-nav" aria-label="Список чатов"></nav>
-        <div class="chat-sidebar__body">
-        <h1 class="chat-sidebar__title">Оформление PRO</h1>
-        <p class="chat-sidebar__desc">Выберите тариф и оплатите онлайн — доступ активируется автоматически.</p>
+  <main class="account-page">
+    <div class="container" style="max-width: 640px;">
+      <div class="account-header">
+        <h1>Оформление PRO-доступа</h1>
+        <p class="account-header__desc">Оплата через защищённую платёжную систему Prodamus. Доступ активируется автоматически.</p>
+      </div>
 
+      <section class="account-card">
         <div class="payment-plans" id="payment-plans">
           <div class="payment-plan payment-plan--free">
             <h2 class="payment-plan__title">Free</h2>
@@ -50,187 +44,100 @@
           <div class="payment-plan payment-plan--pro payment-plan--selected" id="plan-pro">
             <h2 class="payment-plan__title">PRO</h2>
             <p class="payment-plan__price" id="plan-pro-price">1000 ₽ / мес</p>
-            <p class="payment-plan__desc">Закрытые PRO-чаты и разделы платформы</p>
-            <button type="button" class="btn btn--pro btn--block" id="btn-pay-online">Оплатить онлайн</button>
-            <p class="form__error" id="pay-online-error" hidden></p>
+            <p class="payment-plan__desc">Закрытые PRO-чаты и разделы платформы на 30 дней</p>
           </div>
         </div>
 
-        <details class="payment-manual">
-          <summary>Оплата по реквизитам (СБП)</summary>
-        <div class="payment-info">
-          <h2 class="payment-info__title">Реквизиты для оплаты</h2>
-          <dl class="payment-info__list">
-            <dt>Стоимость</dt>
-            <dd>1000 ₽ в месяц</dd>
-            <dt>Телефон (СБП)</dt>
-            <dd><a href="tel:+79824586893">8 982 458-68-93</a></dd>
-            <dt>Банк</dt>
-            <dd>Альфа банк</dd>
-            <dt>Получатель</dt>
-            <dd>Надежда Николаевна Д.</dd>
-          </dl>
-          <p class="payment-info__text">
-            Для получения PRO-доступа необходимо оплатить <strong>1000 рублей в месяц</strong> по номеру телефона
-            <strong>89824586893</strong> на <strong>Альфа банк</strong>, <strong>Надежда Николаевна Д.</strong>
-            Пришлите чек или скрин об оплате — и вам предоставят доступ к PRO-чатам.
-          </p>
-        </div>
-        </details>
-        <div class="admin-contacts admin-contacts--compact">
-          <a href="https://max.ru/u/f9LHodD0cOKDAVR-vHKW32GuSxfr27ol4LzzwpkZqgYd4JicavrrOAmBw48" class="admin-contact-icon admin-contact-icon--sm" target="_blank" rel="noopener noreferrer" title="MAX">
-            <img src="мах.jfif" alt="MAX" width="40" height="40">
-          </a>
-          <a href="https://t.me/expert_Nadezhda" class="admin-contact-icon admin-contact-icon--sm" target="_blank" rel="noopener noreferrer" title="Telegram">
-            <img src="ТГ.jfif" alt="Telegram" width="40" height="40">
-          </a>
-        </div>
-        <p class="chat-sidebar__note">После онлайн-оплаты доступ активируется автоматически. При оплате по реквизитам — после проверки администратором.</p>
-        </div>
-      </aside>
+        <fieldset class="form__checkboxes" id="pay-consents">
+          <label class="form__checkbox">
+            <input type="checkbox" id="consent-offer" required>
+            <span>Я принимаю условия <a href="offer.html" target="_blank" rel="noopener">публичной оферты</a> и согласен(на) на оказание услуги в электронной форме</span>
+          </label>
+          <label class="form__checkbox">
+            <input type="checkbox" id="consent-digital" required>
+            <span>Я понимаю, что после активации PRO-доступа услуга считается оказанной; возврат за использованный период не предусмотрен, за исключением случаев, указанных в оферте</span>
+          </label>
+          <label class="form__checkbox">
+            <input type="checkbox" id="consent-privacy-pay" required>
+            <span>Я ознакомлен(а) с <a href="privacy.html" target="_blank" rel="noopener">политикой конфиденциальности</a> и согласен(на) на передачу данных платёжному сервису Prodamus для проведения оплаты</span>
+          </label>
+        </fieldset>
 
-      <section class="chat-main">
-        <div class="chat-main__header">
-          <h2>Личный диалог с администратором</h2>
-          <span class="chat-main__count" id="msg-count"></span>
-        </div>
+        <button type="button" class="btn btn--pro btn--block" id="btn-pay-online">Перейти к оплате</button>
+        <p class="form__error" id="pay-online-error" hidden></p>
 
-        <div class="payment-banner" id="payment-banner">
-          <p class="payment-banner__icon" aria-hidden="true">💳</p>
-          <p class="payment-banner__text">
-            <strong>Для доступа к PRO-чатам</strong> оплатите <strong>1000 ₽ в месяц</strong> по номеру
-            <strong>89824586893</strong> (Альфа банк, Надежда Николаевна Д.),
-            затем отправьте в этот чат <strong>чек или скриншот об оплате</strong>.
-            Администратор проверит платёж и откроет вам PRO-доступ.
-          </p>
-        </div>
-
-        <div class="chat-messages" id="messages"></div>
-
-        <div class="chat-compose" id="compose-area">
-          <div class="reply-preview" id="reply-preview" hidden>
-            <span id="reply-text"></span>
-            <button type="button" id="cancel-reply">&times;</button>
-          </div>
-          <form id="msg-form" class="chat-form">
-            <div class="chat-form__bar">
-              <label class="chat-form__attach file-upload" title="Прикрепить чек">
-                <input type="file" id="msg-files" multiple accept="image/*,.pdf">
-                <span class="chat-form__attach-icon" aria-hidden="true">📎</span>
-              </label>
-              <textarea class="form__input chat-form__input" id="msg-text" rows="1" placeholder="Сообщение…"></textarea>
-              <button type="submit" class="chat-form__send btn btn--pro" data-label="Отправить" aria-label="Отправить"><svg class="chat-form__send-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
-            </div>
-            <p class="chat-form__files" id="file-names"></p>
-            <p class="form__error" id="send-error" hidden></p>
-          </form>
-        </div>
+        <p class="chat-sidebar__note" style="margin-top: 1rem;">
+          Оплата принимается только через Prodamus (карта, СБП и др.). По вопросам — <a href="admin-chat.html">напишите администратору</a>.
+        </p>
       </section>
     </div>
   </main>
 
   <script src="js/app.js"></script>
   <script src="js/ui.js"></script>
-  <script src="js/emoji-picker.js"></script>
   <script src="js/mobile.js"></script>
-  <script src="js/chat-send.js"></script>
   <script>
     App.ready.then(() => {
-    let currentUser = App.getCurrentUser();
+      const currentUser = App.getCurrentUser();
 
-    if (currentUser && App.isProActive(currentUser)) {
-      window.location.href = 'pro.html';
-    }
-
-    if (!currentUser) {
-      window.location.href = App.getLoginUrl('pro-request.html');
-      return;
-    }
-
-    const CHAT_ID = App.getAdminDmChatId(currentUser.id);
-
-    UI.initHeader('chats');
-    Mobile.init('chats');
-    Mobile.mountDesktopChatsNav('');
-    App.ensureAdminDmWelcome(currentUser.id);
-
-    const payBtn = document.getElementById('btn-pay-online');
-    const payError = document.getElementById('pay-online-error');
-    const planPriceEl = document.getElementById('plan-pro-price');
-
-    App.fetchPaymentPlans().then(plansData => {
-      const proPlan = (plansData.plans || []).find(p => p.id === 'pro_monthly');
-      if (proPlan) {
-        planPriceEl.textContent = proPlan.price + ' ₽ / ' + (proPlan.days >= 30 ? 'мес' : proPlan.days + ' дн.');
+      if (currentUser && App.isProActive(currentUser)) {
+        window.location.href = 'pro.html';
+        return;
       }
-      if (!plansData.paymentsEnabled) {
-        payBtn.disabled = true;
-        payBtn.textContent = 'Онлайн-оплата скоро';
-        payBtn.title = 'Настройте Prodamus в .env на сервере';
-      }
-    }).catch(() => {});
 
-    payBtn?.addEventListener('click', async () => {
-      payError.hidden = true;
-      payBtn.disabled = true;
-      payBtn.textContent = 'Создаём платёж…';
-      try {
-        const result = await App.createPayment('pro_monthly');
-        if (result.paymentUrl) {
-          window.location.href = result.paymentUrl;
+      if (!currentUser) {
+        window.location.href = App.getLoginUrl('pro-request.html');
+        return;
+      }
+
+      UI.initHeader('chats');
+      Mobile.init('chats');
+
+      const payBtn = document.getElementById('btn-pay-online');
+      const payError = document.getElementById('pay-online-error');
+      const planPriceEl = document.getElementById('plan-pro-price');
+
+      App.fetchPaymentPlans().then(plansData => {
+        const proPlan = (plansData.plans || []).find(p => p.id === 'pro_monthly');
+        if (proPlan) {
+          planPriceEl.textContent = proPlan.price + ' ₽ / ' + (proPlan.days >= 30 ? 'мес' : proPlan.days + ' дн.');
+        }
+        if (!plansData.paymentsEnabled) {
+          payBtn.disabled = true;
+          payBtn.textContent = 'Оплата временно недоступна';
+          payBtn.title = 'Платёжная система настраивается. Обратитесь к администратору.';
+        }
+      }).catch(() => {});
+
+      payBtn.addEventListener('click', async () => {
+        payError.hidden = true;
+
+        const offerOk = document.getElementById('consent-offer').checked;
+        const digitalOk = document.getElementById('consent-digital').checked;
+        const privacyOk = document.getElementById('consent-privacy-pay').checked;
+
+        if (!offerOk || !digitalOk || !privacyOk) {
+          payError.textContent = 'Для оплаты необходимо принять все условия';
+          payError.hidden = false;
           return;
         }
-        throw new Error('Не получена ссылка на оплату');
-      } catch (err) {
-        payError.textContent = err.message || 'Ошибка оплаты';
-        payError.hidden = false;
-        payBtn.disabled = false;
-        payBtn.textContent = 'Оплатить онлайн';
-      }
-    });
 
-    const messagesEl = document.getElementById('messages');
-    const msgForm = document.getElementById('msg-form');
-    const sendError = document.getElementById('send-error');
-
-    async function renderMessages() {
-      const msgs = App.getMessages(CHAT_ID);
-      document.getElementById('msg-count').textContent = msgs.length + ' сообщ.';
-      await UI.renderMessages(messagesEl, msgs, currentUser, CHAT_ID, 'Напишите администратору или прикрепите чек об оплате.');
-    }
-
-    UI.bindMessageActions(messagesEl, CHAT_ID, currentUser, renderMessages);
-
-    messagesEl.addEventListener('reply-to', e => {
-      msgForm._replyTo = e.detail.id;
-      document.getElementById('reply-preview').hidden = false;
-      document.getElementById('reply-text').textContent = 'Ответ ' + e.detail.author + ': ' + ChatSend.getReplyLabel(e.detail);
-      document.getElementById('msg-text').focus();
-    });
-
-    document.getElementById('cancel-reply').addEventListener('click', () => {
-      msgForm._replyTo = null;
-      document.getElementById('reply-preview').hidden = true;
-    });
-
-    ChatSend.bindForm(
-      msgForm,
-      () => CHAT_ID,
-      () => App.getCurrentUser(),
-      () => {
-        sendError.hidden = true;
-        renderMessages();
-      },
-      (msg) => {
-        sendError.textContent = msg;
-        sendError.hidden = false;
-      }
-    );
-
-    renderMessages();
-
-    window.addEventListener('gost-data-synced', renderMessages);
-    window.addEventListener('gost-unread-changed', () => UI.refreshUnreadBadges());
+        payBtn.disabled = true;
+        payBtn.textContent = 'Создаём платёж…';
+        try {
+          const result = await App.createPayment('pro_monthly', { acceptOffer: true });
+          if (result.paymentUrl) {
+            window.location.href = result.paymentUrl;
+            return;
+          }
+          throw new Error('Не получена ссылка на оплату');
+        } catch (err) {
+          payError.textContent = err.message || 'Ошибка оплаты';
+          payError.hidden = false;
+          payBtn.disabled = false;
+          payBtn.textContent = 'Перейти к оплате';
+        }
+      });
     });
   </script>
 </body>
