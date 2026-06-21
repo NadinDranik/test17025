@@ -124,13 +124,15 @@
           return `
           <a href="blog.html?post=${encodeURIComponent(post.id)}" class="blog-card">
             ${cover}
-            <div class="blog-card__meta">
-              <time datetime="${post.date}">${formatBlogDate(post.date)}</time>
-              ${(post.tags || []).map(tag => `<span class="blog-card__tag">${UI.escapeHtml(tag)}</span>`).join('')}
+            <div class="blog-card__body">
+              <div class="blog-card__meta">
+                <time datetime="${post.date}">${formatBlogDate(post.date)}</time>
+                ${(post.tags || []).map(tag => `<span class="blog-card__tag">${UI.escapeHtml(tag)}</span>`).join('')}
+              </div>
+              <h2 class="blog-card__title">${UI.escapeHtml(post.title)}</h2>
+              <p class="blog-card__excerpt">${UI.escapeHtml(post.excerpt)}</p>
+              <span class="blog-card__more">Читать →</span>
             </div>
-            <h2 class="blog-card__title">${UI.escapeHtml(post.title)}</h2>
-            <p class="blog-card__excerpt">${UI.escapeHtml(post.excerpt)}</p>
-            <span class="blog-card__more">Читать →</span>
           </a>`;
         }));
 
