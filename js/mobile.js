@@ -7,6 +7,7 @@ const Mobile = (function () {
 
   const PAGE_TAB = {
     'index.html': 'home',
+    'blog.html': 'blog',
     'chat.html': 'chats',
     'chats.html': 'chats',
     'pro.html': 'chats',
@@ -84,9 +85,9 @@ const Mobile = (function () {
     const themeLabel = isDark ? 'Светлая' : 'Тёмная';
     const items = [
       { id: 'home', href: 'index.html', icon: '⌂', label: 'Главная' },
-      { id: 'chats', href: 'chats.html', icon: '💬', label: 'Чаты', badge: chatUnread },
-      { id: 'account', href: user ? 'account.html' : App.getLoginUrl('account.html'), icon: '👤', label: 'Кабинет' },
-      { id: 'support', href: user ? 'admin-chat.html' : App.getLoginUrl('admin-chat.html'), icon: '✉️', label: 'Поддержка' }
+      { id: 'blog', href: 'blog.html', icon: '📰', label: 'Блог' },
+      { id: 'chats', href: user ? 'chats.html' : App.getLoginUrl('chats.html'), icon: '💬', label: 'Чаты', badge: chatUnread },
+      { id: 'account', href: user ? 'account.html' : App.getLoginUrl('account.html'), icon: '👤', label: 'Кабинет' }
     ];
 
     let nav = document.getElementById('mobile-bottom-nav');
@@ -346,6 +347,31 @@ const Mobile = (function () {
       </a>`;
   }
 
+  function tgLockedTopicRowHtml(topic) {
+    return `
+      <a href="pro-request.html" class="tg-chat-item tg-chat-item--locked">
+        <span class="tg-chat-item__avatar tg-chat-item__avatar--pro" aria-hidden="true">🔒</span>
+        <span class="tg-chat-item__body">
+          <span class="tg-chat-item__row">
+            <span class="tg-chat-item__title">${UI.escapeHtml(topic.title)}</span>
+            <span class="tg-chat-item__meta"><span class="m-card__tier m-card__tier--pro">PRO</span></span>
+          </span>
+          <span class="tg-chat-item__row tg-chat-item__row--preview">
+            <span class="tg-chat-item__preview">Доступ по подписке PRO</span>
+          </span>
+        </span>
+      </a>`;
+  }
+
+  function navLockedTopicRowHtml(topic) {
+    return `
+      <a href="pro-request.html" class="desktop-chats-nav__item desktop-chats-nav__item--locked desktop-chats-nav__item--pro">
+        <span class="desktop-chats-nav__lock" aria-hidden="true">🔒</span>
+        <span class="m-card__tier m-card__tier--pro">PRO</span>
+        <span class="desktop-chats-nav__title">${UI.escapeHtml(topic.title)}</span>
+      </a>`;
+  }
+
   function getProTopicHref(topicId) {
     const page = (window.location.pathname.split('/').pop() || 'index.html').split('?')[0];
     const hash = '#t=' + encodeURIComponent(topicId);
@@ -372,7 +398,7 @@ const Mobile = (function () {
     if (!container || !user) return;
 
     const isPro = App.isProActive(user) || user.role === 'admin';
-    const topics = isPro ? App.getProTopics(false) : [];
+    const topics = App.getProTopics(false);
     const dmChatId = App.getAdminDmChatId(user.id);
 
     let proHtml = '';
@@ -388,6 +414,8 @@ const Mobile = (function () {
           modifier: ' desktop-chats-nav__item--pro'
         })).join('')
         : '<p class="desktop-chats-nav__empty">PRO-чаты пока не созданы</p>';
+    } else if (topics.length) {
+      proHtml = topics.map(t => navLockedTopicRowHtml(t)).join('');
     } else {
       proHtml = `
         <a href="pro-request.html" class="desktop-chats-nav__item desktop-chats-nav__item--locked">
@@ -420,7 +448,7 @@ const Mobile = (function () {
     if (!container || !user) return;
 
     const isPro = App.isProActive(user) || user.role === 'admin';
-    const topics = isPro ? App.getProTopics(false) : [];
+    const topics = App.getProTopics(false);
 
     let proCardsHtml = '';
     if (isPro) {
@@ -444,13 +472,15 @@ const Mobile = (function () {
             </span>
           </div>`;
       }
+    } else if (topics.length) {
+      proCardsHtml = topics.map(t => tgLockedTopicRowHtml(t)).join('');
     } else {
       proCardsHtml = `
         <a href="pro-request.html" class="tg-chat-item tg-chat-item--locked">
           <span class="tg-chat-item__avatar tg-chat-item__avatar--pro">🔒</span>
           <span class="tg-chat-item__body">
             <span class="tg-chat-item__row"><span class="tg-chat-item__title">Закрытые PRO-чаты</span></span>
-            <span class="tg-chat-item__row tg-chat-item__row--preview"><span class="tg-chat-item__preview">Доступ открыт для подписчиков</span></span>
+            <span class="tg-chat-item__row tg-chat-item__row--preview"><span class="tg-chat-item__preview">Оформите подписку для доступа</span></span>
           </span>
         </a>`;
     }
