@@ -210,6 +210,13 @@ function mergeProTopics(serverTopics, clientTopics, actor) {
   return clone(serverTopics || []);
 }
 
+function mergeBlogPosts(serverPosts, clientPosts, actor) {
+  if (actor.role === 'admin') {
+    return clone(clientPosts || serverPosts || []);
+  }
+  return clone(serverPosts || []);
+}
+
 function mergeStore(serverData, clientData, actor) {
   return {
     users: mergeUsers(serverData.users || [], clientData.users || [], actor),
@@ -217,7 +224,8 @@ function mergeStore(serverData, clientData, actor) {
     messages: mergeMessages(serverData.messages, clientData.messages, actor),
     notifications: mergeNotifications(serverData.notifications, clientData.notifications, actor),
     proRequests: mergeProRequests(serverData.proRequests, clientData.proRequests, actor),
-    proHistory: serverData.proHistory || []
+    proHistory: serverData.proHistory || [],
+    blogPosts: mergeBlogPosts(serverData.blogPosts, clientData.blogPosts, actor)
   };
 }
 
