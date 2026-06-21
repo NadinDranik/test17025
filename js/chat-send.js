@@ -12,6 +12,7 @@ const ChatSend = (function () {
   }
 
   function bindForm(form, getChatId, getUser, onSuccess, onError) {
+    form._getChatId = getChatId;
     const textEl = form.querySelector('[id="msg-text"], .chat-form__input');
     const fileEl = form.querySelector('#msg-files, [type="file"]');
     const fileNamesEl = form.querySelector('#file-names, .file-upload__hint, .chat-form__files');
