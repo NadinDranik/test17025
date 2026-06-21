@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Блог Гид PRO: материалы по ГОСТ ISO/IEC 17025-2019, аккредитации и практике работы лабораторий.">
+  <title>Блог — Гид PRO ГОСТ ISO/IEC 17025-2019</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/mobile.css">
+  <link rel="stylesheet" href="css/visual-refresh.css">
+  <link rel="stylesheet" href="css/blog.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Merriweather:wght@700;900&display=swap" rel="stylesheet">
+</head>
+<body class="page-blog">
+
+  <header class="header">
+    <div class="container header__inner">
+      <a href="index.html" class="logo">
+        <span class="logo__mark">17025</span>
+        <span class="logo__text">Гид PRO</span>
+      </a>
+      <nav class="nav" aria-label="Основная навигация">
+        <a href="index.html" class="nav__link">Главная</a>
+        <a href="blog.html" class="nav__link nav__link--active">Блог</a>
+        <a href="login.html?next=chats.html" class="nav__link">Чаты</a>
+      </nav>
+      <div class="header__actions">
+        <a href="login.html" class="btn btn--ghost">Войти</a>
+        <a href="login.html?tab=register" class="btn btn--primary">Зарегистрироваться</a>
+      </div>
+      <button class="burger" aria-label="Открыть меню" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="blog-main container" id="blog-root">
+    <header class="blog-hero">
+      <h1 class="blog-hero__title">Блог сообщества</h1>
+      <p class="blog-hero__lead">Полезные материалы по аккредитации, ГОСТ ISO/IEC 17025 и практике работы лабораторий. Читайте без регистрации — для участия в обсуждениях нужен аккаунт.</p>
+    </header>
+    <div class="blog-layout" id="blog-content"></div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="footer__brand">
+        <span class="logo__mark logo__mark--sm">17025</span>
+        <span>Гид PRO ГОСТ ISO/IEC 17025-2019</span>
+      </div>
+      <nav class="footer__nav" aria-label="Юридические документы">
+        <a href="terms.html" class="footer__link">Пользовательское соглашение</a>
+        <a href="offer.html" class="footer__link">Публичная оферта</a>
+        <a href="privacy.html" class="footer__link">Политика конфиденциальности</a>
+        <a href="index.html#contacts" class="footer__link">Контакты</a>
+      </nav>
+      <p class="footer__copy">&copy; 2026 Гид PRO ГОСТ ISO/IEC 17025-2019. Все права защищены.</p>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/mobile.js"></script>
+  <script>
+    App.ready.then(() => {
+      UI.initHeader('blog');
+      Mobile.init('blog');
+
+      const contentEl = document.getElementById('blog-content');
+      const posts = App.getBlogPosts();
+
+      function formatBlogDate(iso) {
+        return App.formatDate(iso);
+      }
+
+      function renderAside() {
+        const user = App.getCurrentUser();
+        return `
+          <aside class="blog-aside">
+            <div class="blog-aside__card">
+              <h2 class="blog-aside__title">Экспертные чаты</h2>
+              <p class="blog-aside__text">В закрытых разделах участники обсуждают практические ситуации, делятся опытом и разбирают вопросы аккредитации.</p>
+              <a href="${user ? 'chats.html' : App.getLoginUrl('chats.html')}" class="btn btn--primary btn--block">${user ? 'Перейти в чаты' : 'Войти для доступа к чатам'}</a>
+            </div>
+          </aside>`;
+      }
+
+      function renderList() {
+        if (!posts.length) {
+          contentEl.innerHTML = `<p class="blog-empty">Публикации скоро появятся.</p>`;
+          return;
+        }
+
+        const listHtml = posts.map(post => `
+          <a href="blog.html?post=${encodeURIComponent(post.id)}" class="blog-card">
+            <div class="blog-card__meta">
+              <time datetime="${post.date}">${formatBlogDate(post.date)}</time>
+              ${(post.tags || []).map(tag => `<span class="blog-card__tag">${UI.escapeHtml(tag)}</span>`).join('')}
+            </div>
+            <h2 class="blog-card__title">${UI.escapeHtml(post.title)}</h2>
+            <p class="blog-card__excerpt">${UI.escapeHtml(post.excerpt)}</p>
+            <span class="blog-card__more">Читать →</span>
+          </a>
+        `).join('');
+
+        contentEl.innerHTML = `
+          <div class="blog-list">${listHtml}</div>
+          ${renderAside()}`;
+      }
+
+      function renderArticle(post) {
+        const bodyHtml = (post.body || []).map(p => `<p>${UI.escapeHtml(p)}</p>`).join('');
+        contentEl.innerHTML = `
+          <article class="blog-article">
+            <a href="blog.html" class="blog-article__back">← Все публикации</a>
+            <div class="blog-article__meta">
+              <time datetime="${post.date}">${formatBlogDate(post.date)}</time>
+              ${(post.tags || []).map(tag => `<span class="blog-card__tag">${UI.escapeHtml(tag)}</span>`).join('')}
+            </div>
+            <h1 class="blog-article__title">${UI.escapeHtml(post.title)}</h1>
+            <div class="blog-article__body">${bodyHtml}</div>
+          </article>
+          ${renderAside()}`;
+        document.title = post.title + ' — Блог Гид PRO';
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const postId = params.get('post');
+      const post = postId ? App.getBlogPost(postId) : null;
+
+      if (post) {
+        renderArticle(post);
+      } else {
+        renderList();
+      }
+    });
+  </script>
+</body>
+</html>
