@@ -64,7 +64,7 @@ const UI = (function () {
     const navLinks = [
       { href: 'index.html', label: 'Главная', id: 'home' },
       { href: 'blog.html', label: 'Блог', id: 'blog' },
-      { href: user ? 'chats.html' : App.getLoginUrl('chats.html'), label: 'Чаты', id: 'chats', unread: chatUnread }
+      { href: 'chats.html', label: 'Чаты', id: 'chats', unread: chatUnread }
     ];
 
     if (user && App.isProActive(user)) {
