@@ -64,12 +64,11 @@
   <script src="js/ui.js"></script>
   <script src="js/mobile.js"></script>
   <script>
-    App.ready.then(() => {
+    App.ready.then(async () => {
       UI.initHeader('blog');
       Mobile.init('blog');
 
       const contentEl = document.getElementById('blog-content');
-      const posts = App.getBlogPosts();
 
       function formatBlogDate(iso) {
         return App.formatDate(iso);
@@ -86,14 +85,45 @@
           </aside>`;
       }
 
-      function renderList() {
+      async function fileIsImage(file) {
+        const ext = App.getFileExt(file.name);
+        return App.isImageExt(ext) || (file.type || '').startsWith('image/');
+      }
+
+      async function renderCoverHtml(coverImage, className) {
+        if (!coverImage?.id) return '';
+        const url = await App.getBlogFileUrl(coverImage.id);
+        if (!url) return '';
+        return `<div class="${className}"><img src="${url}" alt="" loading="lazy"></div>`;
+      }
+
+      async function renderFilesHtml(files) {
+        if (!files?.length) return '';
+        const items = await Promise.all(files.map(async file => {
+          if (await fileIsImage(file)) {
+            const url = await App.getBlogFileUrl(file.id);
+            if (!url) return '';
+            return `<figure class="blog-article__figure"><img src="${url}" alt="${UI.escapeHtml(file.name)}" loading="lazy"></figure>`;
+          }
+          const url = await App.getBlogFileUrl(file.id);
+          if (!url) return '';
+          return `<a href="${url}" class="blog-file-link" download="${UI.escapeHtml(file.name)}">📎 ${UI.escapeHtml(file.name)}</a>`;
+        }));
+        const html = items.filter(Boolean).join('');
+        return html ? `<div class="blog-article__attachments">${html}</div>` : '';
+      }
+
+      async function renderList(posts) {
         if (!posts.length) {
           contentEl.innerHTML = `<p class="blog-empty">Публикации скоро появятся.</p>`;
           return;
         }
 
-        const listHtml = posts.map(post => `
+        const cards = await Promise.all(posts.map(async post => {
+          const cover = await renderCoverHtml(post.coverImage, 'blog-card__cover');
+          return `
           <a href="blog.html?post=${encodeURIComponent(post.id)}" class="blog-card">
+            ${cover}
             <div class="blog-card__meta">
               <time datetime="${post.date}">${formatBlogDate(post.date)}</time>
               ${(post.tags || []).map(tag => `<span class="blog-card__tag">${UI.escapeHtml(tag)}</span>`).join('')}
@@ -101,16 +131,18 @@
             <h2 class="blog-card__title">${UI.escapeHtml(post.title)}</h2>
             <p class="blog-card__excerpt">${UI.escapeHtml(post.excerpt)}</p>
             <span class="blog-card__more">Читать →</span>
-          </a>
-        `).join('');
+          </a>`;
+        }));
 
         contentEl.innerHTML = `
-          <div class="blog-list">${listHtml}</div>
+          <div class="blog-list">${cards.join('')}</div>
           ${renderAside()}`;
       }
 
-      function renderArticle(post) {
+      async function renderArticle(post) {
         const bodyHtml = (post.body || []).map(p => `<p>${UI.escapeHtml(p)}</p>`).join('');
+        const cover = await renderCoverHtml(post.coverImage, 'blog-article__cover');
+        const attachments = await renderFilesHtml(post.files);
         contentEl.innerHTML = `
           <article class="blog-article">
             <a href="blog.html" class="blog-article__back">← Все публикации</a>
@@ -119,20 +151,33 @@
               ${(post.tags || []).map(tag => `<span class="blog-card__tag">${UI.escapeHtml(tag)}</span>`).join('')}
             </div>
             <h1 class="blog-article__title">${UI.escapeHtml(post.title)}</h1>
+            ${cover}
             <div class="blog-article__body">${bodyHtml}</div>
+            ${attachments}
           </article>
           ${renderAside()}`;
         document.title = post.title + ' — Блог Гид PRO';
       }
 
+      contentEl.innerHTML = '<p class="blog-empty">Загрузка…</p>';
+
       const params = new URLSearchParams(window.location.search);
       const postId = params.get('post');
-      const post = postId ? App.getBlogPost(postId) : null;
 
-      if (post) {
-        renderArticle(post);
-      } else {
-        renderList();
+      try {
+        if (postId) {
+          const post = await App.fetchBlogPost(postId);
+          if (post) {
+            await renderArticle(post);
+          } else {
+            contentEl.innerHTML = `<p class="blog-empty">Публикация не найдена. <a href="blog.html">Вернуться к списку</a></p>`;
+          }
+        } else {
+          const posts = await App.fetchBlogPosts();
+          await renderList(posts);
+        }
+      } catch {
+        contentEl.innerHTML = `<p class="blog-empty">Не удалось загрузить блог. <a href="blog.html">Повторить</a></p>`;
       }
     });
   </script>
