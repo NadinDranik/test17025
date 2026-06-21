@@ -214,6 +214,7 @@ function safeFileId(id) {
 
 function registerFileRoutes(app) {
   const { isFileInFreeChat } = require('./public-routes');
+  const { isFileInBlog } = require('./blog-routes');
 
   app.get('/api/files/:id', (req, res) => {
     const { getSessionUser } = require('./middleware');
@@ -222,7 +223,7 @@ function registerFileRoutes(app) {
     if (!id) return res.status(400).json({ error: 'Некорректный id' });
 
     const store = db.getStore();
-    if (!user && !isFileInFreeChat(id, store.data)) {
+    if (!user && !isFileInFreeChat(id, store.data) && !isFileInBlog(id, store.data)) {
       return res.status(401).json({ error: 'Требуется авторизация' });
     }
 
