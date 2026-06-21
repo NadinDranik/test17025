@@ -14,15 +14,15 @@ function getSubscriptionStatus(user) {
   return 'free';
 }
 
-function expireSubscriptions(users) {
+function expireSubscriptions(users, store) {
+  if (store) {
+    const { processExpiredSubscriptions } = require('./subscriptions');
+    return processExpiredSubscriptions(store);
+  }
   const now = new Date();
-  let changed = false;
-  (users || []).forEach(u => {
-    if (u.role !== 'admin' && u.proExpiresAt && new Date(u.proExpiresAt) <= now) {
-      changed = true;
-    }
-  });
-  return changed;
+  return (users || []).some(u =>
+    u.role !== 'admin' && u.proExpiresAt && new Date(u.proExpiresAt) <= now
+  );
 }
 
 function canAccessProChat(user) {
