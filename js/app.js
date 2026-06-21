@@ -34,10 +34,7 @@ const App = (function () {
   const PRO_PAYMENT_INFO = {
     price: '1000',
     priceLabel: '1000 ₽ в месяц',
-    phone: '89824586893',
-    bank: 'Альфа банк',
-    recipient: 'Надежда Николаевна Д.',
-    text: 'Для получения PRO-доступа необходимо оплатить 1000 рублей в месяц по номеру телефона 89824586893 на Альфа банк, Надежда Николаевна Д. Пришлите чек или скрин об оплате — и вам предоставят доступ.'
+    text: 'PRO-доступ оформляется на странице подписки через платёжную систему Prodamus. После успешной оплаты доступ активируется автоматически.'
   };
 
   function uid() {
@@ -177,8 +174,8 @@ const App = (function () {
   }
 
   function getAdminWelcomeText() {
-    return 'Здравствуйте! Это ваш личный диалог с администратором. Задайте вопрос или, для получения PRO-доступа, отправьте чек об оплате.\n\n' +
-      PRO_PAYMENT_INFO.text;
+    return 'Здравствуйте! Это ваш личный диалог с администратором. Задайте вопрос по работе сообщества.\n\n' +
+      'Оформить PRO-доступ можно на странице подписки через официальную оплату Prodamus: ' + PRO_PAYMENT_INFO.text;
   }
 
   function migrateAdminSupportToDm() {
@@ -286,12 +283,11 @@ const App = (function () {
   function notifyAdminNewMessage(chatId, user, msg) {
     const admin = load().users.find(u => u.role === 'admin');
     if (!admin) return;
-    if (isAdminDmChat(chatId) && msg.files && msg.files.length) {
-      addProRequest(user, msg);
+    if (isAdminDmChat(chatId)) {
       addNotification(
         admin.id,
-        '🔔 Чек об оплате: ' + getDisplayName(user) + ' (' + user.email + ')',
-        'pro_request',
+        '💬 Сообщение от ' + getDisplayName(user) + ' (' + user.email + ')',
+        'dm',
         msg.id
       );
     }
@@ -780,13 +776,21 @@ const App = (function () {
     if (changed) save(data);
   }
 
-  async function register(email, password, nickname) {
+  async function register(email, password, nickname, consents) {
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         ...API_OPTS,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, nickname })
+        body: JSON.stringify({
+          email,
+          password,
+          nickname,
+          acceptAge: !!(consents && consents.acceptAge),
+          acceptConsent: !!(consents && consents.acceptConsent),
+          acceptPrivacy: !!(consents && consents.acceptPrivacy),
+          acceptTerms: !!(consents && consents.acceptTerms)
+        })
       });
       const data = await res.json();
       if (!res.ok) return { ok: false, error: data.error || 'Ошибка регистрации' };
@@ -1625,12 +1629,15 @@ const App = (function () {
     return data;
   }
 
-  async function createPayment(planId) {
+  async function createPayment(planId, opts) {
     const res = await fetch('/api/payments/create', {
       method: 'POST',
       ...API_OPTS,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ planId: planId || 'pro_monthly' })
+      body: JSON.stringify({
+        planId: planId || 'pro_monthly',
+        acceptOffer: !!(opts && opts.acceptOffer)
+      })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Не удалось создать платёж');
