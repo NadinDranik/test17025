@@ -68,6 +68,7 @@
         </button>
         <button type="button" class="admin-tab admin-tab--active" data-tab="users">Пользователи</button>
         <button type="button" class="admin-tab" data-tab="pro">PRO-подписки</button>
+        <button type="button" class="admin-tab" data-tab="payments">Платежи</button>
         <button type="button" class="admin-tab" data-tab="topics">PRO-чаты</button>
         <button type="button" class="admin-tab" data-tab="moderation">Модерация</button>
       </div>
@@ -161,6 +162,26 @@
         <div id="expired-subs" class="subs-list"></div>
         <h3 class="admin-subtitle">Без подписки</h3>
         <div id="free-subs" class="subs-list"></div>
+      </section>
+
+      <!-- Платежи -->
+      <section class="admin-panel" id="panel-payments" hidden>
+        <p class="admin-panel__desc">Онлайн-платежи через Prodamus. Webhook активирует PRO автоматически.</p>
+        <div class="table-wrap">
+          <table class="admin-table" id="payments-table">
+            <thead>
+              <tr>
+                <th>Дата</th>
+                <th>Пользователь</th>
+                <th>Тариф</th>
+                <th>Сумма</th>
+                <th>Статус</th>
+                <th>ID заказа</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </section>
 
       <!-- PRO-чаты -->
@@ -304,6 +325,7 @@
           App.markChatRead(admin.id, App.CHAT_FREE);
           UI.refreshUnreadBadges();
         }
+        if (tab.dataset.tab === 'payments') renderPayments();
       });
     });
 
@@ -785,6 +807,29 @@
       document.getElementById('user-account-modal').close();
     });
 
+    async function renderPayments() {
+      const tbody = document.querySelector('#payments-table tbody');
+      if (!tbody) return;
+      try {
+        const res = await fetch('/api/admin/payments', { credentials: 'include' });
+        const data = await res.json();
+        const payments = data.payments || [];
+        const statusMap = { pending: 'Ожидает', paid: 'Оплачен', failed: 'Ошибка' };
+        tbody.innerHTML = payments.length
+          ? payments.map(p => `<tr>
+              <td data-label="Дата">${App.formatDateTime(p.createdAt)}</td>
+              <td data-label="Пользователь">${UI.escapeHtml(p.userNickname || p.userEmail || p.userId)}</td>
+              <td data-label="Тариф">${UI.escapeHtml(p.planId)}</td>
+              <td data-label="Сумма">${p.amount} ₽</td>
+              <td data-label="Статус">${statusMap[p.status] || p.status}</td>
+              <td data-label="ID"><code>${UI.escapeHtml(p.id)}</code></td>
+            </tr>`).join('')
+          : '<tr><td colspan="6" class="table-empty">Платежей пока нет</td></tr>';
+      } catch (_) {
+        tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Не удалось загрузить платежи</td></tr>';
+      }
+    }
+
     function refresh() {
       renderStats();
       renderProRequests();
@@ -794,6 +839,7 @@
       renderTopics();
       renderModeration();
       renderPrivateMessages();
+      renderPayments();
       const admin = App.getCurrentUser();
       if (admin) UI.refreshUnreadBadges();
     }
