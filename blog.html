@@ -24,7 +24,7 @@
       <nav class="nav" aria-label="Основная навигация">
         <a href="index.html" class="nav__link">Главная</a>
         <a href="blog.html" class="nav__link nav__link--active">Блог</a>
-        <a href="login.html?next=chats.html" class="nav__link">Чаты</a>
+        <a href="chats.html" class="nav__link">Чаты</a>
       </nav>
       <div class="header__actions">
         <a href="login.html" class="btn btn--ghost">Войти</a>
@@ -39,7 +39,7 @@
   <main class="blog-main container" id="blog-root">
     <header class="blog-hero">
       <h1 class="blog-hero__title">Блог сообщества</h1>
-      <p class="blog-hero__lead">Полезные материалы по аккредитации, ГОСТ ISO/IEC 17025 и практике работы лабораторий. Читайте без регистрации — для участия в обсуждениях нужен аккаунт.</p>
+      <p class="blog-hero__lead">Полезные материалы по аккредитации и практике работы лабораторий. Читайте без регистрации. Общий чат открыт всем — PRO-разделы после регистрации и оплаты.</p>
     </header>
     <div class="blog-layout" id="blog-content"></div>
   </main>
@@ -76,13 +76,12 @@
       }
 
       function renderAside() {
-        const user = App.getCurrentUser();
         return `
           <aside class="blog-aside">
             <div class="blog-aside__card">
               <h2 class="blog-aside__title">Экспертные чаты</h2>
-              <p class="blog-aside__text">В закрытых разделах участники обсуждают практические ситуации, делятся опытом и разбирают вопросы аккредитации.</p>
-              <a href="${user ? 'chats.html' : App.getLoginUrl('chats.html')}" class="btn btn--primary btn--block">${user ? 'Перейти в чаты' : 'Войти для доступа к чатам'}</a>
+              <p class="blog-aside__text">Общий чат открыт для всех. Закрытые PRO-разделы доступны после регистрации и оформления подписки.</p>
+              <a href="chats.html" class="btn btn--primary btn--block">Перейти в чаты</a>
             </div>
           </aside>`;
       }
