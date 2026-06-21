@@ -1616,6 +1616,55 @@ const App = (function () {
     return !!(user && user.blocked);
   }
 
+  let _paymentPlansCache = null;
+
+  async function fetchPaymentPlans() {
+    const res = await fetch('/api/payments/plans', API_OPTS);
+    const data = await res.json();
+    _paymentPlansCache = data;
+    return data;
+  }
+
+  async function createPayment(planId) {
+    const res = await fetch('/api/payments/create', {
+      method: 'POST',
+      ...API_OPTS,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ planId: planId || 'pro_monthly' })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Не удалось создать платёж');
+    return data;
+  }
+
+  async function fetchPaymentStatus(paymentId) {
+    const res = await fetch('/api/payments/' + encodeURIComponent(paymentId) + '/status', API_OPTS);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Платёж не найден');
+    return data;
+  }
+
+  async function fetchPaymentHistory() {
+    const res = await fetch('/api/payments/history', API_OPTS);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Ошибка загрузки истории');
+    return data.payments || [];
+  }
+
+  async function pollPaymentUntilActive(paymentId, options) {
+    const maxAttempts = (options && options.maxAttempts) || 30;
+    const intervalMs = (options && options.intervalMs) || 2000;
+    for (let i = 0; i < maxAttempts; i++) {
+      const status = await fetchPaymentStatus(paymentId);
+      if (status.payment?.status === 'paid' || status.subscription?.active) {
+        await pullFromServer();
+        return status;
+      }
+      await new Promise(r => setTimeout(r, intervalMs));
+    }
+    throw new Error('Оплата ещё обрабатывается. Обновите страницу через минуту.');
+  }
+
   const ready = initSync().finally(() => {
     expireSubscriptions();
     ensureAdmin();
@@ -1651,6 +1700,7 @@ const App = (function () {
     requireAuth, requireAdmin, requirePro, isAllowedFile,
     fetchAccountProfile, fetchUserAccountProfile, updateAccountNickname,
     updateAccountAvatar, removeAccountAvatar,
-    changeAccountPassword, toastAccount, isUserBlocked
+    changeAccountPassword, toastAccount, isUserBlocked,
+    fetchPaymentPlans, createPayment, fetchPaymentStatus, fetchPaymentHistory, pollPaymentUntilActive
   };
 })();
