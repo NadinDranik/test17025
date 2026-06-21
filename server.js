@@ -17,6 +17,8 @@ const {
   registerProRoutes
 } = require('./server/routes');
 const { registerAccountRoutes } = require('./server/account-routes');
+const { registerPaymentRoutes } = require('./server/payment-routes');
+const paymentsDb = require('./server/payments-db');
 const { sendHtmlWithMeta, createSiteMetaMiddleware } = require('./server/site-meta');
 
 const app = express();
@@ -38,8 +40,10 @@ function safeFileId(id) {
 
 async function start() {
   await db.initDb();
+  paymentsDb.initPaymentsDb();
 
   app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
   app.use(session({
     secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
@@ -69,6 +73,7 @@ async function start() {
   registerAdminRoutes(app, (msg) => broadcast(msg));
   registerProRoutes(app);
   registerAccountRoutes(app, (msg) => broadcast(msg));
+  registerPaymentRoutes(app, (msg) => broadcast(msg));
 
   app.get('/admin.html', requireAdminPage, (req, res) => {
     sendHtmlWithMeta(req, res, path.join(ROOT, 'admin.html'));
@@ -100,6 +105,19 @@ async function start() {
     ws.send(JSON.stringify({ type: 'connected', version: store.version }));
     ws.on('error', () => {});
   });
+
+  setInterval(() => {
+    try {
+      const store = db.getStore();
+      const { processExpiredSubscriptions } = require('./server/subscriptions');
+      if (processExpiredSubscriptions(store.data)) {
+        const version = db.saveStore(store.data);
+        broadcast({ type: 'data-updated', version });
+      }
+    } catch (err) {
+      console.error('Subscription expiry check error:', err);
+    }
+  }, 60 * 60 * 1000);
 
   server.listen(PORT, '0.0.0.0', () => {
     console.log('');
