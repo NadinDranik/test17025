@@ -63,25 +63,14 @@ const UI = (function () {
 
     const navLinks = [
       { href: 'index.html', label: 'Главная', id: 'home' },
-      { href: 'chats.html', label: 'Чаты', id: 'chats', unread: chatUnread }
+      { href: 'blog.html', label: 'Блог', id: 'blog' },
+      { href: user ? 'chats.html' : App.getLoginUrl('chats.html'), label: 'Чаты', id: 'chats', unread: chatUnread }
     ];
 
-    if (user) {
-      navLinks.push({ href: 'account.html', label: 'Личный кабинет', id: 'account' });
-      navLinks.push({ href: 'admin-chat.html', label: 'Администратор', id: 'admin-chat', unread: dmUnread });
-    }
-
     if (user && App.isProActive(user)) {
-      navLinks.push({ href: 'pro.html', label: 'PRO-раздел', id: 'pro', unread: proUnread });
+      navLinks.push({ href: 'pro.html', label: 'PRO', id: 'pro', unread: proUnread });
     } else if (user) {
-      navLinks.push({ href: 'pro-request.html', label: 'Оформить PRO', id: 'pro-request' });
-    } else {
-      navLinks.push({ href: 'login.html?next=pro-request.html', label: 'PRO-доступ', id: 'pro-request' });
-    }
-
-    if (user && user.role === 'admin') {
-      const adminBadge = App.getPendingProRequestCount() + App.getPendingPrivateMessageCount();
-      navLinks.push({ href: 'admin.html', label: 'Админ-панель', id: 'admin', unread: adminBadge });
+      navLinks.push({ href: 'pro-request.html', label: 'PRO', id: 'pro-request' });
     }
 
     const navHtml = navLinks.map(l => {
@@ -100,10 +89,18 @@ const UI = (function () {
           : '<span class="user-badge">Без подписки</span>';
       const unread = App.getBellUnreadCount(user.id);
       const notifBadge = unread > 0 ? `<span class="notif-badge">${unread > 99 ? '99+' : unread}</span>` : '';
+      const adminBadge = user.role === 'admin'
+        ? App.getPendingProRequestCount() + App.getPendingPrivateMessageCount()
+        : 0;
+      const adminLink = user.role === 'admin'
+        ? `<a href="admin.html" class="btn btn--ghost btn--sm user-menu__admin" title="Админ-панель">Админ${adminBadge > 0 ? `<span class="notif-badge">${adminBadge > 99 ? '99+' : adminBadge}</span>` : ''}</a>`
+        : '';
       actionsHtml = `
         <div class="user-menu">
           ${badge}
-          <span class="user-menu__nick">${escapeAttr(App.getDisplayName(user))}</span>
+          <a href="account.html" class="user-menu__nick" title="Личный кабинет">${escapeAttr(App.getDisplayName(user))}</a>
+          <a href="admin-chat.html" class="btn btn--ghost btn--sm" title="Вопрос администратору">✉️${dmUnread > 0 ? `<span class="notif-badge">${dmUnread > 99 ? '99+' : dmUnread}</span>` : ''}</a>
+          ${adminLink}
           <button type="button" class="btn btn--ghost btn--sm btn-notifications" id="btn-notifications" title="Уведомления и сообщения" aria-label="Уведомления">
             🔔${notifBadge}
           </button>
