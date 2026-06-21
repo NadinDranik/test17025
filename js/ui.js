@@ -567,12 +567,93 @@ const UI = (function () {
     pop.style.left = `${Math.min(rect.left, window.innerWidth - 240)}px`;
   }
 
+  function formatMessageTime(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function formatDateSeparator(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const diff = (today - msgDay) / 86400000;
+    if (diff === 0) return 'Сегодня';
+    if (diff === 1) return 'Вчера';
+    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  }
+
+  function authorColor(name) {
+    const palette = ['#e17076', '#7bc862', '#e5ca77', '#65aadd', '#a695e7', '#ee7aae', '#6ec9cb', '#faa774'];
+    let hash = 0;
+    const s = String(name || '');
+    for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+    return palette[Math.abs(hash) % palette.length];
+  }
+
+  function renderDocFileHtml(f) {
+    const ext = App.getFileExt(f.name).toUpperCase();
+    const src = f.dataUrl || '';
+    if (src) {
+      return `<a class="msg__doc" href="${src}" download="${escapeAttr(f.name)}">
+        <span class="msg__doc-icon" aria-hidden="true"></span>
+        <span class="msg__doc-info">
+          <span class="msg__doc-name">${escapeAttr(f.name)}</span>
+          <span class="msg__doc-meta">${App.formatFileSize(f.size).replace('.', ',')} ${ext}</span>
+        </span>
+      </a>`;
+    }
+    return `<span class="msg__file msg__file--missing">📎 ${escapeAttr(f.name)} · файл недоступен</span>`;
+  }
+
+  function updatePinnedBar(msgs) {
+    const chatMain = document.querySelector('.chat-main');
+    if (!chatMain) return;
+    const pinned = msgs.find(m => m.pinned && !m.systemType);
+    let bar = chatMain.querySelector('.chat-pinned-bar');
+    if (!pinned) {
+      bar?.remove();
+      return;
+    }
+    const preview = pinned.text
+      ? pinned.text.replace(/\s+/g, ' ').slice(0, 100)
+      : (pinned.files && pinned.files[0] ? '📎 ' + pinned.files[0].name : '…');
+    if (!bar) {
+      bar = document.createElement('div');
+      const messagesEl = chatMain.querySelector('.chat-messages');
+      if (messagesEl) chatMain.insertBefore(bar, messagesEl);
+      else chatMain.appendChild(bar);
+    }
+    bar.className = 'chat-pinned-bar';
+    bar.setAttribute('role', 'button');
+    bar.setAttribute('tabindex', '0');
+    bar.dataset.pinId = pinned.id;
+    bar.innerHTML = `
+      <span class="chat-pinned-bar__accent"></span>
+      <span class="chat-pinned-bar__body">
+        <span class="chat-pinned-bar__label">Закреплённое сообщение</span>
+        <span class="chat-pinned-bar__text">${escapeHtml(preview)}</span>
+      </span>
+      <span class="chat-pinned-bar__icon" aria-hidden="true">📌</span>`;
+    if (!bar._pinBound) {
+      bar._pinBound = true;
+      const scrollToPin = () => {
+        const el = document.querySelector('.msg[data-id="' + bar.dataset.pinId + '"]');
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      };
+      bar.addEventListener('click', scrollToPin);
+      bar.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') scrollToPin(); });
+    }
+  }
+
   function renderMessage(msg, currentUser, chatId, allMessages, avatarUrls) {
     const isOwn = currentUser && msg.userId === currentUser.id;
     const isAdmin = currentUser && currentUser.role === 'admin';
     const reply = msg.replyTo ? allMessages.find(m => m.id === msg.replyTo) : null;
     const authorUser = App.getUserById(msg.userId);
-    const avatarHtml = renderAvatarHtml(authorUser, msg, avatarUrls);
+    const avatarHtml = isOwn ? '' : renderAvatarHtml(authorUser, msg, avatarUrls);
+    const authorName = msg.authorName || msg.authorEmail || '';
 
     let filesHtml = '';
     if (msg.files && msg.files.length) {
@@ -591,12 +672,7 @@ const UI = (function () {
             <figcaption>${escapeAttr(f.name)} · ${App.formatFileSize(f.size)}</figcaption>
           </figure>`;
         }
-        if (src) {
-          return `<a class="msg__file msg__file--doc" href="${src}" download="${escapeAttr(f.name)}">
-            📎 ${escapeAttr(f.name)} · ${App.formatFileSize(f.size)}
-          </a>`;
-        }
-        return `<span class="msg__file msg__file--missing">📎 ${escapeAttr(f.name)} · файл недоступен</span>`;
+        return renderDocFileHtml(f);
       }).join('') + '</div>';
     }
 
@@ -632,24 +708,31 @@ const UI = (function () {
 
     const welcomeClass = msg.systemType === 'pro_welcome' ? ' msg--welcome' : '';
     const reactionsHtml = isSystem ? '' : renderReactionsHtml(msg, currentUser);
-    const metaHtml = !isSystem && (viewCount > 0 || isOwn) ? `
+    const metaHtml = !isSystem && viewCount > 0 ? `
       <div class="msg__meta">
-        ${(viewCount > 0 || isOwn) ? `<button type="button" class="msg__meta-btn" data-action="view-users" data-id="${msg.id}" title="Кто просмотрел">👁 ${viewCount || 0}</button>` : ''}
+        <button type="button" class="msg__meta-btn" data-action="view-users" data-id="${msg.id}" title="Кто просмотрел">👁 ${viewCount}</button>
       </div>` : '';
+
+    const authorHtml = isSystem || isOwn ? '' : `<span class="msg__author" style="color:${authorColor(authorName)}">${escapeAttr(authorName)}</span>`;
+    const editedHtml = msg.editedAt ? '<span class="msg__edited">изменено</span>' : '';
+    const checksHtml = isOwn && !isSystem ? '<span class="msg__checks" aria-label="Доставлено">✓✓</span>' : '';
+    const footerHtml = !isSystem ? `<footer class="msg__footer">${editedHtml}<time class="msg__time">${formatMessageTime(msg.createdAt)}</time>${checksHtml}</footer>` : '';
+
+    const replyHtml = reply
+      ? `<div class="msg__reply"><span class="msg__reply-author">${escapeAttr(reply.authorName || reply.authorEmail)}</span><span class="msg__reply-text">${escapeHtml(replyLabel)}${replyLabel.length >= 80 ? '…' : ''}</span></div>`
+      : '';
 
     return `
       <article class="msg${isOwn ? ' msg--own' : ''}${msg.pinned ? ' msg--pinned' : ''}${welcomeClass}" data-id="${msg.id}">
         <div class="msg__layout">
           ${avatarHtml}
           <div class="msg__bubble">
-            ${msg.pinned ? '<span class="msg__pin-label">Закреплено</span>' : ''}
-            <header class="msg__header">
-              <strong class="msg__author">${escapeAttr(msg.authorName || msg.authorEmail)}</strong>
-              <time class="msg__time">${App.formatDateTime(msg.createdAt)}${msg.editedAt ? ' (ред.)' : ''}</time>
-            </header>
-            ${reply ? `<div class="msg__reply">↩ ${escapeAttr(reply.authorName || reply.authorEmail)}: ${escapeHtml(replyLabel)}${replyLabel.length >= 80 ? '…' : ''}</div>` : ''}
+            ${msg.pinned ? '<span class="msg__pin-label">📌 Закреплено</span>' : ''}
+            ${authorHtml}
+            ${replyHtml}
             ${textHtml}
             ${filesHtml}
+            ${footerHtml}
             ${reactionsHtml}
             ${metaHtml}
             ${actions}
@@ -659,6 +742,7 @@ const UI = (function () {
   }
 
   async function renderMessages(container, msgs, currentUser, chatId, emptyText) {
+    updatePinnedBar(msgs);
     if (!msgs.length) {
       const empty = (typeof Mobile !== 'undefined' && Mobile.getEmptyChatText)
         ? Mobile.getEmptyChatText(chatId)
@@ -671,7 +755,17 @@ const UI = (function () {
       : msgs.slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     const hydrated = await Promise.all(sorted.map(m => App.hydrateMessageFiles(m)));
     const avatarUrls = await App.prefetchAvatarUrls([...new Set(sorted.map(m => m.userId))]);
-    container.innerHTML = hydrated.map(m => renderMessage(m, currentUser, chatId, sorted, avatarUrls)).join('');
+    let lastDateKey = '';
+    const parts = [];
+    hydrated.forEach(m => {
+      const dateKey = new Date(m.createdAt).toDateString();
+      if (dateKey !== lastDateKey) {
+        parts.push(`<div class="msg-date-sep"><span>${formatDateSeparator(m.createdAt)}</span></div>`);
+        lastDateKey = dateKey;
+      }
+      parts.push(renderMessage(m, currentUser, chatId, sorted, avatarUrls));
+    });
+    container.innerHTML = parts.join('');
     container.scrollTop = container.scrollHeight;
     setupMessageViewTracking(container, chatId, currentUser);
     if (currentUser && chatId) {
