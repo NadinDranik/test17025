@@ -213,9 +213,19 @@ function safeFileId(id) {
 }
 
 function registerFileRoutes(app) {
-  app.get('/api/files/:id', requireAuth, (req, res) => {
+  const { isFileInFreeChat } = require('./public-routes');
+
+  app.get('/api/files/:id', (req, res) => {
+    const { getSessionUser } = require('./middleware');
+    const user = getSessionUser(req);
     const id = safeFileId(req.params.id);
     if (!id) return res.status(400).json({ error: 'Некорректный id' });
+
+    const store = db.getStore();
+    if (!user && !isFileInFreeChat(id, store.data)) {
+      return res.status(401).json({ error: 'Требуется авторизация' });
+    }
+
     const dataUrl = db.getFile(id);
     if (!dataUrl) return res.status(404).json({ error: 'Файл не найден' });
     res.json({ dataUrl });
@@ -503,5 +513,6 @@ module.exports = {
   registerDataRoutes,
   registerFileRoutes,
   registerAdminRoutes,
-  registerProRoutes
+  registerProRoutes,
+  registerPublicRoutes: require('./public-routes').registerPublicRoutes
 };
