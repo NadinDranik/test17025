@@ -640,7 +640,3 @@
   }
 }
 
-/* Скрыть лендинг для авторизованных */
-body.logged-in-home .home-landing {
-  display: none;
-}
