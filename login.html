@@ -66,6 +66,24 @@
             Подтверждение пароля
             <input type="password" class="form__input" name="password_confirm" required placeholder="Повторите пароль" autocomplete="new-password">
           </label>
+          <fieldset class="form__checkboxes">
+            <label class="form__checkbox">
+              <input type="checkbox" id="reg-age" required>
+              <span>Мне исполнилось 18 лет</span>
+            </label>
+            <label class="form__checkbox">
+              <input type="checkbox" id="reg-consent" required>
+              <span>Я даю <a href="consent.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a></span>
+            </label>
+            <label class="form__checkbox">
+              <input type="checkbox" id="reg-privacy" required>
+              <span>Я ознакомлен(а) с <a href="privacy.html" target="_blank" rel="noopener">политикой конфиденциальности</a></span>
+            </label>
+            <label class="form__checkbox">
+              <input type="checkbox" id="reg-terms" required>
+              <span>Я принимаю <a href="terms.html" target="_blank" rel="noopener">пользовательское соглашение</a></span>
+            </label>
+          </fieldset>
           <p class="form__error" id="register-error" hidden></p>
           <button type="submit" class="btn btn--primary btn--block">Зарегистрироваться</button>
         </form>
@@ -130,7 +148,19 @@
         showError('register-error', 'Пароли не совпадают');
         return;
       }
-      const result = await App.register(fd.get('email'), fd.get('password'), fd.get('nickname'));
+      if (!document.getElementById('reg-age').checked ||
+          !document.getElementById('reg-consent').checked ||
+          !document.getElementById('reg-privacy').checked ||
+          !document.getElementById('reg-terms').checked) {
+        showError('register-error', 'Необходимо принять все условия для регистрации');
+        return;
+      }
+      const result = await App.register(fd.get('email'), fd.get('password'), fd.get('nickname'), {
+        acceptAge: true,
+        acceptConsent: true,
+        acceptPrivacy: true,
+        acceptTerms: true
+      });
       if (!result.ok) {
         showError('register-error', result.error);
         return;
