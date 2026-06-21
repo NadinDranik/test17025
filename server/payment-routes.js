@@ -100,14 +100,18 @@ function registerPaymentRoutes(app, broadcast) {
 
   app.post('/api/payments/create', requireAuth, async (req, res) => {
     try {
+      const { planId, acceptOffer } = req.body || {};
+      if (!acceptOffer) {
+        return res.status(400).json({ error: 'Необходимо принять условия публичной оферты' });
+      }
+
       if (!isPaymentsConfigured()) {
         return res.status(503).json({
-          error: 'Онлайн-оплата не настроена. Используйте оплату по реквизитам.',
+          error: 'Оплата временно недоступна. Обратитесь к администратору.',
           paymentsEnabled: false
         });
       }
 
-      const { planId } = req.body || {};
       const plan = getPlan(planId || 'pro_monthly');
       if (!plan || plan.price <= 0) {
         return res.status(400).json({ error: 'Неизвестный тариф' });
