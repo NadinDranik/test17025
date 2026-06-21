@@ -243,9 +243,16 @@ body {
   backdrop-filter: blur(6px);
 }
 
-.page-home .home-hero__subtitle,
-.page-home .home-hero__lead {
+.page-home .home-hero__intro {
   animation: vr-fade-up 0.6s var(--vr-ease) 0.08s both;
+}
+
+.page-home .home-hero__subtitle {
+  animation: vr-fade-up 0.6s var(--vr-ease) 0.1s both;
+}
+
+.page-home .home-hero__lead {
+  animation: vr-fade-up 0.6s var(--vr-ease) 0.16s both;
 }
 
 .page-home .home-hero__actions {
