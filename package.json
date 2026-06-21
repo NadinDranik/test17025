@@ -5,7 +5,8 @@
   "description": "Гид PRO ГОСТ ISO/IEC 17025-2019 — сервер с SQLite и WebSocket",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "postinstall": "node scripts/copy-vendor.js"
   },
   "engines": {
     "node": ">=18"
@@ -15,6 +16,7 @@
     "better-sqlite3": "^11.10.0",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
+    "gsap": "^3.15.0",
     "ws": "^8.18.3"
   }
 }
