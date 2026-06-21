@@ -914,10 +914,10 @@
 
 /* --- Пикер эмодзи --- */
 .emoji-picker {
-  position: absolute;
+  position: fixed;
   z-index: 1500;
   width: min(100vw - 16px, 340px);
-  max-height: min(52vh, 320px);
+  max-height: min(52vh, 340px);
   display: flex;
   flex-direction: column;
   background: var(--tg-list-bg);
@@ -925,6 +925,7 @@
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
   overflow: hidden;
+  touch-action: manipulation;
 }
 
 .emoji-picker[hidden] {
@@ -932,9 +933,16 @@
 }
 
 .emoji-picker__toolbar {
-  padding: 8px 10px 6px;
+  padding: 8px 10px 4px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   flex-shrink: 0;
+}
+
+.emoji-picker__hint {
+  margin: 4px 0 0;
+  font-size: 0.65rem;
+  color: var(--tg-text-secondary);
+  text-align: center;
 }
 
 .emoji-picker__modes {
@@ -1013,11 +1021,19 @@
   border: none;
   background: transparent;
   border-radius: 6px;
-  font-size: 1.45rem;
+  font-size: 1.55rem;
   line-height: 1;
-  padding: 6px 2px;
+  padding: 7px 2px;
   cursor: pointer;
   font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.emoji-picker__item--picked {
+  transform: scale(1.25);
+  background: rgba(42, 171, 238, 0.18);
 }
 
 .emoji-picker__item:hover,
