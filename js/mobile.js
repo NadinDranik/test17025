@@ -86,7 +86,7 @@ const Mobile = (function () {
     const items = [
       { id: 'home', href: 'index.html', icon: '⌂', label: 'Главная' },
       { id: 'blog', href: 'blog.html', icon: '📰', label: 'Блог' },
-      { id: 'chats', href: user ? 'chats.html' : App.getLoginUrl('chats.html'), icon: '💬', label: 'Чаты', badge: chatUnread },
+      { id: 'chats', href: 'chats.html', icon: '💬', label: 'Чаты', badge: chatUnread },
       { id: 'account', href: user ? 'account.html' : App.getLoginUrl('account.html'), icon: '👤', label: 'Кабинет' }
     ];
 
@@ -347,9 +347,16 @@ const Mobile = (function () {
       </a>`;
   }
 
+  function getProLockHref() {
+    const user = App.getCurrentUser();
+    return user ? 'pro-request.html' : App.getLoginUrl('pro-request.html');
+  }
+
   function tgLockedTopicRowHtml(topic) {
+    const user = App.getCurrentUser();
+    const preview = user ? 'Доступ по подписке PRO' : 'Войдите и оформите PRO';
     return `
-      <a href="pro-request.html" class="tg-chat-item tg-chat-item--locked">
+      <a href="${getProLockHref()}" class="tg-chat-item tg-chat-item--locked">
         <span class="tg-chat-item__avatar tg-chat-item__avatar--pro" aria-hidden="true">🔒</span>
         <span class="tg-chat-item__body">
           <span class="tg-chat-item__row">
@@ -357,7 +364,7 @@ const Mobile = (function () {
             <span class="tg-chat-item__meta"><span class="m-card__tier m-card__tier--pro">PRO</span></span>
           </span>
           <span class="tg-chat-item__row tg-chat-item__row--preview">
-            <span class="tg-chat-item__preview">Доступ по подписке PRO</span>
+            <span class="tg-chat-item__preview">${preview}</span>
           </span>
         </span>
       </a>`;
@@ -365,7 +372,7 @@ const Mobile = (function () {
 
   function navLockedTopicRowHtml(topic) {
     return `
-      <a href="pro-request.html" class="desktop-chats-nav__item desktop-chats-nav__item--locked desktop-chats-nav__item--pro">
+      <a href="${getProLockHref()}" class="desktop-chats-nav__item desktop-chats-nav__item--locked desktop-chats-nav__item--pro">
         <span class="desktop-chats-nav__lock" aria-hidden="true">🔒</span>
         <span class="m-card__tier m-card__tier--pro">PRO</span>
         <span class="desktop-chats-nav__title">${UI.escapeHtml(topic.title)}</span>
@@ -394,12 +401,12 @@ const Mobile = (function () {
   }
 
   function renderChatsNavList(container, activeChatId) {
+    if (!container) return;
     const user = App.getCurrentUser();
-    if (!container || !user) return;
 
-    const isPro = App.isProActive(user) || user.role === 'admin';
+    const isPro = user && (App.isProActive(user) || user.role === 'admin');
     const topics = App.getProTopics(false);
-    const dmChatId = App.getAdminDmChatId(user.id);
+    const dmChatId = user ? App.getAdminDmChatId(user.id) : '';
 
     let proHtml = '';
     if (isPro) {
@@ -416,7 +423,7 @@ const Mobile = (function () {
         : '<p class="desktop-chats-nav__empty">PRO-чаты пока не созданы</p>';
     } else if (topics.length) {
       proHtml = topics.map(t => navLockedTopicRowHtml(t)).join('');
-    } else {
+    } else if (user) {
       proHtml = `
         <a href="pro-request.html" class="desktop-chats-nav__item desktop-chats-nav__item--locked">
           <span class="m-card__tier m-card__tier--pro">PRO</span>
@@ -424,30 +431,39 @@ const Mobile = (function () {
         </a>`;
     }
 
-    container.innerHTML = `
-      <div class="desktop-chats-nav__head">Мои чаты</div>
-      ${navListRowHtml({
-        href: 'chat.html',
-        tier: 'free',
-        title: 'Общий чат',
-        unread: getUnreadCount('free'),
-        active: activeChatId === 'free'
-      })}
-      ${proHtml}
-      ${navListRowHtml({
+    const adminHtml = user
+      ? navListRowHtml({
         href: 'admin-chat.html',
         tier: 'dm',
         title: 'Вопрос администратору',
         unread: getUnreadCount(dmChatId),
         active: activeChatId === dmChatId
-      })}`;
+      })
+      : `
+        <a href="${App.getLoginUrl('admin-chat.html')}" class="desktop-chats-nav__item desktop-chats-nav__item--locked">
+          <span class="m-card__tier m-card__tier--dm">ЛС</span>
+          <span class="desktop-chats-nav__lock" aria-hidden="true">🔒</span>
+          <span class="desktop-chats-nav__title">Вопрос администратору</span>
+        </a>`;
+
+    container.innerHTML = `
+      <div class="desktop-chats-nav__head">${user ? 'Мои чаты' : 'Чаты'}</div>
+      ${navListRowHtml({
+        href: 'chat.html',
+        tier: 'free',
+        title: 'Общий чат',
+        unread: user ? getUnreadCount('free') : 0,
+        active: activeChatId === 'free'
+      })}
+      ${proHtml}
+      ${adminHtml}`;
   }
 
   function renderChatsHub(container) {
+    if (!container) return;
     const user = App.getCurrentUser();
-    if (!container || !user) return;
 
-    const isPro = App.isProActive(user) || user.role === 'admin';
+    const isPro = user && (App.isProActive(user) || user.role === 'admin');
     const topics = App.getProTopics(false);
 
     let proCardsHtml = '';
@@ -474,7 +490,7 @@ const Mobile = (function () {
       }
     } else if (topics.length) {
       proCardsHtml = topics.map(t => tgLockedTopicRowHtml(t)).join('');
-    } else {
+    } else if (user) {
       proCardsHtml = `
         <a href="pro-request.html" class="tg-chat-item tg-chat-item--locked">
           <span class="tg-chat-item__avatar tg-chat-item__avatar--pro">🔒</span>
@@ -485,19 +501,29 @@ const Mobile = (function () {
         </a>`;
     }
 
-    const dmChatId = App.getAdminDmChatId(user.id);
-    const chatCount = 1 + topics.length + 1;
+    const dmChatId = user ? App.getAdminDmChatId(user.id) : '';
+    const chatCount = 1 + topics.length + (user ? 1 : 0);
+    const adminCardHtml = user
+      ? tgChatRowHtml({ href: 'admin-chat.html', tier: 'dm', title: 'Вопрос администратору', chatId: dmChatId, unread: getUnreadCount(dmChatId) })
+      : `
+        <a href="${App.getLoginUrl('admin-chat.html')}" class="tg-chat-item tg-chat-item--locked">
+          <span class="tg-chat-item__avatar tg-chat-item__avatar--dm">🔒</span>
+          <span class="tg-chat-item__body">
+            <span class="tg-chat-item__row"><span class="tg-chat-item__title">Вопрос администратору</span></span>
+            <span class="tg-chat-item__row tg-chat-item__row--preview"><span class="tg-chat-item__preview">Войдите, чтобы написать администратору</span></span>
+          </span>
+        </a>`;
 
     container.innerHTML = `
       <div class="tg-chats-page">
         <header class="tg-chats-header">
-          <h1 class="tg-chats-header__title">Мои чаты</h1>
+          <h1 class="tg-chats-header__title">${user ? 'Мои чаты' : 'Чаты'}</h1>
           <p class="tg-chats-header__sub">${chatCount} ${chatCount === 1 ? 'чат' : chatCount < 5 ? 'чата' : 'чатов'}</p>
         </header>
         <div class="tg-chat-list">
-          ${tgChatRowHtml({ href: 'chat.html', tier: 'free', title: 'Общий чат', chatId: 'free', unread: getUnreadCount('free') })}
+          ${tgChatRowHtml({ href: 'chat.html', tier: 'free', title: 'Общий чат', chatId: 'free', unread: user ? getUnreadCount('free') : 0 })}
           ${proCardsHtml}
-          ${tgChatRowHtml({ href: 'admin-chat.html', tier: 'dm', title: 'Вопрос администратору', chatId: dmChatId, unread: getUnreadCount(dmChatId) })}
+          ${adminCardHtml}
         </div>
       </div>`;
   }
