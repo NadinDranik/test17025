@@ -42,9 +42,13 @@ function sanitizeStoreData(data) {
 function registerAuthRoutes(app) {
   app.post('/api/auth/register', async (req, res) => {
     try {
-      const { email, password, nickname } = req.body || {};
+      const { email, password, nickname, acceptAge, acceptConsent, acceptPrivacy, acceptTerms } = req.body || {};
       const emailNorm = (email || '').trim().toLowerCase();
       const nick = normalizeNickname(nickname);
+
+      if (!acceptAge || !acceptConsent || !acceptPrivacy || !acceptTerms) {
+        return res.status(400).json({ error: 'Необходимо принять все условия регистрации' });
+      }
 
       if (!emailNorm || !password || !nick) {
         return res.status(400).json({ error: 'Заполните все поля' });
@@ -77,7 +81,8 @@ function registerAuthRoutes(app) {
         proPaidAt: null,
         proExpiresAt: null,
         blocked: false,
-        lastActive: new Date().toISOString()
+        lastActive: new Date().toISOString(),
+        consentAcceptedAt: new Date().toISOString()
       };
 
       store.data.users.push(user);
