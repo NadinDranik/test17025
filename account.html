@@ -132,6 +132,12 @@
             <div id="pro-history-list" class="account-list"></div>
           </section>
 
+          <!-- История платежей -->
+          <section class="account-card account-card--wide">
+            <h2>История платежей</h2>
+            <div id="payment-history-list" class="account-list"></div>
+          </section>
+
           <!-- Заявки PRO -->
           <section class="account-card account-card--wide">
             <h2>Заявки на PRO</h2>
@@ -270,6 +276,20 @@
               ${r.text ? `<p>${UI.escapeHtml(r.text)}</p>` : ''}
             </div>`).join('')
           : '<p class="account-empty">Заявок пока нет</p>';
+
+        const payHistEl = document.getElementById('payment-history-list');
+        App.fetchPaymentHistory().then(payments => {
+          const statusLabel = { pending: 'Ожидает оплаты', paid: 'Оплачен', failed: 'Ошибка' };
+          payHistEl.innerHTML = payments.length
+            ? payments.map(pay => `<div class="account-list-item">
+                <strong>${statusLabel[pay.status] || pay.status}</strong>
+                <span>${App.formatDate(pay.createdAt)}</span>
+                <p>${pay.amount} ₽ · ${UI.escapeHtml(pay.planId)}</p>
+              </div>`).join('')
+            : '<p class="account-empty">Онлайн-платежей пока нет</p>';
+        }).catch(() => {
+          payHistEl.innerHTML = '<p class="account-empty">Не удалось загрузить историю платежей</p>';
+        });
 
         const msgEl = document.getElementById('admin-messages-list');
         msgEl.innerHTML = p.adminMessages.length
