@@ -22,10 +22,9 @@
         <span class="logo__text">Гид PRO</span>
       </a>
       <nav class="nav" aria-label="Основная навигация">
-        <a href="#audience" class="nav__link">Для кого</a>
-        <a href="#benefits" class="nav__link">Возможности</a>
-        <a href="#access" class="nav__link">Участие</a>
-        <a href="#contacts" class="nav__link">Контакты</a>
+        <a href="index.html" class="nav__link nav__link--active">Главная</a>
+        <a href="blog.html" class="nav__link">Блог</a>
+        <a href="login.html?next=chats.html" class="nav__link">Чаты</a>
       </nav>
       <div class="header__actions">
         <a href="login.html" class="btn btn--ghost">Войти</a>
@@ -38,8 +37,6 @@
   </header>
 
   <main>
-    <div id="user-dashboard" hidden></div>
-
     <div class="home-landing">
 
       <!-- Блок 1. Первый экран -->
@@ -194,6 +191,7 @@
                 <li>регистрация и личный кабинет</li>
                 <li>общий чат участников</li>
                 <li>новости и объявления сообщества</li>
+                <li>блог и материалы без регистрации</li>
                 <li>знакомство со структурой разделов</li>
                 <li>возможность перехода на приватный доступ</li>
               </ul>
@@ -332,6 +330,7 @@
         <span>Гид PRO ГОСТ ISO/IEC 17025-2019</span>
       </div>
       <nav class="footer__nav" aria-label="Юридические документы">
+        <a href="blog.html" class="footer__link">Блог</a>
         <a href="terms.html" class="footer__link">Пользовательское соглашение</a>
         <a href="offer.html" class="footer__link">Публичная оферта</a>
         <a href="privacy.html" class="footer__link">Политика конфиденциальности</a>
@@ -350,12 +349,23 @@
       UI.initAuthForms();
       UI.initHeader('home');
 
-      (function initIndexPage() {
+      Mobile.init('home');
+
+      (function initHeroForUser() {
         var user = App.getCurrentUser();
-        if (user) {
-          Mobile.renderHomeDashboard(document.getElementById('user-dashboard'));
+        if (!user) return;
+        var heroActions = document.querySelector('.home-hero__actions');
+        if (heroActions) {
+          heroActions.innerHTML =
+            '<a href="chats.html" class="btn btn--primary btn--lg">Перейти в чаты</a>' +
+            '<a href="blog.html" class="btn btn--outline btn--lg">Читать блог</a>';
         }
-        Mobile.init('home');
+        var ctaActions = document.querySelector('.home-cta__actions');
+        if (ctaActions) {
+          ctaActions.innerHTML =
+            '<a href="chats.html" class="btn btn--primary btn--lg">Перейти в чаты</a>' +
+            '<a href="account.html" class="btn btn--outline btn--lg">Личный кабинет</a>';
+        }
       })();
 
       (function initContactsButton() {
