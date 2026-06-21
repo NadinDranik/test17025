@@ -4,7 +4,10 @@
 const App = (function () {
   const STORAGE_KEY = 'gost17025_data';
   const SESSION_KEY = 'gost17025_session';
+  const GUEST_NAME_KEY = 'gost17025_guest_name';
+  const GUEST_ID_KEY = 'gost17025_guest_id';
   let syncEnabled = false;
+  let guestSyncMode = false;
   let serverAvailable = false;
   let syncVersion = 0;
   let syncPollTimer = null;
@@ -538,14 +541,25 @@ const App = (function () {
   }
 
   async function pullFromServer() {
-    const res = await fetch('/api/data', { ...API_OPTS, cache: 'no-store' });
-    if (res.status === 401) {
+    const url = guestSyncMode ? '/api/public/chats' : '/api/data';
+    const res = await fetch(url, { ...API_OPTS, cache: 'no-store' });
+    if (res.status === 401 && !guestSyncMode) {
       _currentUser = null;
       setSession(null);
       throw new Error('Unauthorized');
     }
     if (!res.ok) throw new Error('API unavailable');
     const payload = await res.json();
+
+    if (guestSyncMode) {
+      if (payload.version !== syncVersion) {
+        mergePublicPayload(payload);
+      } else {
+        mergePublicPayload(payload);
+      }
+      return payload;
+    }
+
     if (payload.version !== syncVersion && payload.data) {
       syncVersion = payload.version || 0;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload.data));
@@ -614,6 +628,7 @@ const App = (function () {
   }
 
   async function activateUserSync() {
+    guestSyncMode = false;
     const payload = await pullFromServer();
     const localRaw = localStorage.getItem(STORAGE_KEY);
     const localData = localRaw ? JSON.parse(localRaw) : null;
@@ -621,6 +636,15 @@ const App = (function () {
       await pushToServer(localData, true);
       await pullFromServer();
     }
+    syncEnabled = true;
+    connectSyncSocket();
+    startSyncPolling();
+    window.dispatchEvent(new CustomEvent('gost-sync-ready'));
+  }
+
+  async function activateGuestSync() {
+    guestSyncMode = true;
+    await pullFromServer();
     syncEnabled = true;
     connectSyncSocket();
     startSyncPolling();
@@ -636,10 +660,13 @@ const App = (function () {
       await fetchAuthMe();
       if (_currentUser) {
         await activateUserSync();
+      } else {
+        await activateGuestSync();
       }
     } catch {
       serverAvailable = false;
       syncEnabled = false;
+      guestSyncMode = false;
     }
   }
 
@@ -652,6 +679,10 @@ const App = (function () {
 
   function isSyncEnabled() {
     return syncEnabled;
+  }
+
+  function isGuestSyncMode() {
+    return guestSyncMode;
   }
 
   function isServerAvailable() {
@@ -743,12 +774,44 @@ const App = (function () {
   function save(data) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      if (syncEnabled) pushToServer(data);
+      if (syncEnabled && !guestSyncMode) pushToServer(data);
       return true;
     } catch (e) {
       console.error('Save failed:', e);
       return false;
     }
+  }
+
+  function getGuestName() {
+    return normalizeNickname(localStorage.getItem(GUEST_NAME_KEY) || '');
+  }
+
+  function setGuestName(name) {
+    const n = normalizeNickname(name);
+    if (n) localStorage.setItem(GUEST_NAME_KEY, n);
+    return n;
+  }
+
+  function getGuestUserId() {
+    let id = localStorage.getItem(GUEST_ID_KEY);
+    if (!id) {
+      id = 'guest:local:' + uid();
+      localStorage.setItem(GUEST_ID_KEY, id);
+    }
+    return id;
+  }
+
+  function mergePublicPayload(payload) {
+    const data = load();
+    if (payload.messages?.free) {
+      data.messages.free = payload.messages.free;
+    }
+    if (payload.proTopics) {
+      data.proTopics = payload.proTopics;
+    }
+    syncVersion = payload.version || syncVersion;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    window.dispatchEvent(new CustomEvent('gost-data-synced'));
   }
 
   function getData() {
@@ -872,9 +935,13 @@ const App = (function () {
     _currentUser = null;
     setSession(null);
     syncEnabled = false;
+    guestSyncMode = false;
     if (syncSocket) {
       try { syncSocket.close(); } catch { /* ignore */ }
       syncSocket = null;
+    }
+    if (serverAvailable) {
+      await activateGuestSync();
     }
   }
 
@@ -1022,6 +1089,71 @@ const App = (function () {
     if (!data.messages[chatId]) data.messages[chatId] = [];
     repairChatMessageOrder(chatId);
     return sortMessagesChronologically(data.messages[chatId]);
+  }
+
+  function canReadChat(chatId, user) {
+    if (chatId === CHAT_FREE) return true;
+    if (!user) return false;
+    if (isAdminDmChat(chatId)) return user.role === 'admin' || getAdminDmChatId(user.id) === chatId;
+    return isProActive(user) || user.role === 'admin';
+  }
+
+  function canWriteChat(chatId, user) {
+    if (user && user.blocked) return false;
+    if (chatId === CHAT_FREE) return true;
+    if (!user) return false;
+    if (isAdminDmChat(chatId)) return user.role === 'admin' || getAdminDmChatId(user.id) === chatId;
+    return isProActive(user) || user.role === 'admin';
+  }
+
+  async function addGuestMessage(chatId, text, replyTo, guestName) {
+    if (chatId !== CHAT_FREE) {
+      return { ok: false, error: 'Гостевой доступ только к общему чату' };
+    }
+    const trimmed = (text || '').trim();
+    const name = setGuestName(guestName);
+    if (!trimmed) return { ok: false, error: 'Введите текст сообщения' };
+    if (!name || name.length < 2) return { ok: false, error: 'Укажите имя (от 2 символов)' };
+
+    if (guestSyncMode && serverAvailable) {
+      try {
+        const res = await fetch('/api/public/free/messages', {
+          method: 'POST',
+          ...API_OPTS,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: trimmed, guestName: name, replyTo: replyTo || null })
+        });
+        const payload = await res.json();
+        if (!res.ok) return { ok: false, error: payload.error || 'Не удалось отправить' };
+        if (payload.version) syncVersion = payload.version;
+        if (payload.msg?.userId) localStorage.setItem(GUEST_ID_KEY, payload.msg.userId);
+        await pullFromServer();
+        return { ok: true, msg: payload.msg };
+      } catch {
+        return { ok: false, error: 'Ошибка связи с сервером' };
+      }
+    }
+
+    const data = load();
+    if (!data.messages[chatId]) data.messages[chatId] = [];
+    const msg = {
+      id: uid(),
+      userId: getGuestUserId(),
+      authorEmail: '',
+      authorName: name,
+      text: trimmed,
+      replyTo: replyTo || null,
+      files: [],
+      createdAt: new Date().toISOString(),
+      editedAt: null,
+      pinned: false,
+      reactions: {},
+      views: {},
+      guest: true
+    };
+    data.messages[chatId].push(msg);
+    if (!save(data)) return { ok: false, error: 'Не удалось сохранить сообщение' };
+    return { ok: true, msg };
   }
 
   function addMessage(chatId, userId, text, replyTo, files) {
@@ -1218,7 +1350,12 @@ const App = (function () {
     const data = load();
     return (userIds || []).map(id => {
       const u = data.users.find(x => x.id === id);
-      return u ? getDisplayName(u) : 'Участник';
+      if (u) return getDisplayName(u);
+      const guestMsg = Object.values(data.messages || {})
+        .flat()
+        .find(m => m.userId === id && m.authorName);
+      if (guestMsg) return guestMsg.authorName;
+      return 'Участник';
     });
   }
 
@@ -1730,6 +1867,7 @@ const App = (function () {
   return {
     ready,
     isSyncEnabled,
+    isGuestSyncMode,
     isServerAvailable,
     getData, getCurrentUser, getSession, login, logout, register,
     ensureAdmin, ensureAdminSupportChat, ensureProRequestWelcomeMessage, ensureAdminDmWelcome, migrateUsers,
@@ -1739,6 +1877,7 @@ const App = (function () {
     getUserById, getUserInitial, getAvatarUrl, prefetchAvatarUrls,
     REACTION_EMOJIS,
     getDisplayName, getStatusLabel, normalizeNickname, getLoginUrl, getRedirectAfterLogin,
+    getGuestName, setGuestName, addGuestMessage, canReadChat, canWriteChat,
     getBlogPosts, getBlogPost,
     isProActive, getSubscriptionStatus, grantPro, extendPro, revokePro,
     setProExpiry, blockUser, updateUser,
