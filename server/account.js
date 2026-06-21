@@ -14,7 +14,9 @@ const PRO_HISTORY_LABELS = {
   grant: 'Выдача PRO',
   extend: 'Продление PRO',
   revoke: 'Отключение PRO',
-  set_expiry: 'Изменение даты окончания'
+  set_expiry: 'Изменение даты окончания',
+  payment: 'Оплата подписки',
+  expire: 'Истечение подписки'
 };
 
 function formatDateRu(iso) {
@@ -32,7 +34,7 @@ function calcDaysLeft(proExpiresAt) {
 
 function buildAccountProfile(userId, storeData) {
   const data = storeData;
-  expireSubscriptions(data.users || []);
+  expireSubscriptions(data.users || [], data);
 
   const user = data.users.find(u => u.id === userId);
   if (!user) return null;
