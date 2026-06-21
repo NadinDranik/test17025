@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Оплата принята — Гид PRO ГОСТ ISO/IEC 17025-2019</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/mobile.css">
+  <link rel="stylesheet" href="css/visual-refresh.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Merriweather:wght@700;900&display=swap" rel="stylesheet">
+</head>
+<body class="page-account">
+
+  <header class="header">
+    <div class="container header__inner">
+      <a href="index.html" class="logo">
+        <span class="logo__mark">17025</span>
+        <span class="logo__text">Гид PRO</span>
+      </a>
+      <nav class="nav" aria-label="Основная навигация"></nav>
+      <div class="header__actions"></div>
+    </div>
+  </header>
+
+  <main class="account-page">
+    <div class="container" style="max-width: 560px; padding: 3rem 1rem;">
+      <div class="account-card" id="payment-result">
+        <h1 style="margin-top:0">Проверяем оплату…</h1>
+        <p id="payment-result-text">Подождите, идёт активация PRO-доступа.</p>
+        <div id="payment-result-actions" hidden style="margin-top:1.5rem; display:flex; gap:.75rem; flex-wrap:wrap;">
+          <a href="pro.html" class="btn btn--pro">Перейти в PRO-чаты</a>
+          <a href="account.html" class="btn btn--outline">Личный кабинет</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    App.ready.then(async () => {
+      UI.initHeader('chats');
+
+      if (!App.getCurrentUser()) {
+        window.location.href = App.getLoginUrl('payment-success.html' + window.location.search);
+        return;
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const paymentId = params.get('payment');
+      const titleEl = document.querySelector('#payment-result h1');
+      const textEl = document.getElementById('payment-result-text');
+      const actionsEl = document.getElementById('payment-result-actions');
+
+      if (!paymentId) {
+        titleEl.textContent = 'Оплата';
+        textEl.textContent = 'Если вы только что оплатили подписку, доступ активируется автоматически в течение нескольких минут.';
+        actionsEl.hidden = false;
+        return;
+      }
+
+      try {
+        const result = await App.pollPaymentUntilActive(paymentId);
+        titleEl.textContent = 'PRO-доступ активирован';
+        const expires = result.subscription?.proExpiresAt;
+        textEl.textContent = expires
+          ? 'Подписка активна до ' + App.formatDate(expires) + '.'
+          : 'Подписка успешно активирована.';
+        actionsEl.hidden = false;
+      } catch (err) {
+        titleEl.textContent = 'Оплата обрабатывается';
+        textEl.textContent = err.message || 'Если оплата прошла, доступ появится в течение нескольких минут.';
+        actionsEl.hidden = false;
+      }
+    });
+  </script>
+</body>
+</html>
