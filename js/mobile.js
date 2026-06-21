@@ -512,23 +512,9 @@ const Mobile = (function () {
   }
 
   function injectTelegramCompose() {
-    document.querySelectorAll('.chat-form__bar').forEach(bar => {
-      if (bar.querySelector('.chat-form__emoji')) return;
-      const emoji = document.createElement('button');
-      emoji.type = 'button';
-      emoji.className = 'chat-form__emoji';
-      emoji.setAttribute('aria-label', 'Эмодзи');
-      emoji.textContent = '😊';
-      emoji.addEventListener('click', () => {
-        bar.querySelector('.chat-form__input')?.focus();
-      });
-      bar.insertBefore(emoji, bar.firstChild);
-    });
-    document.querySelectorAll('.chat-form__input').forEach(input => {
-      if (input.placeholder === 'Сообщение…' || input.placeholder === 'Сообщение...') {
-        input.placeholder = 'Сообщение';
-      }
-    });
+    if (typeof EmojiPicker !== 'undefined') {
+      EmojiPicker.init();
+    }
   }
 
   function injectChatHeaderAvatar() {
