@@ -42,13 +42,41 @@ const ChatSend = (function () {
       e.preventDefault();
       const user = getUser();
       const chatId = getChatId();
-      if (!user || !chatId) return;
+      if (!chatId) return;
 
       const text = textEl ? textEl.value : '';
       const hasFiles = fileEl && fileEl.files && fileEl.files.length > 0;
 
       if (!text.trim() && !hasFiles) {
         showError(onError, 'Введите текст или прикрепите файл');
+        return;
+      }
+
+      if (!user) {
+        if (chatId !== 'free') {
+          showError(onError, 'Войдите, чтобы писать в этот чат');
+          return;
+        }
+        const guestNameEl = form.querySelector('#guest-name');
+        const guestName = guestNameEl ? guestNameEl.value : App.getGuestName();
+        if (!text.trim()) {
+          showError(onError, 'Введите текст сообщения');
+          return;
+        }
+        setSubmitState(submitBtn, true);
+        const result = await App.addGuestMessage(chatId, text, form._replyTo || null, guestName);
+        setSubmitState(submitBtn, false);
+        if (!result.ok) {
+          showError(onError, result.error);
+          return;
+        }
+        form.reset();
+        if (guestNameEl && guestName) guestNameEl.value = guestName;
+        if (textEl) textEl.style.height = 'auto';
+        form._replyTo = null;
+        const replyPreview = form.closest('.chat-compose')?.querySelector('#reply-preview, .reply-preview');
+        if (replyPreview) replyPreview.hidden = true;
+        if (onSuccess) onSuccess(result.msg);
         return;
       }
 
