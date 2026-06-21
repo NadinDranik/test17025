@@ -53,10 +53,10 @@
 .home-hero__title {
   font-family: var(--font-serif);
   font-size: clamp(1.75rem, 3.5vw, 2.5rem);
-  line-height: 1.2;
+  line-height: 1.25;
   margin: 0 0 16px;
   color: #fff;
-  min-height: 2.5em;
+  min-height: 3.75em;
 }
 
 .home-hero__subtitle {
