@@ -252,6 +252,84 @@ const Mobile = (function () {
     return `<span class="m-card__unread">${count > 99 ? '99+' : count}</span>`;
   }
 
+  function getChatLastMessage(chatId) {
+    const msgs = App.getMessages(chatId);
+    return msgs.length ? msgs[msgs.length - 1] : null;
+  }
+
+  function formatChatListTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const diff = (today - msgDay) / 86400000;
+    if (diff === 0) {
+      return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    }
+    if (diff === 1) return 'вч';
+    if (diff < 7) {
+      return ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'][d.getDay()];
+    }
+    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  }
+
+  function getMessagePreviewHtml(msg, currentUserId) {
+    if (!msg) return '<span class="tg-chat-item__preview-text">Нет сообщений</span>';
+    let text = '';
+    if (msg.text) {
+      text = msg.text.replace(/\s+/g, ' ').slice(0, 55);
+    } else if (msg.files && msg.files.length) {
+      const f = msg.files[0];
+      const ext = App.getFileExt(f.name);
+      if (App.isImageExt(ext)) text = '📷 Фото';
+      else if (App.isVideoExt(ext)) text = '🎬 Видео';
+      else text = '📎 ' + f.name;
+    }
+    const truncated = msg.text && msg.text.replace(/\s+/g, ' ').length > 55;
+    const youPrefix = currentUserId && msg.userId === currentUserId
+      ? '<span class="tg-chat-item__you">Вы: </span>'
+      : '';
+    return youPrefix + UI.escapeHtml(text) + (truncated ? '…' : '');
+  }
+
+  function getChatEmoji(tier) {
+    if (tier === 'free') return '💬';
+    if (tier === 'pro') return '📋';
+    if (tier === 'dm') return '✉️';
+    return '💬';
+  }
+
+  function tgChatRowHtml(opts) {
+    const user = App.getCurrentUser();
+    const last = opts.chatId ? getChatLastMessage(opts.chatId) : null;
+    const time = last ? formatChatListTime(last.createdAt) : '';
+    const preview = getMessagePreviewHtml(last, user?.id);
+    const emoji = opts.emoji || getChatEmoji(opts.tier);
+    const unread = opts.unread || 0;
+    const pinIcon = opts.pinned ? '<span class="tg-chat-item__pin" aria-hidden="true">📌</span>' : '';
+    const checks = last && user && last.userId === user.id
+      ? '<span class="tg-chat-item__checks">✓✓</span>'
+      : '';
+    const avatarClass = opts.tier ? ' tg-chat-item__avatar--' + opts.tier : '';
+
+    return `
+      <a href="${opts.href}" class="tg-chat-item${opts.modifier || ''}">
+        <span class="tg-chat-item__avatar${avatarClass}" aria-hidden="true">${emoji}</span>
+        <span class="tg-chat-item__body">
+          <span class="tg-chat-item__row">
+            <span class="tg-chat-item__title">${UI.escapeHtml(opts.title)}</span>
+            <span class="tg-chat-item__meta">${pinIcon}<time class="tg-chat-item__time">${time}</time></span>
+          </span>
+          <span class="tg-chat-item__row tg-chat-item__row--preview">
+            <span class="tg-chat-item__preview">${preview}</span>
+            ${checks}
+            ${unread ? `<span class="tg-chat-item__badge">${unread > 99 ? '99+' : unread}</span>` : ''}
+          </span>
+        </span>
+      </a>`;
+  }
+
   function chatRowHtml(opts) {
     const tierLabel = opts.tier === 'pro' ? 'PRO' : opts.tier === 'free' ? 'FREE' : opts.tier === 'dm' ? 'ЛС' : '';
     const tier = opts.tier
@@ -347,41 +425,49 @@ const Mobile = (function () {
     let proCardsHtml = '';
     if (isPro) {
       if (topics.length) {
-        proCardsHtml = topics.map(t => chatRowHtml({
+        proCardsHtml = topics.map(t => tgChatRowHtml({
           href: getProTopicHref(t.id),
           tier: 'pro',
           title: t.title,
+          chatId: t.id,
           pinned: t.pinned,
           unread: getUnreadCount(t.id),
           modifier: ' m-card--pro'
         })).join('');
       } else {
         proCardsHtml = `
-          <article class="m-card m-card--compact m-card--empty">
-            <span class="m-card__title">PRO-чаты пока не созданы</span>
-          </article>`;
+          <div class="tg-chat-item tg-chat-item--locked" style="pointer-events:none">
+            <span class="tg-chat-item__avatar tg-chat-item__avatar--pro">📋</span>
+            <span class="tg-chat-item__body">
+              <span class="tg-chat-item__row"><span class="tg-chat-item__title">PRO-чаты пока не созданы</span></span>
+              <span class="tg-chat-item__row tg-chat-item__row--preview"><span class="tg-chat-item__preview">Ожидайте создания тем администратором</span></span>
+            </span>
+          </div>`;
       }
     } else {
       proCardsHtml = `
-        <article class="m-card m-card--compact m-card--locked">
-          <div class="m-card__row">
-            <span class="m-card__tier m-card__tier--pro">PRO</span>
-            <span class="m-card__title">Закрытые чаты</span>
-          </div>
-          <p class="m-card__desc-locked">Доступ открыт для подписчиков</p>
-          <a href="pro-request.html" class="btn btn--pro btn--sm m-card__cta-compact">Оформить доступ</a>
-        </article>`;
+        <a href="pro-request.html" class="tg-chat-item tg-chat-item--locked">
+          <span class="tg-chat-item__avatar tg-chat-item__avatar--pro">🔒</span>
+          <span class="tg-chat-item__body">
+            <span class="tg-chat-item__row"><span class="tg-chat-item__title">Закрытые PRO-чаты</span></span>
+            <span class="tg-chat-item__row tg-chat-item__row--preview"><span class="tg-chat-item__preview">Доступ открыт для подписчиков</span></span>
+          </span>
+        </a>`;
     }
 
     const dmChatId = App.getAdminDmChatId(user.id);
+    const chatCount = 1 + topics.length + 1;
 
     container.innerHTML = `
-      <div class="m-page m-page--chats">
-        <h1 class="m-page__title">Мои чаты</h1>
-        <div class="m-cards m-cards--compact">
-          ${chatRowHtml({ href: 'chat.html', tier: 'free', title: 'Общий чат', unread: getUnreadCount('free') })}
+      <div class="tg-chats-page">
+        <header class="tg-chats-header">
+          <h1 class="tg-chats-header__title">Мои чаты</h1>
+          <p class="tg-chats-header__sub">${chatCount} ${chatCount === 1 ? 'чат' : chatCount < 5 ? 'чата' : 'чатов'}</p>
+        </header>
+        <div class="tg-chat-list">
+          ${tgChatRowHtml({ href: 'chat.html', tier: 'free', title: 'Общий чат', chatId: 'free', unread: getUnreadCount('free') })}
           ${proCardsHtml}
-          ${chatRowHtml({ href: 'admin-chat.html', tier: 'dm', title: 'Вопрос администратору', unread: getUnreadCount(dmChatId) })}
+          ${tgChatRowHtml({ href: 'admin-chat.html', tier: 'dm', title: 'Вопрос администратору', chatId: dmChatId, unread: getUnreadCount(dmChatId) })}
         </div>
       </div>`;
   }
@@ -425,6 +511,57 @@ const Mobile = (function () {
     </div>`;
   }
 
+  function injectTelegramCompose() {
+    document.querySelectorAll('.chat-form__bar').forEach(bar => {
+      if (bar.querySelector('.chat-form__emoji')) return;
+      const emoji = document.createElement('button');
+      emoji.type = 'button';
+      emoji.className = 'chat-form__emoji';
+      emoji.setAttribute('aria-label', 'Эмодзи');
+      emoji.textContent = '😊';
+      emoji.addEventListener('click', () => {
+        bar.querySelector('.chat-form__input')?.focus();
+      });
+      bar.insertBefore(emoji, bar.firstChild);
+    });
+    document.querySelectorAll('.chat-form__input').forEach(input => {
+      if (input.placeholder === 'Сообщение…' || input.placeholder === 'Сообщение...') {
+        input.placeholder = 'Сообщение';
+      }
+    });
+  }
+
+  function injectChatHeaderAvatar() {
+    const header = document.querySelector('.chat-main__header');
+    if (!header || header.querySelector('.chat-main__header-avatar')) return;
+    const h2 = header.querySelector('h2');
+    const count = header.querySelector('.chat-main__count');
+    if (!h2) return;
+
+    const avatar = document.createElement('span');
+    avatar.className = 'chat-main__header-avatar';
+    avatar.setAttribute('aria-hidden', 'true');
+    const title = h2.textContent || '💬';
+    avatar.textContent = title.includes('PRO') ? '📋' : title.includes('админ') || title.includes('Админ') ? '✉️' : '💬';
+
+    const info = document.createElement('div');
+    info.className = 'chat-main__header-info';
+    if (count) {
+      info.appendChild(h2);
+      info.appendChild(count);
+    } else {
+      info.appendChild(h2);
+    }
+
+    const back = header.querySelector('.chat-back, .pro-chat-back');
+    if (back) {
+      header.insertBefore(avatar, back.nextSibling);
+    } else {
+      header.insertBefore(avatar, header.firstChild);
+    }
+    header.insertBefore(info, avatar.nextSibling);
+  }
+
   function injectChatBack() {
     if (!isMobile()) return;
     const header = document.querySelector('.chat-main__header');
@@ -441,10 +578,14 @@ const Mobile = (function () {
     mountCompactHeader();
     mountBottomNav();
     injectChatBack();
+    injectChatHeaderAvatar();
+    injectTelegramCompose();
     window.addEventListener('resize', () => {
       mountCompactHeader();
       mountBottomNav();
       injectChatBack();
+      injectChatHeaderAvatar();
+      injectTelegramCompose();
     });
     window.addEventListener('gost-data-synced', () => {
       mountCompactHeader();
