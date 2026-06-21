@@ -20,6 +20,7 @@ const {
 const { registerAccountRoutes } = require('./server/account-routes');
 const { registerPaymentRoutes } = require('./server/payment-routes');
 const paymentsDb = require('./server/payments-db');
+const { registerBlogRoutes } = require('./server/blog-routes');
 const { sendHtmlWithMeta, createSiteMetaMiddleware } = require('./server/site-meta');
 
 const app = express();
@@ -70,6 +71,7 @@ async function start() {
 
   registerAuthRoutes(app);
   registerPublicRoutes(app, (msg) => broadcast(msg));
+  registerBlogRoutes(app, (msg) => broadcast(msg));
   registerDataRoutes(app, (msg) => broadcast(msg));
   registerFileRoutes(app);
   registerAdminRoutes(app, (msg) => broadcast(msg));
