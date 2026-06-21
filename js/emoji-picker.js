@@ -1,59 +1,84 @@
 /**
- * Пикер эмодзи для чатов: вставка в текст или мгновенная отправка.
+ * Пикер эмодзи: вставка в текст или мгновенная отправка.
  */
 const EmojiPicker = (function () {
   const RECENT_KEY = 'gost-emoji-recent';
-  const MAX_RECENT = 24;
+  const MAX_RECENT = 32;
 
   const CATEGORIES = [
     { id: 'recent', icon: '🕐', title: 'Недавние' },
-    { id: 'popular', icon: '⭐', title: 'Популярные' },
-    { id: 'smileys', icon: '😀', title: 'Смайлы и люди' },
-    { id: 'gestures', icon: '👋', title: 'Жесты' },
-    { id: 'symbols', icon: '❤️', title: 'Символы' },
-    { id: 'objects', icon: '📎', title: 'Предметы' }
+    { id: 'vibe', icon: '✨', title: 'Вайб / мемы' },
+    { id: 'lab', icon: '🔬', title: 'Лаборатория' },
+    { id: 'smileys', icon: '🫠', title: 'Эмоции' },
+    { id: 'gestures', icon: '🫶', title: 'Жесты' },
+    { id: 'nature', icon: '🦋', title: 'Природа' },
+    { id: 'food', icon: '🍕', title: 'Еда' },
+    { id: 'symbols', icon: '💫', title: 'Символы' }
   ];
 
   const EMOJIS = {
-    popular: [
-      '❤️', '👍', '🔥', '✅', '❗', '‼️', '📌', '⚡', '💋', '🤝', '👌', '👆',
-      '😂', '😢', '😡', '🤔', '🙏', '👏', '🎉', '💯', '✨', '🚀', '⭐', '💪'
+    vibe: [
+      '🫡', '🫠', '🥹', '🫶', '🫨', '🙂‍↔️', '🙂‍↕️', '🧠', '🪩', '🛐', '🗿', '🐐',
+      '💀', '😭', '👀', '💅', '🤌', '🧢', '🤡', '👑', '💎', '🎯', '🧿', '🪬',
+      '🔥', '⚡', '💯', '✨', '🚀', '💥', '🎉', '🎊', '🏆', '🥇', '🎖️', '💪',
+      '🤝', '🙌', '👏', '✅', '❌', '⏳', '🔔', '📢', '💬', '🗣️', '📌', '‼️'
+    ],
+    lab: [
+      '🔬', '🧪', '⚗️', '🧫', '🧬', '🔭', '⚖️', '📋', '📑', '📊', '📈', '📉',
+      '🗂️', '📁', '📎', '🔍', '🔎', '🛡️', '⚙️', '🧰', '🔧', '🔩', '⚠️', '☣️',
+      '✔️', '✅', '❎', '❗', '❓', '🎓', '🏅', '📝', '🖊️', '🗒️', '🧾', '🏛️',
+      '🔖', '📐', '📏', '🧮', '💡', '🔬', '🌡️', '🧯', '🚰', '♻️', '🔒', '🔓'
     ],
     smileys: [
-      '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊',
-      '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜',
-      '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶',
-      '😏', '😒', '🙄', '😬', '😮‍💨', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷',
-      '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳',
-      '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺',
-      '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓',
-      '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '👻', '💀', '☠️', '🤡', '👹'
+      '😀', '😃', '😄', '😁', '😆', '🥹', '😂', '🤣', '😊', '😇', '🙂', '🙃',
+      '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😜', '🤪',
+      '😝', '🤑', '🤗', '🤭', '🫢', '🫣', '🤫', '🤔', '🫡', '🤐', '🤨', '😐',
+      '😑', '😶', '🫥', '😏', '😒', '🙄', '😬', '😮‍💨', '🤥', '😔', '😪', '🤤',
+      '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🥵', '🥶', '🥴', '😵', '😵‍💫', '🤯',
+      '🤠', '🥳', '🥸', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯',
+      '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖',
+      '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈', '👿',
+      '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖', '🎃', '😺'
     ],
     gestures: [
-      '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘',
-      '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛',
-      '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '💪', '🦾', '🦿', '🦵', '🦶'
+      '👋', '🤚', '🖐️', '✋', '🖖', '🫱', '🫲', '🫳', '🫴', '👌', '🤌', '🤏',
+      '✌️', '🤞', '🫰', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️',
+      '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '🫶', '👐', '🤲', '🤝',
+      '🙏', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🫀', '🦷'
+    ],
+    nature: [
+      '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐻‍❄️', '🐨', '🐯', '🦁',
+      '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🐤', '🦆', '🦅', '🦉', '🦇',
+      '🐺', '🐗', '🐴', '🦄', '🐝', '🪱', '🐛', '🦋', '🐌', '🐞', '🐜', '🪰',
+      '🦟', '🦗', '🕷️', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐',
+      '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆',
+      '🌸', '🌺', '🌻', '🌹', '🌷', '🌼', '🌱', '🌿', '🍀', '🍁', '🍂', '🌳'
+    ],
+    food: [
+      '🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈', '🍒', '🍑', '🥭',
+      '🍍', '🥥', '🥝', '🍅', '🥑', '🍆', '🥦', '🥬', '🥒', '🌶️', '🫑', '🌽',
+      '🥕', '🫒', '🧄', '🧅', '🥔', '🍠', '🥐', '🥯', '🍞', '🥖', '🥨', '🧀',
+      '🥚', '🍳', '🥞', '🧇', '🥓', '🥩', '🍗', '🍖', '🌭', '🍔', '🍟', '🍕',
+      '🌮', '🌯', '🥗', '🍝', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🦪', '🍤',
+      '☕', '🍵', '🧃', '🥤', '🧋', '🍺', '🍻', '🥂', '🍷', '🍰', '🎂', '🍫'
     ],
     symbols: [
-      '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕',
-      '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️',
-      '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌',
-      '❗', '❕', '❓', '❔', '‼️', '⁉️', '💢', '♨️', '💥', '💫', '💦', '💨',
-      '✅', '☑️', '✔️', '❌', '❎', '➕', '➖', '➗', '✖️', '♾️', '💯', '🔴'
-    ],
-    objects: [
-      '📎', '📁', '📂', '📄', '📝', '📋', '📊', '📈', '📉', '📌', '📍', '🔖',
-      '🏷️', '💼', '📧', '📨', '📩', '📤', '📥', '📦', '📫', '🔔', '🔕', '📢',
-      '📣', '💬', '💭', '🗯️', '🔍', '🔎', '🔒', '🔓', '🔑', '🛠️', '⚙️', '🔧',
-      '💡', '🔋', '🔌', '💻', '🖥️', '📱', '☎️', '📞', '📷', '📸', '🎥', '🎬'
+      '❤️', '🩷', '🧡', '💛', '💚', '💙', '🩵', '💜', '🖤', '🩶', '🤍', '🤎',
+      '💔', '❤️‍🔥', '❤️‍🩹', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '❣️',
+      '⭐', '🌟', '✨', '💫', '🌈', '☀️', '🌙', '⚡', '🔥', '💧', '❄️', '☃️',
+      '💥', '💢', '💦', '💨', '🕳️', '💬', '👁️‍🗨️', '🗨️', '🗯️', '💭', '💤', '🔔',
+      '✅', '☑️', '✔️', '❌', '❎', '➕', '➖', '➗', '✖️', '♾️', '💯', '🔴',
+      '🟠', '🟡', '🟢', '🔵', '🟣', '⚫', '⚪', '🟤', '🔶', '🔷', '🔺', '🔻'
     ]
   };
 
   let panelEl = null;
   let activeBtn = null;
   let activeForm = null;
-  let activeCategory = 'popular';
+  let activeCategory = 'vibe';
   let sendMode = false;
+  let sending = false;
+  let docClickBound = false;
 
   function loadRecent() {
     try {
@@ -76,9 +101,20 @@ const EmojiPicker = (function () {
   function getCategoryEmojis(id) {
     if (id === 'recent') {
       const recent = loadRecent();
-      return recent.length ? recent : EMOJIS.popular.slice(0, 16);
+      return recent.length ? recent : EMOJIS.vibe.slice(0, 20);
     }
     return EMOJIS[id] || [];
+  }
+
+  /** Надёжное чтение эмодзи — dataset ломает составные символы (ZWJ). */
+  function readEmojiFromItem(item) {
+    if (!item) return '';
+    const idx = item.getAttribute('data-idx');
+    if (idx != null && panelEl) {
+      const list = panelEl._currentList;
+      if (list && list[+idx]) return list[+idx];
+    }
+    return (item.textContent || '').trim();
   }
 
   function ensurePanel() {
@@ -93,6 +129,7 @@ const EmojiPicker = (function () {
           <button type="button" class="emoji-picker__mode emoji-picker__mode--active" data-mode="insert">Вставить</button>
           <button type="button" class="emoji-picker__mode" data-mode="send">Отправить</button>
         </div>
+        <p class="emoji-picker__hint">Можно выбирать несколько подряд</p>
       </div>
       <div class="emoji-picker__tabs" role="tablist"></div>
       <div class="emoji-picker__title"></div>
@@ -102,6 +139,7 @@ const EmojiPicker = (function () {
     panelEl.querySelector('.emoji-picker__modes').addEventListener('click', e => {
       const btn = e.target.closest('[data-mode]');
       if (!btn) return;
+      e.stopPropagation();
       sendMode = btn.dataset.mode === 'send';
       panelEl.querySelectorAll('.emoji-picker__mode').forEach(b => {
         b.classList.toggle('emoji-picker__mode--active', b === btn);
@@ -111,21 +149,40 @@ const EmojiPicker = (function () {
     panelEl.querySelector('.emoji-picker__tabs').addEventListener('click', e => {
       const tab = e.target.closest('[data-cat]');
       if (!tab) return;
+      e.stopPropagation();
       activeCategory = tab.dataset.cat;
       renderGrid();
     });
 
-    panelEl.querySelector('.emoji-picker__grid').addEventListener('click', e => {
-      const item = e.target.closest('[data-emoji]');
+    const onPick = e => {
+      const item = e.target.closest('.emoji-picker__item');
       if (!item) return;
-      pick(item.dataset.emoji);
-    });
+      e.preventDefault();
+      e.stopPropagation();
+      const emoji = readEmojiFromItem(item);
+      if (emoji) pick(emoji, item);
+    };
 
-    document.addEventListener('click', e => {
-      if (panelEl.hidden) return;
-      if (e.target.closest('.emoji-picker') || e.target.closest('.chat-form__emoji')) return;
-      close();
-    });
+    panelEl.querySelector('.emoji-picker__grid').addEventListener('click', onPick);
+    panelEl.querySelector('.emoji-picker__grid').addEventListener('touchend', e => {
+      const item = e.target.closest('.emoji-picker__item');
+      if (!item) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const emoji = readEmojiFromItem(item);
+      if (emoji) pick(emoji, item);
+    }, { passive: false });
+
+    panelEl.addEventListener('click', e => e.stopPropagation());
+
+    if (!docClickBound) {
+      docClickBound = true;
+      document.addEventListener('click', e => {
+        if (!panelEl || panelEl.hidden) return;
+        if (e.target.closest('.emoji-picker') || e.target.closest('.chat-form__emoji')) return;
+        close();
+      }, true);
+    }
 
     window.addEventListener('resize', () => {
       if (!panelEl.hidden && activeBtn) positionPanel(activeBtn);
@@ -145,26 +202,27 @@ const EmojiPicker = (function () {
   function renderGrid() {
     renderTabs();
     const emojis = getCategoryEmojis(activeCategory);
+    panelEl._currentList = emojis;
     const cat = CATEGORIES.find(c => c.id === activeCategory);
     panelEl.querySelector('.emoji-picker__title').textContent = cat ? cat.title : '';
-    panelEl.querySelector('.emoji-picker__grid').innerHTML = emojis.map(e =>
-      `<button type="button" class="emoji-picker__item" data-emoji="${e}" aria-label="${e}">${e}</button>`
+    panelEl.querySelector('.emoji-picker__grid').innerHTML = emojis.map((e, i) =>
+      `<button type="button" class="emoji-picker__item" data-idx="${i}" aria-label="Смайл">${e}</button>`
     ).join('');
   }
 
   function positionPanel(anchor) {
     const rect = anchor.getBoundingClientRect();
-    const panelH = panelEl.offsetHeight || 280;
-    const panelW = panelEl.offsetWidth || 320;
+    const panelH = panelEl.offsetHeight || 300;
+    const panelW = panelEl.offsetWidth || 340;
     let top = rect.top - panelH - 8;
-    if (top < 8) top = rect.bottom + 8;
+    if (top < 8) top = Math.min(rect.bottom + 8, window.innerHeight - panelH - 8);
     let left = rect.left;
     if (left + panelW > window.innerWidth - 8) {
       left = window.innerWidth - panelW - 8;
     }
     left = Math.max(8, left);
-    panelEl.style.top = `${top + window.scrollY}px`;
-    panelEl.style.left = `${left + window.scrollX}px`;
+    panelEl.style.top = `${Math.max(8, top)}px`;
+    panelEl.style.left = `${left}px`;
   }
 
   function insertAtCursor(textarea, text) {
@@ -174,36 +232,51 @@ const EmojiPicker = (function () {
     const before = textarea.value.slice(0, start);
     const after = textarea.value.slice(end);
     textarea.value = before + text + after;
-    const pos = start + text.length;
+    const pos = start + [...text].length;
     textarea.selectionStart = textarea.selectionEnd = pos;
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
     textarea.focus();
   }
 
+  function flashItem(item) {
+    if (!item) return;
+    item.classList.add('emoji-picker__item--picked');
+    setTimeout(() => item.classList.remove('emoji-picker__item--picked'), 280);
+  }
+
   async function sendEmoji(emoji) {
+    if (sending) return;
     const form = activeForm;
     if (!form || !form._getChatId) return;
     const user = App.getCurrentUser();
     const chatId = typeof form._getChatId === 'function' ? form._getChatId() : form._getChatId;
     if (!user || !chatId) return;
-    const result = await App.addMessage(chatId, user.id, emoji, form._replyTo || null, []);
-    if (!result.ok) {
-      alert(result.error || 'Не удалось отправить');
-      return;
+
+    sending = true;
+    try {
+      const result = await App.addMessage(chatId, user.id, emoji, form._replyTo || null, []);
+      if (!result.ok) {
+        alert(result.error || 'Не удалось отправить');
+        return;
+      }
+      form._replyTo = null;
+      const replyPreview = form.closest('.chat-compose')?.querySelector('#reply-preview, .reply-preview');
+      if (replyPreview) replyPreview.hidden = true;
+    } finally {
+      sending = false;
     }
-    form._replyTo = null;
-    const replyPreview = form.closest('.chat-compose')?.querySelector('#reply-preview, .reply-preview');
-    if (replyPreview) replyPreview.hidden = true;
-    close();
   }
 
-  function pick(emoji) {
-    if (!emoji) return;
+  function pick(emoji, item) {
+    if (!emoji || sending) return;
     saveRecent(emoji);
+    flashItem(item);
+
     if (sendMode) {
       sendEmoji(emoji);
       return;
     }
+
     const input = activeForm?.querySelector('.chat-form__input, #msg-text');
     insertAtCursor(input, emoji);
     if (activeCategory === 'recent') renderGrid();
@@ -217,20 +290,22 @@ const EmojiPicker = (function () {
     }
     activeBtn = btn;
     activeForm = form;
-    activeCategory = loadRecent().length ? 'recent' : 'popular';
+    activeCategory = loadRecent().length ? 'recent' : 'vibe';
     sendMode = false;
+    sending = false;
     panelEl.querySelectorAll('.emoji-picker__mode').forEach(b => {
       b.classList.toggle('emoji-picker__mode--active', b.dataset.mode === 'insert');
     });
     renderGrid();
     panelEl.hidden = false;
-    positionPanel(btn);
+    requestAnimationFrame(() => positionPanel(btn));
   }
 
   function close() {
     if (panelEl) panelEl.hidden = true;
     activeBtn = null;
     activeForm = null;
+    sending = false;
   }
 
   function bindFormBar(bar) {
@@ -246,6 +321,7 @@ const EmojiPicker = (function () {
     if (btn._emojiBound) return;
     btn._emojiBound = true;
     btn.addEventListener('click', e => {
+      e.preventDefault();
       e.stopPropagation();
       const form = bar.closest('form');
       if (form) open(btn, form);
@@ -264,7 +340,7 @@ const EmojiPicker = (function () {
   function isEmojiOnlyText(text) {
     if (!text) return false;
     const t = text.trim();
-    if (!t || t.length > 12) return false;
+    if (!t || [...t].length > 8) return false;
     return !/[^\s\p{Emoji}\p{Emoji_Presentation}\p{Extended_Pictographic}\u200d\ufe0f]/u.test(t);
   }
 
