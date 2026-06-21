@@ -14,7 +14,8 @@ const {
   registerDataRoutes,
   registerFileRoutes,
   registerAdminRoutes,
-  registerProRoutes
+  registerProRoutes,
+  registerPublicRoutes
 } = require('./server/routes');
 const { registerAccountRoutes } = require('./server/account-routes');
 const { registerPaymentRoutes } = require('./server/payment-routes');
@@ -68,6 +69,7 @@ async function start() {
   });
 
   registerAuthRoutes(app);
+  registerPublicRoutes(app, (msg) => broadcast(msg));
   registerDataRoutes(app, (msg) => broadcast(msg));
   registerFileRoutes(app);
   registerAdminRoutes(app, (msg) => broadcast(msg));
