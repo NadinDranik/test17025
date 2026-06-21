@@ -656,7 +656,7 @@
       const url = await App.getBlogFileUrl(file.id);
       if (isImg && url) {
         return `<div class="blog-admin-media__item">
-          <img src="${url}" alt="${UI.escapeHtml(file.name)}" class="blog-admin-media__img">
+          <div class="blog-admin-media__img-wrap"><img src="${url}" alt="${UI.escapeHtml(file.name)}" class="blog-admin-media__img"></div>
           <span class="blog-admin-media__name">${UI.escapeHtml(file.name)}</span>
           <button type="button" class="btn btn--sm btn--danger" data-blog-remove="${cover ? 'cover' : 'file'}" data-file-id="${file.id}">Удалить</button>
         </div>`;
