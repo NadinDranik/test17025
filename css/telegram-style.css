@@ -729,6 +729,16 @@
   font-style: italic;
 }
 
+.tg-chat-item__meta .m-card__tier {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  background: var(--color-accent);
+  color: #fff;
+}
+
 /* Скрыть старые карточки, если остались */
 .page-chats-hub .m-cards--compact {
   display: none;
