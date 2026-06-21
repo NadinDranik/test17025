@@ -2400,6 +2400,54 @@ ul {
 
 /* ---- PRO request / payment ---- */
 
+.payment-plans {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.payment-plan {
+  background: #fdfaf3;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.payment-plan--pro {
+  border-color: var(--color-accent);
+}
+
+.payment-plan--selected {
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.payment-plan__title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.payment-plan__price {
+  margin: 0 0 8px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.payment-plan__desc {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.payment-manual {
+  margin-bottom: 16px;
+}
+
+.payment-manual summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
 .payment-info {
   background: #fdfaf3;
   border: 1px solid var(--color-accent);
