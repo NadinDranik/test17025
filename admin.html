@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="css/mobile.css">
   <link rel="stylesheet" href="css/visual-refresh.css">
+  <link rel="stylesheet" href="css/blog.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Merriweather:wght@700;900&display=swap" rel="stylesheet">
@@ -70,6 +71,7 @@
         <button type="button" class="admin-tab" data-tab="pro">PRO-подписки</button>
         <button type="button" class="admin-tab" data-tab="payments">Платежи</button>
         <button type="button" class="admin-tab" data-tab="topics">PRO-чаты</button>
+        <button type="button" class="admin-tab" data-tab="blog">Блог</button>
         <button type="button" class="admin-tab" data-tab="moderation">Модерация</button>
       </div>
 
@@ -207,6 +209,67 @@
                 <th>Название</th>
                 <th>Описание</th>
                 <th>Создана</th>
+                <th>Статус</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Блог -->
+      <section class="admin-panel" id="panel-blog" hidden>
+        <p class="admin-panel__desc">Публикации на странице <a href="blog.html" target="_blank" rel="noopener">blog.html</a>. Доступны всем без регистрации.</p>
+        <div class="admin-card">
+          <h3 id="blog-form-heading">Новая публикация</h3>
+          <form id="blog-form" class="form">
+            <label class="form__label">
+              Заголовок
+              <input type="text" class="form__input" id="blog-title" required maxlength="300">
+            </label>
+            <label class="form__label">
+              Краткое описание
+              <textarea class="form__input" id="blog-excerpt" rows="2" required maxlength="500"></textarea>
+            </label>
+            <label class="form__label">
+              Теги (через запятую)
+              <input type="text" class="form__input" id="blog-tags" placeholder="стандарт, аккредитация">
+            </label>
+            <label class="form__label">
+              Текст (абзацы через пустую строку)
+              <textarea class="form__input" id="blog-body" rows="8" required></textarea>
+            </label>
+            <label class="form__label">
+              Дата публикации
+              <input type="date" class="form__input" id="blog-date">
+            </label>
+            <label class="form__label">
+              Обложка (изображение)
+              <input type="file" class="form__input" id="blog-cover" accept="image/*">
+            </label>
+            <div id="blog-cover-current" class="blog-admin-media" hidden></div>
+            <label class="form__label">
+              Файлы и изображения
+              <input type="file" class="form__input" id="blog-files" multiple>
+            </label>
+            <div id="blog-files-current" class="blog-admin-media"></div>
+            <label class="form__label form__label--checkbox">
+              <input type="checkbox" id="blog-published" checked> Опубликовано
+            </label>
+            <div class="form__actions">
+              <button type="submit" class="btn btn--primary" id="blog-submit-btn">Создать публикацию</button>
+              <button type="button" class="btn btn--outline" id="blog-cancel-edit" hidden>Отменить редактирование</button>
+            </div>
+          </form>
+        </div>
+        <h3 class="admin-subtitle">Все публикации</h3>
+        <div class="table-wrap">
+          <table class="admin-table" id="blog-table">
+            <thead>
+              <tr>
+                <th>Дата</th>
+                <th>Заголовок</th>
                 <th>Статус</th>
                 <th>Действия</th>
               </tr>
@@ -369,9 +432,11 @@
         <div class="stat-card"><span class="stat-card__num">${users.length}</span><span class="stat-card__label">Пользователей</span></div>
         <div class="stat-card stat-card--pro"><span class="stat-card__num">${active.length}</span><span class="stat-card__label">Активных PRO</span></div>
         <div class="stat-card stat-card--warn"><span class="stat-card__num">${expired.length}</span><span class="stat-card__label">Истёк PRO</span></div>
-        <div class="stat-card"><span class="stat-card__num">${topics.length}</span><span class="stat-card__label">PRO-чатов</span></div>`;
+        <div class="stat-card"><span class="stat-card__num">${topics.length}</span><span class="stat-card__label">PRO-чатов</span></div>
+        <div class="stat-card" id="stat-blog" title="Открыть блог"><span class="stat-card__num">${App.getAdminBlogPosts().length}</span><span class="stat-card__label">Публикаций</span></div>`;
 
       document.getElementById('stat-pending')?.addEventListener('click', () => switchTab('requests'));
+      document.getElementById('stat-blog')?.addEventListener('click', () => switchTab('blog'));
     }
 
     function renderProRequests() {
@@ -564,6 +629,173 @@
       }
       refresh();
     });
+
+    /* Blog */
+    let blogEditId = null;
+    let blogRemoveCover = false;
+    const blogRemoveFileIds = new Set();
+
+    function resetBlogForm() {
+      blogEditId = null;
+      blogRemoveCover = false;
+      blogRemoveFileIds.clear();
+      document.getElementById('blog-form').reset();
+      document.getElementById('blog-published').checked = true;
+      document.getElementById('blog-date').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('blog-form-heading').textContent = 'Новая публикация';
+      document.getElementById('blog-submit-btn').textContent = 'Создать публикацию';
+      document.getElementById('blog-cancel-edit').hidden = true;
+      document.getElementById('blog-cover-current').hidden = true;
+      document.getElementById('blog-cover-current').innerHTML = '';
+      document.getElementById('blog-files-current').innerHTML = '';
+    }
+
+    async function renderBlogMediaPreview(container, file, { cover } = {}) {
+      const ext = App.getFileExt(file.name);
+      const isImg = App.isImageExt(ext) || (file.type || '').startsWith('image/');
+      const url = await App.getBlogFileUrl(file.id);
+      if (isImg && url) {
+        return `<div class="blog-admin-media__item">
+          <img src="${url}" alt="${UI.escapeHtml(file.name)}" class="blog-admin-media__img">
+          <span class="blog-admin-media__name">${UI.escapeHtml(file.name)}</span>
+          <button type="button" class="btn btn--sm btn--danger" data-blog-remove="${cover ? 'cover' : 'file'}" data-file-id="${file.id}">Удалить</button>
+        </div>`;
+      }
+      return `<div class="blog-admin-media__item blog-admin-media__item--file">
+        <span class="blog-admin-media__name">📎 ${UI.escapeHtml(file.name)}</span>
+        <button type="button" class="btn btn--sm btn--danger" data-blog-remove="file" data-file-id="${file.id}">Удалить</button>
+      </div>`;
+    }
+
+    async function fillBlogForm(post) {
+      blogEditId = post.id;
+      blogRemoveCover = false;
+      blogRemoveFileIds.clear();
+      document.getElementById('blog-form-heading').textContent = 'Редактирование публикации';
+      document.getElementById('blog-submit-btn').textContent = 'Сохранить';
+      document.getElementById('blog-cancel-edit').hidden = false;
+      document.getElementById('blog-title').value = post.title || '';
+      document.getElementById('blog-excerpt').value = post.excerpt || '';
+      document.getElementById('blog-tags').value = (post.tags || []).join(', ');
+      document.getElementById('blog-body').value = (post.body || []).join('\n\n');
+      document.getElementById('blog-date').value = (post.date || '').slice(0, 10);
+      document.getElementById('blog-published').checked = post.published !== false;
+      document.getElementById('blog-cover').value = '';
+      document.getElementById('blog-files').value = '';
+
+      const coverEl = document.getElementById('blog-cover-current');
+      if (post.coverImage && !blogRemoveCover) {
+        coverEl.hidden = false;
+        coverEl.innerHTML = await renderBlogMediaPreview(coverEl, post.coverImage, { cover: true });
+      } else {
+        coverEl.hidden = true;
+        coverEl.innerHTML = '';
+      }
+
+      const filesEl = document.getElementById('blog-files-current');
+      const files = (post.files || []).filter(f => !blogRemoveFileIds.has(f.id));
+      filesEl.innerHTML = files.length
+        ? (await Promise.all(files.map(f => renderBlogMediaPreview(filesEl, f)))).join('')
+        : '';
+    }
+
+    function renderBlog() {
+      const posts = App.getAdminBlogPosts();
+      const tbody = document.querySelector('#blog-table tbody');
+      if (!tbody) return;
+      tbody.innerHTML = posts.length
+        ? posts.map(p => `<tr>
+            <td data-label="Дата">${App.formatDate(p.date)}</td>
+            <td data-label="Заголовок">${UI.escapeHtml(p.title)}</td>
+            <td data-label="Статус">${p.published !== false ? '<span class="badge badge--pro">Опубликовано</span>' : '<span class="badge badge--blocked">Черновик</span>'}</td>
+            <td data-label="Действия" class="admin-actions">
+              <a href="blog.html?post=${encodeURIComponent(p.id)}" class="btn btn--sm btn--outline" target="_blank" rel="noopener">Открыть</a>
+              <button type="button" class="btn btn--sm btn--outline" data-blog-action="edit" data-id="${p.id}">Изменить</button>
+              <button type="button" class="btn btn--sm btn--danger" data-blog-action="delete" data-id="${p.id}">Удалить</button>
+            </td>
+          </tr>`).join('')
+        : '<tr><td colspan="4" class="table-empty">Публикаций пока нет</td></tr>';
+    }
+
+    document.getElementById('blog-form')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = document.getElementById('blog-submit-btn');
+      btn.disabled = true;
+      const payload = {
+        title: document.getElementById('blog-title').value.trim(),
+        excerpt: document.getElementById('blog-excerpt').value.trim(),
+        tags: document.getElementById('blog-tags').value.split(',').map(t => t.trim()).filter(Boolean),
+        bodyText: document.getElementById('blog-body').value,
+        date: document.getElementById('blog-date').value,
+        published: document.getElementById('blog-published').checked,
+        coverFiles: document.getElementById('blog-cover').files,
+        attachFiles: document.getElementById('blog-files').files
+      };
+      try {
+        if (blogEditId) {
+          await App.updateBlogPost(blogEditId, {
+            ...payload,
+            removeCover: blogRemoveCover,
+            removeFileIds: Array.from(blogRemoveFileIds)
+          });
+          toast('Публикация обновлена');
+        } else {
+          await App.createBlogPost(payload);
+          toast('Публикация создана');
+        }
+        resetBlogForm();
+        refresh();
+      } catch (err) {
+        toast(err.message || 'Ошибка сохранения');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('blog-cancel-edit')?.addEventListener('click', () => resetBlogForm());
+
+    document.getElementById('blog-cover-current')?.addEventListener('click', e => {
+      const btn = e.target.closest('[data-blog-remove]');
+      if (!btn) return;
+      if (btn.dataset.blogRemove === 'cover') {
+        blogRemoveCover = true;
+        document.getElementById('blog-cover-current').hidden = true;
+        document.getElementById('blog-cover-current').innerHTML = '';
+      }
+    });
+
+    document.getElementById('blog-files-current')?.addEventListener('click', e => {
+      const btn = e.target.closest('[data-blog-remove="file"]');
+      if (!btn) return;
+      blogRemoveFileIds.add(btn.dataset.fileId);
+      btn.closest('.blog-admin-media__item')?.remove();
+    });
+
+    document.querySelector('#blog-table tbody')?.addEventListener('click', async e => {
+      const btn = e.target.closest('[data-blog-action]');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const post = App.getBlogPost(id);
+      if (!post) return;
+      if (btn.dataset.blogAction === 'edit') {
+        await fillBlogForm(post);
+        switchTab('blog');
+        document.getElementById('blog-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      if (btn.dataset.blogAction === 'delete') {
+        if (!confirm('Удалить публикацию «' + post.title + '»?')) return;
+        try {
+          await App.deleteBlogPost(id);
+          if (blogEditId === id) resetBlogForm();
+          toast('Публикация удалена');
+          refresh();
+        } catch (err) {
+          toast(err.message || 'Ошибка удаления');
+        }
+      }
+    });
+
+    resetBlogForm();
 
     function renderModChatList(chatId, containerId, delPrefix) {
       const msgs = App.getMessages(chatId).slice(-20);
@@ -837,6 +1069,7 @@
       renderUsers();
       renderSubsLists();
       renderTopics();
+      renderBlog();
       renderModeration();
       renderPrivateMessages();
       renderPayments();
