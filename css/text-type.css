@@ -1,0 +1,43 @@
+.text-type {
+  display: inline;
+  white-space: pre-wrap;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.text-type__content {
+  display: inline;
+}
+
+.text-type__cursor {
+  margin-left: 0.12em;
+  display: inline-block;
+  opacity: 1;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 400;
+}
+
+.text-type__cursor--hidden {
+  visibility: hidden;
+}
+
+.home-hero__title .text-type {
+  display: inline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-type__cursor {
+    animation: none !important;
+    opacity: 1;
+  }
+}
