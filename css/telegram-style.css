@@ -739,6 +739,15 @@
   color: #fff;
 }
 
+.chat-guest-name {
+  padding: 8px 12px 0;
+}
+
+.chat-guest-name .form__input {
+  width: 100%;
+  max-width: 280px;
+}
+
 /* Скрыть старые карточки, если остались */
 .page-chats-hub .m-cards--compact {
   display: none;
