@@ -106,7 +106,7 @@ function registerAuthRoutes(app) {
       db.updateStore(data => {
         const u = data.users.find(x => x.id === user.id);
         if (u) u.lastActive = new Date().toISOString();
-        expireSubscriptions(data.users);
+        expireSubscriptions(data.users, data);
         return data;
       });
 
@@ -131,7 +131,9 @@ function registerAuthRoutes(app) {
 function registerDataRoutes(app, broadcast) {
   app.get('/api/data', requireAuth, (req, res) => {
     const store = db.getStore();
-    expireSubscriptions(store.data.users);
+    if (expireSubscriptions(store.data.users, store.data)) {
+      db.saveStore(store.data);
+    }
     res.json({
       version: store.version,
       data: sanitizeStoreDataForUser(store.data, req.user)
@@ -153,7 +155,7 @@ function registerDataRoutes(app, broadcast) {
       return original ? { ...mu, password: original.password } : mu;
     });
 
-    expireSubscriptions(merged.users);
+    expireSubscriptions(merged.users, merged);
     const version = db.saveStore(merged);
     broadcast({ type: 'data-updated', version });
     res.json({ ok: true, version });
