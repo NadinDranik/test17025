@@ -35,10 +35,6 @@
   <script src="js/mobile.js"></script>
   <script>
     App.ready.then(() => {
-      if (!App.getCurrentUser()) {
-        window.location.href = App.getLoginUrl('chats.html');
-        return;
-      }
       const hub = document.getElementById('chats-hub');
       function refreshHub() {
         Mobile.renderChatsHub(hub);
@@ -49,6 +45,7 @@
       refreshHub();
       window.addEventListener('gost-data-synced', refreshHub);
       window.addEventListener('gost-unread-changed', refreshHub);
+      window.addEventListener('gost-sync-ready', refreshHub);
     });
   </script>
 </body>
