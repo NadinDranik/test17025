@@ -90,7 +90,15 @@ const App = (function () {
       messages: { free: [], [CHAT_ADMIN_SUPPORT]: [] },
       notifications: [],
       proRequests: [],
-      proHistory: []
+      proHistory: [],
+      blogPosts: BLOG_POSTS.map(p => ({
+        ...p,
+        coverImage: p.coverImage || null,
+        files: p.files || [],
+        published: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }))
     };
   }
 
@@ -987,12 +995,153 @@ const App = (function () {
   }
 
   /* Blog */
+  function sortBlogPosts(posts) {
+    return (posts || []).slice().sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
+  }
+
+  function getBlogPostsFromStore(includeUnpublished) {
+    const data = load();
+    const posts = data.blogPosts?.length ? data.blogPosts : BLOG_POSTS;
+    const list = includeUnpublished ? posts : posts.filter(p => p.published !== false);
+    return sortBlogPosts(list);
+  }
+
   function getBlogPosts() {
-    return BLOG_POSTS.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+    return getBlogPostsFromStore(false);
+  }
+
+  function getAdminBlogPosts() {
+    return getBlogPostsFromStore(true);
   }
 
   function getBlogPost(id) {
-    return BLOG_POSTS.find(p => p.id === id) || null;
+    return getBlogPostsFromStore(true).find(p => p.id === id) || null;
+  }
+
+  async function fetchBlogPosts() {
+    if (serverAvailable) {
+      try {
+        const res = await fetch('/api/blog/posts', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          return sortBlogPosts(data.posts || []);
+        }
+      } catch { /* fallback */ }
+    }
+    return getBlogPosts();
+  }
+
+  async function fetchBlogPost(id) {
+    if (serverAvailable && id) {
+      try {
+        const res = await fetch('/api/blog/posts/' + encodeURIComponent(id), { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          return data.post || null;
+        }
+      } catch { /* fallback */ }
+    }
+    return getBlogPost(id);
+  }
+
+  function parseBlogBodyText(text) {
+    return String(text || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  }
+
+  async function uploadFilesFromInput(fileList) {
+    if (!fileList || !fileList.length) return { ok: true, files: [] };
+    const readResult = await readFilesAsAttachments(fileList);
+    if (!readResult.ok) return readResult;
+    const files = [];
+    for (const f of readResult.files) {
+      await FileDB.save(f.id, f.dataUrl);
+      files.push({ id: f.id, name: f.name, size: f.size, type: f.type || '' });
+    }
+    return { ok: true, files };
+  }
+
+  async function createBlogPost(payload) {
+    let coverImage = payload.coverImage || null;
+    let files = Array.isArray(payload.files) ? payload.files.slice() : [];
+
+    if (payload.coverFiles?.length) {
+      const up = await uploadFilesFromInput(payload.coverFiles);
+      if (!up.ok) return up;
+      coverImage = up.files[0] || null;
+    }
+    if (payload.attachFiles?.length) {
+      const up = await uploadFilesFromInput(payload.attachFiles);
+      if (!up.ok) return up;
+      files = files.concat(up.files);
+    }
+
+    await adminRequest('blog/posts', 'POST', {
+      title: payload.title,
+      excerpt: payload.excerpt,
+      tags: payload.tags,
+      body: parseBlogBodyText(payload.bodyText),
+      date: payload.date,
+      coverImage,
+      files,
+      published: payload.published !== false
+    });
+    return { ok: true };
+  }
+
+  async function updateBlogPost(id, payload) {
+    const patch = {};
+    if (payload.title !== undefined) patch.title = payload.title;
+    if (payload.excerpt !== undefined) patch.excerpt = payload.excerpt;
+    if (payload.tags !== undefined) patch.tags = payload.tags;
+    if (payload.bodyText !== undefined) patch.body = parseBlogBodyText(payload.bodyText);
+    if (payload.date !== undefined) patch.date = payload.date;
+    if (payload.published !== undefined) patch.published = payload.published;
+
+    const current = getBlogPost(id);
+    if (!current) return { ok: false, error: 'Публикация не найдена' };
+
+    let files = Array.isArray(payload.files) ? payload.files.slice() : (current.files || []).slice();
+    let coverImage = payload.coverImage !== undefined ? payload.coverImage : current.coverImage;
+
+    if (payload.removeCover) coverImage = null;
+    if (payload.coverFiles?.length) {
+      const up = await uploadFilesFromInput(payload.coverFiles);
+      if (!up.ok) return up;
+      coverImage = up.files[0] || null;
+    }
+    if (payload.attachFiles?.length) {
+      const up = await uploadFilesFromInput(payload.attachFiles);
+      if (!up.ok) return up;
+      files = files.concat(up.files);
+    }
+    if (payload.removeFileIds?.length) {
+      files = files.filter(f => !payload.removeFileIds.includes(f.id));
+    }
+
+    patch.files = files;
+    patch.coverImage = coverImage;
+
+    await adminRequest('blog/posts/' + encodeURIComponent(id), 'PATCH', patch);
+    return { ok: true };
+  }
+
+  async function deleteBlogPost(id) {
+    await adminRequest('blog/posts/' + encodeURIComponent(id), 'DELETE');
+    return { ok: true };
+  }
+
+  async function getBlogFileUrl(fileId) {
+    if (!fileId) return '';
+    const fromDb = await FileDB.get(fileId);
+    if (fromDb && String(fromDb).startsWith('data:')) return fromDb;
+    try {
+      const res = await fetch('/api/files/' + encodeURIComponent(fileId), { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        return data.dataUrl || '';
+      }
+    } catch { /* ignore */ }
+    return fromDb || '';
   }
 
   /* PRO Topics */
@@ -1878,7 +2027,8 @@ const App = (function () {
     REACTION_EMOJIS,
     getDisplayName, getStatusLabel, normalizeNickname, getLoginUrl, getRedirectAfterLogin,
     getGuestName, setGuestName, addGuestMessage, canReadChat, canWriteChat,
-    getBlogPosts, getBlogPost,
+    getBlogPosts, getBlogPost, getAdminBlogPosts, fetchBlogPosts, fetchBlogPost,
+    createBlogPost, updateBlogPost, deleteBlogPost, getBlogFileUrl, parseBlogBodyText,
     isProActive, getSubscriptionStatus, grantPro, extendPro, revokePro,
     setProExpiry, blockUser, updateUser,
     getProTopics, createProTopic, updateProTopic, deleteProTopic,
