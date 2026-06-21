@@ -55,6 +55,9 @@
         </div>
         <div class="chat-messages" id="messages"></div>
         <div class="chat-compose" id="compose-area">
+          <div class="chat-guest-name" id="guest-name-row" hidden>
+            <input type="text" class="form__input" id="guest-name" maxlength="30" placeholder="Ваше имя" autocomplete="nickname">
+          </div>
           <div class="reply-preview" id="reply-preview" hidden>
             <span id="reply-text"></span>
             <button type="button" id="cancel-reply">&times;</button>
@@ -73,7 +76,7 @@
           </form>
         </div>
         <div class="chat-guest-notice" id="guest-notice" hidden>
-          <p>Для отправки сообщений необходимо <a href="login.html?next=chat.html">войти</a> или <a href="login.html?tab=register&next=chat.html">зарегистрироваться</a>.</p>
+          <p>Для отправки сообщений укажите имя выше. <a href="login.html?next=chat.html">Войти</a> или <a href="login.html?tab=register&next=chat.html">зарегистрироваться</a> — для личного кабинета и PRO-чатов.</p>
         </div>
       </section>
     </div>
@@ -108,16 +111,28 @@
 
     function updateAccessUI() {
       currentUser = App.getCurrentUser();
+      const guestNameRow = document.getElementById('guest-name-row');
+      const guestNameInput = document.getElementById('guest-name');
       if (currentUser && App.isUserBlocked(currentUser)) {
         composeArea.hidden = true;
         guestNotice.hidden = false;
+        if (guestNameRow) guestNameRow.hidden = true;
         guestNotice.innerHTML = '<p>Ваш аккаунт <strong>заблокирован</strong>. Отправка сообщений недоступна. <a href="account.html">Личный кабинет</a></p>';
       } else if (currentUser) {
         composeArea.hidden = false;
         guestNotice.hidden = true;
+        if (guestNameRow) guestNameRow.hidden = true;
       } else {
-        composeArea.hidden = true;
+        composeArea.hidden = false;
         guestNotice.hidden = false;
+        if (guestNameRow) guestNameRow.hidden = false;
+        if (guestNameInput) guestNameInput.value = App.getGuestName();
+        const fileUpload = document.querySelector('#msg-files')?.closest('.file-upload');
+        if (fileUpload) fileUpload.hidden = true;
+      }
+      if (currentUser) {
+        const fileUpload = document.querySelector('#msg-files')?.closest('.file-upload');
+        if (fileUpload) fileUpload.hidden = false;
       }
     }
 
@@ -163,6 +178,10 @@
 
     updateAccessUI();
     renderMessages();
+
+    document.getElementById('guest-name')?.addEventListener('change', (e) => {
+      App.setGuestName(e.target.value);
+    });
 
     window.addEventListener('gost-data-synced', () => {
       updateAccessUI();
