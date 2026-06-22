@@ -17,6 +17,19 @@ const App = (function () {
   let _currentUser = null;
   const ADMIN_EMAIL = 'admin@gost17025.pro';
   const API_OPTS = { credentials: 'include' };
+  const FETCH_TIMEOUT_MS = 8000;
+
+  function fetchWithTimeout(url, options, timeoutMs) {
+    const ms = timeoutMs || FETCH_TIMEOUT_MS;
+    if (typeof AbortController === 'undefined') {
+      return fetch(url, options);
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    return fetch(url, { ...options, signal: controller.signal })
+      .finally(() => clearTimeout(timer));
+  }
+
   const CHAT_FREE = 'free';
   const CHAT_ADMIN_SUPPORT = 'admin-support';
   const CHAT_DM_PREFIX = 'dm:';
@@ -533,7 +546,7 @@ const App = (function () {
 
   async function fetchAuthMe() {
     try {
-      const res = await fetch('/api/auth/me', { ...API_OPTS, cache: 'no-store' });
+      const res = await fetchWithTimeout('/api/auth/me', { ...API_OPTS, cache: 'no-store' });
       if (res.ok) {
         const payload = await res.json();
         _currentUser = payload.user || null;
@@ -662,7 +675,7 @@ const App = (function () {
   async function initSync() {
     if (typeof window === 'undefined' || window.location.protocol === 'file:') return;
     try {
-      const health = await fetch('/api/health', { cache: 'no-store' });
+      const health = await fetchWithTimeout('/api/health', { cache: 'no-store' });
       if (!health.ok) throw new Error('API unavailable');
       serverAvailable = true;
       await fetchAuthMe();
