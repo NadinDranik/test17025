@@ -603,8 +603,10 @@ const Mobile = (function () {
         existing.addEventListener('error', () => reject(), { once: true });
         return;
       }
+      const v = typeof window !== 'undefined' && window.GOST_ASSET_V;
+      const src = v ? 'js/emoji-picker.js?v=' + encodeURIComponent(v) : 'js/emoji-picker.js';
       const script = document.createElement('script');
-      script.src = 'js/emoji-picker.js';
+      script.src = src;
       script.dataset.lazy = 'emoji-picker';
       script.onload = () => resolve();
       script.onerror = () => reject(new Error('emoji-picker load failed'));
