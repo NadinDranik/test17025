@@ -949,10 +949,10 @@ body.logged-in-home #user-dashboard {
     overflow: visible;
   }
 
-  .page-chat .msg__bubble-footer,
-  .page-pro .msg__bubble-footer,
-  .page-admin-chat .msg__bubble-footer {
-    margin-top: 6px;
+  .page-chat .msg__content,
+  .page-pro .msg__content,
+  .page-admin-chat .msg__content {
+    gap: 3px;
   }
 
   .msg__reaction-picker {
