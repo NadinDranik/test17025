@@ -48,7 +48,7 @@ async function main() {
   await exec(conn, 'sleep 2 && curl -sf http://127.0.0.1:3000/api/health && echo ""', 'health');
   await exec(conn, 'pm2 status', 'status');
 
-  console.log(`\nГотово: http://${HOST}`);
+  console.log(`\nГотово: https://akkred17025.ru`);
   conn.end();
 }
 
