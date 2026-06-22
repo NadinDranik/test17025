@@ -3646,6 +3646,7 @@ ul {
   .chat-compose,
   .chat-guest-notice {
     grid-row: 3;
+    grid-column: 1 / -1;
     flex-shrink: 0;
     position: relative;
     z-index: 10;
@@ -3658,9 +3659,24 @@ ul {
   }
 
   .chat-compose {
-    padding: 6px 4px;
-    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
     background: var(--color-bg-white);
+  }
+
+  .chat-guest-name {
+    width: 100%;
+    padding: 0;
+  }
+
+  .chat-guest-name .form__input {
+    width: 100%;
+    max-width: none;
+    min-height: 40px;
+    font-size: 15px;
   }
 
   [data-theme="dark"] .chat-compose {
