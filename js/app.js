@@ -563,7 +563,7 @@ const App = (function () {
 
   async function pullFromServer() {
     const url = guestSyncMode ? '/api/public/chats' : '/api/data';
-    const res = await fetch(url, { ...API_OPTS, cache: 'no-store' });
+    const res = await fetchWithTimeout(url, { ...API_OPTS, cache: 'no-store' }, 12000);
     if (res.status === 401 && !guestSyncMode) {
       _currentUser = null;
       setSession(null);
@@ -679,11 +679,8 @@ const App = (function () {
       if (!health.ok) throw new Error('API unavailable');
       serverAvailable = true;
       await fetchAuthMe();
-      if (_currentUser) {
-        await activateUserSync();
-      } else {
-        await activateGuestSync();
-      }
+      const syncTask = _currentUser ? activateUserSync() : activateGuestSync();
+      syncTask.catch(() => {});
     } catch {
       serverAvailable = false;
       syncEnabled = false;
