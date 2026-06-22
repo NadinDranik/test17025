@@ -15,9 +15,16 @@ const App = (function () {
   let syncSocketTimer = null;
   let lastPushPromise = Promise.resolve();
   let _currentUser = null;
+  let _dataCache = null;
   const ADMIN_EMAIL = 'admin@gost17025.pro';
   const API_OPTS = { credentials: 'include' };
   const FETCH_TIMEOUT_MS = 8000;
+
+  function isMobileClient() {
+    return typeof window !== 'undefined'
+      && window.matchMedia
+      && window.matchMedia('(max-width: 992px)').matches;
+  }
 
   function fetchWithTimeout(url, options, timeoutMs) {
     const ms = timeoutMs || FETCH_TIMEOUT_MS;
@@ -182,8 +189,11 @@ const App = (function () {
 
   async function prefetchAvatarUrls(userIds) {
     const map = {};
+    const ids = isMobileClient()
+      ? userIds.slice(0, 8)
+      : userIds;
     const users = load().users;
-    await Promise.all(userIds.map(async (id) => {
+    await Promise.all(ids.map(async (id) => {
       const user = users.find(u => u.id === id);
       map[id] = user ? await getAvatarUrl(user) : null;
     }));
@@ -523,6 +533,7 @@ const App = (function () {
   }
 
   function load() {
+    if (_dataCache) return _dataCache;
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) {
@@ -530,7 +541,8 @@ const App = (function () {
         save(data);
         return data;
       }
-      return JSON.parse(raw);
+      _dataCache = JSON.parse(raw);
+      return _dataCache;
     } catch {
       const data = defaultData();
       save(data);
@@ -583,10 +595,12 @@ const App = (function () {
 
     if (payload.version !== syncVersion && payload.data) {
       syncVersion = payload.version || 0;
+      _dataCache = payload.data;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload.data));
       window.dispatchEvent(new CustomEvent('gost-data-synced'));
     } else if (payload.data) {
       syncVersion = payload.version || 0;
+      _dataCache = payload.data;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload.data));
     }
     return payload;
@@ -619,6 +633,14 @@ const App = (function () {
   function applyRemoteVersion(version) {
     if (!version || version === syncVersion) return;
     pullFromServer().catch(() => {});
+  }
+
+  function startRealtimeSync() {
+    if (isMobileClient()) {
+      setTimeout(connectSyncSocket, 5000);
+      return;
+    }
+    connectSyncSocket();
   }
 
   function connectSyncSocket() {
@@ -658,7 +680,7 @@ const App = (function () {
       await pullFromServer();
     }
     syncEnabled = true;
-    connectSyncSocket();
+    startRealtimeSync();
     startSyncPolling();
     window.dispatchEvent(new CustomEvent('gost-sync-ready'));
   }
@@ -667,13 +689,27 @@ const App = (function () {
     guestSyncMode = true;
     await pullFromServer();
     syncEnabled = true;
-    connectSyncSocket();
+    startRealtimeSync();
     startSyncPolling();
     window.dispatchEvent(new CustomEvent('gost-sync-ready'));
   }
 
+  function bootstrapCurrentUserFromCache() {
+    const sess = getSession();
+    if (!sess?.userId) return;
+    try {
+      const data = load();
+      const user = data.users?.find(u => u.id === sess.userId);
+      if (user && !user.blocked) {
+        _currentUser = { ...user };
+        delete _currentUser.password;
+      }
+    } catch { /* ignore */ }
+  }
+
   async function initSync() {
     if (typeof window === 'undefined' || window.location.protocol === 'file:') return;
+    bootstrapCurrentUserFromCache();
     try {
       const health = await fetchWithTimeout('/api/health', { cache: 'no-store' });
       if (!health.ok) throw new Error('API unavailable');
@@ -690,9 +726,10 @@ const App = (function () {
 
   function startSyncPolling() {
     if (!syncEnabled || syncPollTimer) return;
+    const intervalMs = isMobileClient() ? 60000 : 30000;
     syncPollTimer = setInterval(() => {
       pullFromServer().catch(() => {});
-    }, 30000);
+    }, intervalMs);
   }
 
   function isSyncEnabled() {
@@ -791,6 +828,7 @@ const App = (function () {
 
   function save(data) {
     try {
+      _dataCache = data;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       if (syncEnabled && !guestSyncMode) pushToServer(data);
       return true;
@@ -828,6 +866,7 @@ const App = (function () {
       data.proTopics = payload.proTopics;
     }
     syncVersion = payload.version || syncVersion;
+    _dataCache = data;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     window.dispatchEvent(new CustomEvent('gost-data-synced'));
   }
