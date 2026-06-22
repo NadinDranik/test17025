@@ -25,6 +25,7 @@ const { registerBlogRoutes } = require('./server/blog-routes');
 const { sendHtmlWithMeta, createSiteMetaMiddleware } = require('./server/site-meta');
 
 const app = express();
+app.disable('x-powered-by');
 const ROOT = __dirname;
 const PORT = Number(process.env.PORT) || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
