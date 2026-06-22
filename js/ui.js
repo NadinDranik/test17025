@@ -759,19 +759,49 @@ const UI = (function () {
     const sorted = (typeof App.sortMessagesChronologically === 'function')
       ? App.sortMessagesChronologically(msgs)
       : msgs.slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+    const mobileFast = typeof Mobile !== 'undefined' && Mobile.isMobile();
+    const renderList = (list, avatarUrls) => {
+      let lastDateKey = '';
+      const parts = [];
+      list.forEach(m => {
+        const dateKey = new Date(m.createdAt).toDateString();
+        if (dateKey !== lastDateKey) {
+          parts.push(`<div class="msg-date-sep"><span>${formatDateSeparator(m.createdAt)}</span></div>`);
+          lastDateKey = dateKey;
+        }
+        parts.push(renderMessage(m, currentUser, chatId, sorted, avatarUrls));
+      });
+      return parts.join('');
+    };
+
+    if (mobileFast) {
+      container.innerHTML = renderList(sorted, {});
+      container.scrollTop = container.scrollHeight;
+      setupMessageViewTracking(container, chatId, currentUser);
+      if (currentUser && chatId) {
+        App.markChatRead(currentUser.id, chatId);
+        refreshUnreadBadges();
+      }
+      const hydrateLimit = 25;
+      const toHydrate = sorted.length > hydrateLimit ? sorted.slice(-hydrateLimit) : sorted;
+      Promise.all([
+        Promise.all(toHydrate.map(m => App.hydrateMessageFiles(m))),
+        App.prefetchAvatarUrls([...new Set(sorted.map(m => m.userId))])
+      ]).then(([hydratedBatch, avatarUrls]) => {
+        if (!container.isConnected) return;
+        const hydratedMap = new Map(hydratedBatch.map(m => [m.id, m]));
+        const merged = sorted.map(m => hydratedMap.get(m.id) || m);
+        container.innerHTML = renderList(merged, avatarUrls);
+        container.scrollTop = container.scrollHeight;
+        setupMessageViewTracking(container, chatId, currentUser);
+      }).catch(() => {});
+      return;
+    }
+
     const hydrated = await Promise.all(sorted.map(m => App.hydrateMessageFiles(m)));
     const avatarUrls = await App.prefetchAvatarUrls([...new Set(sorted.map(m => m.userId))]);
-    let lastDateKey = '';
-    const parts = [];
-    hydrated.forEach(m => {
-      const dateKey = new Date(m.createdAt).toDateString();
-      if (dateKey !== lastDateKey) {
-        parts.push(`<div class="msg-date-sep"><span>${formatDateSeparator(m.createdAt)}</span></div>`);
-        lastDateKey = dateKey;
-      }
-      parts.push(renderMessage(m, currentUser, chatId, sorted, avatarUrls));
-    });
-    container.innerHTML = parts.join('');
+    container.innerHTML = renderList(hydrated, avatarUrls);
     container.scrollTop = container.scrollHeight;
     setupMessageViewTracking(container, chatId, currentUser);
     if (currentUser && chatId) {
