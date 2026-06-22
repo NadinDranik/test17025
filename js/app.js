@@ -707,21 +707,41 @@ const App = (function () {
     } catch { /* ignore */ }
   }
 
-  async function initSync() {
-    if (typeof window === 'undefined' || window.location.protocol === 'file:') return;
+  function runLocalBootstrap() {
     bootstrapCurrentUserFromCache();
-    try {
-      const health = await fetchWithTimeout('/api/health', { cache: 'no-store' });
-      if (!health.ok) throw new Error('API unavailable');
-      serverAvailable = true;
-      await fetchAuthMe();
-      const syncTask = _currentUser ? activateUserSync() : activateGuestSync();
-      syncTask.catch(() => {});
-    } catch {
-      serverAvailable = false;
-      syncEnabled = false;
-      guestSyncMode = false;
-    }
+    expireSubscriptions();
+    ensureAdmin();
+    ensureAdminSupportChat();
+    migrateUsers();
+  }
+
+  function backgroundSync() {
+    (async () => {
+      try {
+        const healthMs = isMobileClient() ? 5000 : FETCH_TIMEOUT_MS;
+        const health = await fetchWithTimeout('/api/health', { cache: 'no-store' }, healthMs);
+        if (!health.ok) throw new Error('API unavailable');
+        serverAvailable = true;
+        await fetchAuthMe();
+        const syncTask = _currentUser ? activateUserSync() : activateGuestSync();
+        await syncTask.catch(() => {});
+        expireSubscriptions();
+        ensureAdmin();
+        ensureAdminSupportChat();
+        migrateUsers();
+        window.dispatchEvent(new CustomEvent('gost-auth-updated'));
+      } catch {
+        serverAvailable = false;
+        syncEnabled = false;
+        guestSyncMode = false;
+      }
+    })();
+  }
+
+  function initSync() {
+    if (typeof window === 'undefined' || window.location.protocol === 'file:') return;
+    runLocalBootstrap();
+    backgroundSync();
   }
 
   function startSyncPolling() {
@@ -2060,12 +2080,7 @@ const App = (function () {
     throw new Error('Оплата ещё обрабатывается. Обновите страницу через минуту.');
   }
 
-  const ready = initSync().finally(() => {
-    expireSubscriptions();
-    ensureAdmin();
-    ensureAdminSupportChat();
-    migrateUsers();
-  });
+  const ready = Promise.resolve().then(initSync);
 
   return {
     ready,
