@@ -874,10 +874,6 @@ body.logged-in-home #user-dashboard {
     color: var(--color-text);
   }
 
-  .msg__bubble:has(.msg__meta) {
-    padding-bottom: 18px;
-  }
-
   .msg:not(.msg--own) .msg__bubble {
     border-bottom-left-radius: 4px;
   }
@@ -941,41 +937,16 @@ body.logged-in-home #user-dashboard {
     font-size: 0.62rem;
   }
 
-  .msg__text {
-    font-size: 0.93rem;
-    line-height: 1.42;
+  .page-chat .msg__bubble .msg__text,
+  .page-pro .msg__bubble .msg__text,
+  .page-admin-chat .msg__bubble .msg__text {
+    font-size: 1.0625rem !important;
+    line-height: 1.48 !important;
     margin: 0;
   }
 
   .msg__bubble {
     overflow: visible;
-  }
-
-  .msg__meta {
-    position: absolute;
-    right: 6px;
-    bottom: 3px;
-    margin: 0;
-    gap: 0;
-  }
-
-  .msg__meta-btn {
-    font-size: 0.56rem;
-    font-weight: 400;
-    color: var(--color-text-muted);
-    opacity: 0.42;
-    line-height: 1;
-    padding: 0;
-  }
-
-  .msg--own .msg__meta-btn {
-    opacity: 0.48;
-  }
-
-  .msg__meta-btn:hover,
-  .msg__meta-btn:active {
-    opacity: 0.65;
-    text-decoration: none;
   }
 
   .msg__reaction-picker {
