@@ -43,10 +43,9 @@
           <div class="home-hero__content">
             <p class="home-hero__badge">Экспертное сообщество</p>
             <h1 class="home-hero__title" id="home-hero-title">
-              <span class="visually-hidden">Гид PRO ГОСТ ISO/IEC 17025-2019</span>
-              <span id="home-hero-typed" class="text-type" aria-hidden="true">
+              <span id="home-hero-typed" class="text-type">
                 <span class="text-type__line">
-                  <span class="text-type__content"></span><span class="text-type__cursor text-type__cursor--bar" aria-hidden="true"></span>
+                  <span class="text-type__content">Гид PRO ГОСТ ISO/IEC 17025-2019</span><span class="text-type__cursor text-type__cursor--bar" aria-hidden="true"></span>
                 </span>
               </span>
             </h1>
@@ -366,7 +365,8 @@
       (function initHeroTitleType() {
         if (!window.TextType) return;
         var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (reducedMotion) return;
+        var mobile = window.matchMedia && window.matchMedia('(max-width: 992px)').matches;
+        if (reducedMotion || mobile) return;
         TextType.mount('#home-hero-typed', {
           text: [
             'Гид PRO ГОСТ ISO/IEC 17025-2019',
