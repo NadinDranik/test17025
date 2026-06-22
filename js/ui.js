@@ -508,7 +508,7 @@ const UI = (function () {
     reactionPopoverEl.hidden = true;
     document.body.appendChild(reactionPopoverEl);
     document.addEventListener('click', e => {
-      if (!e.target.closest('.msg-reaction-popover') && !e.target.closest('[data-action="react-picker"]')) {
+      if (!e.target.closest('.msg-reaction-popover') && !e.target.closest('[data-action="react-picker"]') && !e.target.closest('.msg__react-trigger')) {
         hideReactionPopover();
       }
     });
@@ -522,10 +522,22 @@ const UI = (function () {
     ).join('');
     pop.innerHTML = picker;
     pop.hidden = false;
-    const rect = anchorBtn.getBoundingClientRect();
-    const popHeight = pop.offsetHeight || 52;
-    pop.style.top = `${Math.max(8, rect.top - popHeight - 8)}px`;
-    pop.style.left = `${Math.min(Math.max(8, rect.left), window.innerWidth - 230)}px`;
+    const bubble = anchorBtn.closest('.msg__bubble');
+    const isMobile = typeof window !== 'undefined'
+      && window.matchMedia
+      && window.matchMedia('(max-width: 992px)').matches;
+    if (isMobile && bubble) {
+      const rect = bubble.getBoundingClientRect();
+      const popW = pop.offsetWidth || 220;
+      const popH = pop.offsetHeight || 52;
+      pop.style.top = `${Math.max(8, rect.bottom - popH - 4)}px`;
+      pop.style.left = `${Math.max(8, Math.min(rect.right - popW - 4, window.innerWidth - popW - 8))}px`;
+    } else {
+      const rect = anchorBtn.getBoundingClientRect();
+      const popHeight = pop.offsetHeight || 52;
+      pop.style.top = `${Math.max(8, rect.top - popHeight - 8)}px`;
+      pop.style.left = `${Math.min(Math.max(8, rect.left), window.innerWidth - 230)}px`;
+    }
     pop.dataset.chatId = chatId;
     pop._onUpdate = onUpdate;
   }
@@ -692,7 +704,6 @@ const UI = (function () {
 
     const actions = currentUser ? `
       <div class="msg__actions">
-        ${!isSystem ? `<button type="button" class="msg__btn msg__btn--icon" data-action="react-picker" data-id="${msg.id}" title="Реакция">😊</button>` : ''}
         ${canEdit ? `<button type="button" class="msg__btn" data-action="edit" data-id="${msg.id}">Изменить</button>` : ''}
         ${canDelete ? `<button type="button" class="msg__btn msg__btn--danger" data-action="delete" data-id="${msg.id}">Удалить</button>` : ''}
         ${isAdmin ? `<button type="button" class="msg__btn" data-action="pin" data-id="${msg.id}">${msg.pinned ? 'Открепить' : 'Закрепить'}</button>` : ''}
@@ -708,6 +719,14 @@ const UI = (function () {
 
     const welcomeClass = msg.systemType === 'pro_welcome' ? ' msg--welcome' : '';
     const reactionsHtml = isSystem ? '' : renderReactionsHtml(msg, currentUser);
+    const reactTrigger = (!isSystem && currentUser)
+      ? `<button type="button" class="msg__react-trigger" data-action="react-picker" data-id="${msg.id}" title="Добавить реакцию" aria-label="Добавить реакцию">😊</button>`
+      : '';
+    const bubbleFooter = !isSystem && currentUser ? `
+      <div class="msg__bubble-footer">
+        ${reactionsHtml || '<div class="msg__reactions msg__reactions--empty"></div>'}
+        ${reactTrigger}
+      </div>` : reactionsHtml;
 
     const authorHtml = isSystem || isOwn ? '' : `<span class="msg__author" style="color:${authorColor(authorName)}">${escapeAttr(authorName)}</span>`;
     const editedHtml = msg.editedAt ? '<span class="msg__edited">изменено</span>' : '';
@@ -721,9 +740,9 @@ const UI = (function () {
 
     const bubbleInner = emojiOnly
       ? `<div class="msg__emoji-only">${textHtml}${emojiFooterHtml}</div>`
-      : `<div class="msg__inner">${authorHtml}${replyHtml}<div class="msg__text-row">${textHtml}${footerHtml}</div>${filesHtml}${reactionsHtml}${actions}</div>`;
+      : `<div class="msg__inner">${authorHtml}${replyHtml}<div class="msg__text-row">${textHtml}${footerHtml}</div>${filesHtml}${bubbleFooter}${actions}</div>`;
 
-    const extraBelow = emojiOnly ? `${reactionsHtml}${actions}` : '';
+    const extraBelow = emojiOnly ? `${bubbleFooter}${actions}` : '';
 
     return `
       <article class="msg${isOwn ? ' msg--own' : ''}${msg.pinned ? ' msg--pinned' : ''}${welcomeClass}${emojiOnly ? ' msg--emoji-only' : ''}" data-id="${msg.id}">
