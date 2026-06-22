@@ -964,9 +964,29 @@ body.logged-in-home #user-dashboard {
   }
 
   .chat-compose {
-    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
     background: var(--color-bg-white);
     border-top: 1px solid var(--color-border);
+  }
+
+  .chat-guest-name {
+    width: 100%;
+    padding: 0;
+  }
+
+  .chat-guest-name .form__input {
+    width: 100%;
+    max-width: none;
+    min-height: 40px;
+    font-size: 15px;
+  }
+
+  .chat-guest-notice {
+    grid-column: 1 / -1;
   }
 
   .chat-form__bar {
@@ -1005,10 +1025,11 @@ body.logged-in-home #user-dashboard {
   .chat-form__input {
     flex: 1 1 auto;
     min-width: 0;
+    width: 100%;
     font-size: 16px;
     min-height: 48px;
     max-height: 120px;
-    padding: 10px 12px;
+    padding: 10px 14px;
     line-height: 1.35;
   }
 
