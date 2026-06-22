@@ -39,6 +39,7 @@ function buildSiteHead(req, html) {
   <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="/images/apple-touch-icon.png" sizes="180x180">
   <link rel="manifest" href="/site.webmanifest">
+  <link rel="canonical" href="${escapeAttr(pageUrl)}">
   <meta name="theme-color" content="#1a3a5c">
   <meta name="application-name" content="Гид PRO">
   <meta property="og:type" content="website">
