@@ -125,10 +125,30 @@
 
       <!-- PRO-подписки -->
       <section class="admin-panel" id="panel-pro" hidden>
+        <p class="admin-panel__desc">Пока Prodamus не подключён — оформляйте и продлевайте PRO вручную здесь.</p>
         <div class="admin-cards">
           <div class="admin-card">
-            <h3>Выдать PRO-доступ</h3>
-            <p class="admin-card__desc">После подтверждения оплаты выберите пользователя и срок.</p>
+            <h3>Добавить подписчика вручную</h3>
+            <p class="admin-card__desc">Создаёт аккаунт и сразу активирует PRO. Передайте пользователю email и пароль для входа.</p>
+            <form id="create-subscriber-form" class="form">
+              <div class="form form--inline">
+                <input type="email" class="form__input" id="sub-email" placeholder="Email" required autocomplete="off">
+                <input type="text" class="form__input" id="sub-nickname" placeholder="Ник (необязательно)" maxlength="30" autocomplete="off">
+                <input type="text" class="form__input" id="sub-password" placeholder="Временный пароль (от 8 символов)" required minlength="8" autocomplete="new-password">
+                <select class="form__input form__input--select" id="sub-days">
+                  <option value="30">PRO на 30 дней</option>
+                  <option value="90">PRO на 90 дней</option>
+                  <option value="180">PRO на 180 дней</option>
+                  <option value="365">PRO на 365 дней</option>
+                </select>
+                <button type="submit" class="btn btn--pro">Создать подписчика</button>
+              </div>
+              <p class="form__error" id="create-subscriber-error" hidden></p>
+            </form>
+          </div>
+          <div class="admin-card">
+            <h3>Выдать PRO существующему пользователю</h3>
+            <p class="admin-card__desc">Если человек уже зарегистрировался — выберите его из списка.</p>
             <form id="grant-form" class="form form--inline">
               <select class="form__input" id="grant-user" required></select>
               <select class="form__input form__input--select" id="grant-days">
@@ -953,6 +973,26 @@
       await App.grantPro(document.getElementById('grant-user').value, +document.getElementById('grant-days').value);
       toast('PRO-доступ выдан');
       refresh();
+    });
+
+    document.getElementById('create-subscriber-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const errEl = document.getElementById('create-subscriber-error');
+      errEl.hidden = true;
+      try {
+        const user = await App.createSubscriber({
+          email: document.getElementById('sub-email').value.trim(),
+          nickname: document.getElementById('sub-nickname').value.trim(),
+          password: document.getElementById('sub-password').value,
+          days: +document.getElementById('sub-days').value
+        });
+        document.getElementById('create-subscriber-form').reset();
+        toast(`Подписчик создан: ${user.email}`);
+        refresh();
+      } catch (err) {
+        errEl.textContent = err.message || 'Ошибка создания';
+        errEl.hidden = false;
+      }
     });
 
     document.getElementById('set-date-form').addEventListener('submit', async e => {
