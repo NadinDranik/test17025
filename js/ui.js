@@ -481,10 +481,6 @@ const UI = (function () {
     return chips ? `<div class="msg__reactions">${chips}</div>` : '';
   }
 
-  function getMessageViewCount(msg) {
-    return msg.views ? Object.keys(msg.views).length : 0;
-  }
-
   function formatMessageText(text) {
     const escaped = escapeHtml(text);
     return linkifyHtml(escaped);
@@ -548,7 +544,7 @@ const UI = (function () {
     detailsPopoverEl.hidden = true;
     document.body.appendChild(detailsPopoverEl);
     document.addEventListener('click', e => {
-      if (!e.target.closest('.msg-details-popover') && !e.target.closest('[data-action="reaction-users"]') && !e.target.closest('[data-action="view-users"]')) {
+      if (!e.target.closest('.msg-details-popover') && !e.target.closest('[data-action="reaction-users"]')) {
         detailsPopoverEl.hidden = true;
       }
     });
@@ -693,7 +689,6 @@ const UI = (function () {
     const canManage = isOwn || isAdmin;
     const canDelete = canManage && (!isSystem || isAdmin);
     const canEdit = !isSystem && msg.text && (isOwn || isAdmin);
-    const viewCount = getMessageViewCount(msg);
 
     const actions = currentUser ? `
       <div class="msg__actions">
@@ -713,10 +708,6 @@ const UI = (function () {
 
     const welcomeClass = msg.systemType === 'pro_welcome' ? ' msg--welcome' : '';
     const reactionsHtml = isSystem ? '' : renderReactionsHtml(msg, currentUser);
-    const metaHtml = !isSystem && viewCount > 0 ? `
-      <div class="msg__meta">
-        <button type="button" class="msg__meta-btn" data-action="view-users" data-id="${msg.id}" title="Кто просмотрел">👁 ${viewCount}</button>
-      </div>` : '';
 
     const authorHtml = isSystem || isOwn ? '' : `<span class="msg__author" style="color:${authorColor(authorName)}">${escapeAttr(authorName)}</span>`;
     const editedHtml = msg.editedAt ? '<span class="msg__edited">изменено</span>' : '';
@@ -730,9 +721,9 @@ const UI = (function () {
 
     const bubbleInner = emojiOnly
       ? `<div class="msg__emoji-only">${textHtml}${emojiFooterHtml}</div>`
-      : `<div class="msg__inner">${authorHtml}${replyHtml}<div class="msg__text-row">${textHtml}${footerHtml}</div>${filesHtml}${reactionsHtml}${metaHtml}${actions}</div>`;
+      : `<div class="msg__inner">${authorHtml}${replyHtml}<div class="msg__text-row">${textHtml}${footerHtml}</div>${filesHtml}${reactionsHtml}${actions}</div>`;
 
-    const extraBelow = emojiOnly ? `${reactionsHtml}${metaHtml}${actions}` : '';
+    const extraBelow = emojiOnly ? `${reactionsHtml}${actions}` : '';
 
     return `
       <article class="msg${isOwn ? ' msg--own' : ''}${msg.pinned ? ' msg--pinned' : ''}${welcomeClass}${emojiOnly ? ' msg--emoji-only' : ''}" data-id="${msg.id}">
@@ -919,15 +910,6 @@ const UI = (function () {
         const userIds = (msg.reactions && msg.reactions[emoji]) || [];
         const names = App.getMessageUserNames(userIds);
         showDetailsPopover(btn, `${emoji} — реакции`, names.length ? names : ['Пока никто']);
-        return;
-      }
-
-      if (action === 'view-users') {
-        if (!msg) return;
-        e.stopPropagation();
-        const userIds = msg.views ? Object.keys(msg.views) : [];
-        const names = App.getMessageUserNames(userIds);
-        showDetailsPopover(btn, 'Просмотрели', names.length ? names : ['Пока никто']);
         return;
       }
 
