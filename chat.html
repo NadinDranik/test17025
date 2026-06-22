@@ -75,9 +75,7 @@
             <p class="form__error" id="send-error" hidden></p>
           </form>
         </div>
-        <div class="chat-guest-notice" id="guest-notice" hidden>
-          <p>Для отправки сообщений укажите имя выше. <a href="login.html?next=chat.html">Войти</a> или <a href="login.html?tab=register&next=chat.html">зарегистрироваться</a> — для личного кабинета и PRO-чатов.</p>
-        </div>
+        <div class="chat-guest-notice" id="guest-notice" hidden></div>
       </section>
     </div>
   </main>
@@ -124,7 +122,7 @@
         if (guestNameRow) guestNameRow.hidden = true;
       } else {
         composeArea.hidden = false;
-        guestNotice.hidden = false;
+        guestNotice.hidden = true;
         if (guestNameRow) guestNameRow.hidden = false;
         if (guestNameInput) guestNameInput.value = App.getGuestName();
         const fileUpload = document.querySelector('#msg-files')?.closest('.file-upload');
