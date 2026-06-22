@@ -48,7 +48,8 @@ conn.on('ready', () => {
       if (files.some(f => f.replace(/\\/g, '/') === 'package.json')) {
         await exec(conn, `cd ${APP_DIR} && npm install --production`);
       }
-      await exec(conn, 'pm2 restart gost17025 && sleep 2 && curl -sf http://127.0.0.1:3000/api/health');
+      await exec(conn, `cd ${APP_DIR} && V=$(git rev-parse --short HEAD 2>/dev/null || date +%Y%m%d%H%M) && echo "$V" > .asset-version && (grep -q '^ASSET_VERSION=' .env 2>/dev/null && sed -i "s|^ASSET_VERSION=.*|ASSET_VERSION=$V|" .env || echo "ASSET_VERSION=$V" >> .env) && echo "ASSET_VERSION=$V"`);
+      await exec(conn, 'pm2 restart gost17025 --update-env && sleep 2 && curl -sf http://127.0.0.1:3000/api/health');
       console.log('\nDeploy done');
       conn.end();
     } catch (e) {
