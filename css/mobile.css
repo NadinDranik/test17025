@@ -865,12 +865,17 @@ body.logged-in-home #user-dashboard {
   }
 
   .msg__bubble {
+    position: relative;
     padding: 10px 12px;
     border-radius: 16px;
     border: 1px solid rgba(0, 0, 0, 0.06);
     background: #ffffff;
     box-shadow: 0 1px 3px rgba(180, 90, 70, 0.08);
     color: var(--color-text);
+  }
+
+  .msg__bubble:has(.msg__meta) {
+    padding-bottom: 18px;
   }
 
   .msg:not(.msg--own) .msg__bubble {
@@ -937,13 +942,40 @@ body.logged-in-home #user-dashboard {
   }
 
   .msg__text {
-    font-size: 0.86rem;
-    line-height: 1.4;
+    font-size: 0.93rem;
+    line-height: 1.42;
     margin: 0;
   }
 
   .msg__bubble {
     overflow: visible;
+  }
+
+  .msg__meta {
+    position: absolute;
+    right: 6px;
+    bottom: 3px;
+    margin: 0;
+    gap: 0;
+  }
+
+  .msg__meta-btn {
+    font-size: 0.56rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+    opacity: 0.42;
+    line-height: 1;
+    padding: 0;
+  }
+
+  .msg--own .msg__meta-btn {
+    opacity: 0.48;
+  }
+
+  .msg__meta-btn:hover,
+  .msg__meta-btn:active {
+    opacity: 0.65;
+    text-decoration: none;
   }
 
   .msg__reaction-picker {
