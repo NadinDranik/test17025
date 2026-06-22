@@ -1596,6 +1596,7 @@ body.logged-in-home #user-dashboard .m-card:nth-child(3) { animation-delay: 0.1s
   .page-admin .tab-badge,
   .page-home .home-hero__title,
   .page-home .home-hero__badge,
+  .page-home .home-hero__intro,
   .page-home .home-hero__subtitle,
   .page-home .home-hero__lead,
   .page-home .home-hero__actions,
@@ -1617,6 +1618,9 @@ body.logged-in-home #user-dashboard .m-card:nth-child(3) { animation-delay: 0.1s
   .account-card,
   .about-card {
     animation: none;
+    opacity: 1;
+    transform: none;
+    visibility: visible;
   }
 
   .page-admin .stat-card:hover,
