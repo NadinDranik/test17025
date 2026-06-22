@@ -45,6 +45,9 @@ conn.on('ready', () => {
     if (err) { console.error(err); process.exit(1); }
     try {
       for (const f of files) await upload(sftp, f);
+      if (files.some(f => f.replace(/\\/g, '/') === 'package.json')) {
+        await exec(conn, `cd ${APP_DIR} && npm install --production`);
+      }
       await exec(conn, 'pm2 restart gost17025 && sleep 2 && curl -sf http://127.0.0.1:3000/api/health');
       console.log('\nDeploy done');
       conn.end();
