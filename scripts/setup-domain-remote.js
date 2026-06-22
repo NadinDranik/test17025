@@ -22,11 +22,21 @@ if (!PASS) {
 }
 
 const nginxConf = `server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    return 301 https://${DOMAIN}$request_uri;
+}
+
+server {
     listen 80;
     listen [::]:80;
     server_name ${DOMAIN} www.${DOMAIN};
 
     client_max_body_size 50M;
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 256;
 
     location / {
         proxy_pass http://127.0.0.1:3000;
