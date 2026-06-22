@@ -3,6 +3,7 @@
  * Запуск: npm install && npm start
  */
 const express = require('express');
+const compression = require('compression');
 const http = require('http');
 const path = require('path');
 const session = require('express-session');
@@ -44,6 +45,7 @@ async function start() {
   await db.initDb();
   paymentsDb.initPaymentsDb();
 
+  app.use(compression());
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
@@ -91,7 +93,18 @@ async function start() {
   app.use(createSiteMetaMiddleware(ROOT));
 
   app.use(express.static(ROOT, {
-    index: false
+    index: false,
+    etag: true,
+    lastModified: true,
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache');
+        return;
+      }
+      if (/\.(css|js|png|webp|jpe?g|gif|svg|ico|woff2?|webmanifest)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=604800');
+      }
+    }
   }));
 
   const server = http.createServer(app);
