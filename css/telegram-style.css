@@ -1001,12 +1001,13 @@
 }
 
 .chat-guest-name {
-  padding: 8px 12px 0;
+  padding: 0 0 6px;
+  width: 100%;
 }
 
 .chat-guest-name .form__input {
   width: 100%;
-  max-width: 280px;
+  max-width: none;
 }
 
 /* Скрыть старые карточки, если остались */
