@@ -584,7 +584,7 @@
 
 .tg-chats-header__title {
   margin: 0;
-  font-family: var(--font-display, 'Merriweather', serif);
+  font-family: var(--font-display, Georgia, serif);
   font-size: clamp(1.35rem, 3vw, 1.65rem);
   font-weight: 800;
   letter-spacing: -0.02em;
