@@ -1632,8 +1632,7 @@ body.logged-in-home #user-dashboard .m-card:nth-child(3) { animation-delay: 0.1s
 
 @media (max-width: 992px) {
   .btn,
-  .mobile-bottom-nav__item,
-  .chat-form__send {
+  .mobile-bottom-nav__item {
     min-height: var(--btn-height);
   }
 
