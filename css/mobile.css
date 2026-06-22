@@ -940,7 +940,7 @@ body.logged-in-home #user-dashboard {
   .page-chat .msg__bubble .msg__text,
   .page-pro .msg__bubble .msg__text,
   .page-admin-chat .msg__bubble .msg__text {
-    font-size: 1.0625rem !important;
+    font-size: 1.125rem !important;
     line-height: 1.48 !important;
     margin: 0;
   }
