@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="css/mobile.css">
   <link rel="stylesheet" href="css/visual-refresh.css">
   <link rel="stylesheet" href="css/home.css">
-  <link rel="stylesheet" href="css/text-type.css">
 </head>
 <body class="page-home">
 
@@ -43,11 +42,7 @@
           <div class="home-hero__content">
             <p class="home-hero__badge">Экспертное сообщество</p>
             <h1 class="home-hero__title" id="home-hero-title">
-              <span id="home-hero-typed" class="text-type">
-                <span class="text-type__line">
-                  <span class="text-type__content">Гид PRO ГОСТ ISO/IEC 17025-2019</span><span class="text-type__cursor text-type__cursor--bar" aria-hidden="true"></span>
-                </span>
-              </span>
+              Гид PRO ГОСТ ISO/IEC 17025-2019
             </h1>
             <div class="home-hero__intro">
               <p class="home-hero__card home-hero__subtitle">
@@ -350,8 +345,6 @@
     </div>
   </footer>
 
-  <script src="js/vendor/gsap.min.js"></script>
-  <script src="js/text-type.js"></script>
   <script src="js/app.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/mobile.js"></script>
@@ -361,28 +354,6 @@
       UI.initHeader('home');
 
       Mobile.init('home');
-
-      (function initHeroTitleType() {
-        if (!window.TextType) return;
-        var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var mobile = window.matchMedia && window.matchMedia('(max-width: 992px)').matches;
-        if (reducedMotion || mobile) return;
-        TextType.mount('#home-hero-typed', {
-          text: [
-            'Гид PRO ГОСТ ISO/IEC 17025-2019',
-            'Практика аккредитации лабораторий',
-            'Экспертные чаты и база знаний',
-            'Решения для специалистов СМК'
-          ],
-          typingSpeed: 155,
-          pauseDuration: 3200,
-          showCursor: true,
-          deletingSpeed: 50,
-          cursorBlinkDuration: 0.6,
-          loop: true,
-          startOnVisible: true
-        });
-      })();
 
       (function initHeroForUser() {
         var user = App.getCurrentUser();
