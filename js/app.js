@@ -989,6 +989,11 @@ const App = (function () {
     return load().users.find(u => u.id === userId) || null;
   }
 
+  async function createSubscriber({ email, password, nickname, days }) {
+    const data = await adminRequest('create-subscriber', 'POST', { email, password, nickname, days });
+    return data.user || null;
+  }
+
   async function blockUser(userId, blocked) {
     await adminRequest('block-user', 'POST', { userId, blocked });
     return load().users.find(u => u.id === userId) || null;
@@ -2029,7 +2034,7 @@ const App = (function () {
     getGuestName, setGuestName, addGuestMessage, canReadChat, canWriteChat,
     getBlogPosts, getBlogPost, getAdminBlogPosts, fetchBlogPosts, fetchBlogPost,
     createBlogPost, updateBlogPost, deleteBlogPost, getBlogFileUrl, parseBlogBodyText,
-    isProActive, getSubscriptionStatus, grantPro, extendPro, revokePro,
+    isProActive, getSubscriptionStatus, grantPro, extendPro, revokePro, createSubscriber,
     setProExpiry, blockUser, updateUser,
     getProTopics, createProTopic, updateProTopic, deleteProTopic,
     getMessages, sortMessagesChronologically, addMessage, editMessage, deleteMessage, pinMessage, toggleReaction,
