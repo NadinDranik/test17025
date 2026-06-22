@@ -949,6 +949,12 @@ body.logged-in-home #user-dashboard {
     overflow: visible;
   }
 
+  .page-chat .msg__bubble-footer,
+  .page-pro .msg__bubble-footer,
+  .page-admin-chat .msg__bubble-footer {
+    margin-top: 6px;
+  }
+
   .msg__reaction-picker {
     z-index: 50;
     max-width: 100%;
