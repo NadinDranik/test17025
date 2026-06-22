@@ -43,8 +43,9 @@ async function main() {
 
   console.log('SSH OK\n');
   await exec(conn, `cd ${APP_DIR} && git fetch origin && git reset --hard origin/main`, 'git pull');
+  await exec(conn, `cd ${APP_DIR} && V=$(git rev-parse --short HEAD) && echo "$V" > .asset-version && (grep -q '^ASSET_VERSION=' .env 2>/dev/null && sed -i "s|^ASSET_VERSION=.*|ASSET_VERSION=$V|" .env || echo "ASSET_VERSION=$V" >> .env) && echo "ASSET_VERSION=$V"`, 'asset version');
   await exec(conn, `cd ${APP_DIR} && npm install --production`, 'npm install');
-  await exec(conn, 'pm2 restart gost17025', 'pm2 restart');
+  await exec(conn, 'pm2 restart gost17025 --update-env', 'pm2 restart');
   await exec(conn, 'sleep 2 && curl -sf http://127.0.0.1:3000/api/health && echo ""', 'health');
   await exec(conn, 'pm2 status', 'status');
 
