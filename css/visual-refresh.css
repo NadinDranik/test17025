@@ -3,7 +3,7 @@
    ============================================= */
 
 :root {
-  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --color-error: #c45c5c;
   --color-success: #3d7a5c;
   --color-surface: #ffffff;
