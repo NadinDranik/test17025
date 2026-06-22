@@ -15,7 +15,7 @@
   --color-text-muted: #5a6a7e;
   --color-border: #d8dfe8;
   --color-success: #2d6a4f;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
   --shadow-sm: 0 1px 3px rgba(15, 39, 64, 0.08);
   --shadow-md: 0 4px 16px rgba(15, 39, 64, 0.1);
@@ -3908,7 +3908,7 @@ ul {
 }
 
 .account-header h1 {
-  font-family: var(--font-serif, Merriweather, serif);
+  font-family: var(--font-serif, Georgia, serif);
   margin: 0 0 0.5rem;
 }
 
