@@ -594,10 +594,29 @@ const Mobile = (function () {
     </div>`;
   }
 
+  function loadEmojiPicker() {
+    if (typeof EmojiPicker !== 'undefined') return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-lazy="emoji-picker"]');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(), { once: true });
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'js/emoji-picker.js';
+      script.dataset.lazy = 'emoji-picker';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('emoji-picker load failed'));
+      document.body.appendChild(script);
+    });
+  }
+
   function injectTelegramCompose() {
-    if (typeof EmojiPicker !== 'undefined') {
-      EmojiPicker.init();
-    }
+    if (!document.querySelector('.chat-form, #msg-form')) return;
+    loadEmojiPicker().then(() => {
+      if (typeof EmojiPicker !== 'undefined') EmojiPicker.init();
+    }).catch(() => {});
   }
 
   function injectChatHeaderAvatar() {
