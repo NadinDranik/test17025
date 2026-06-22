@@ -1197,49 +1197,18 @@
     border-radius: 11px;
   }
 
-  .msg__bubble:has(.msg__meta) {
-    padding-bottom: 15px;
+  .page-chat .msg__bubble .msg__text,
+  .page-pro .msg__bubble .msg__text,
+  .page-admin-chat .msg__bubble .msg__text,
+  .page-pro-request .msg__bubble .msg__text {
+    font-size: 1.0625rem !important;
+    line-height: 1.48 !important;
   }
 
-  .msg__text {
-    font-size: 0.93rem;
-    line-height: 1.42;
-  }
-
-  .msg__meta {
-    position: absolute;
-    right: 5px;
-    bottom: 2px;
-    margin: 0;
-    gap: 0;
-    z-index: 1;
-  }
-
-  .msg__meta-btn {
-    font-size: 0.56rem;
-    font-weight: 400;
-    color: var(--tg-text-secondary);
-    opacity: 0.42;
-    line-height: 1;
-    padding: 0;
-    letter-spacing: -0.01em;
-  }
-
-  .msg--own .msg__meta-btn {
-    color: rgba(0, 0, 0, 0.38);
-    opacity: 0.48;
-  }
-
-  .msg__meta-btn:hover,
-  .msg__meta-btn:active {
-    opacity: 0.65;
-    text-decoration: none;
-    color: var(--tg-text-secondary);
-  }
-
-  .msg--own .msg__meta-btn:hover,
-  .msg--own .msg__meta-btn:active {
-    color: rgba(0, 0, 0, 0.5);
+  .page-chat .msg__bubble .msg__link,
+  .page-pro .msg__bubble .msg__link,
+  .page-admin-chat .msg__bubble .msg__link {
+    font-size: inherit;
   }
 
   .chat-compose {
