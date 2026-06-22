@@ -1003,6 +1003,10 @@ if (typeof App !== 'undefined' && App.ready) {
     UI.refreshUnreadBadges();
     window.addEventListener('gost-data-synced', () => UI.refreshUnreadBadges());
     window.addEventListener('gost-unread-changed', () => UI.refreshUnreadBadges());
+    window.addEventListener('gost-auth-updated', () => {
+      UI.refreshUnreadBadges();
+      UI.showSyncNotice();
+    });
   });
 }
 
