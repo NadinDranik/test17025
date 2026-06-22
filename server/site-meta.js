@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { getAssetVersion, injectAssetVersion } = require('./asset-version');
 
 const SITE_META_MARKER = '<!-- gost-site-icons -->';
 
@@ -62,9 +63,15 @@ function injectSiteMeta(html, req) {
   return html.replace('</title>', `</title>\n${buildSiteHead(req, html)}`);
 }
 
-function sendHtmlWithMeta(req, res, filePath) {
+function prepareHtml(html, req, rootDir) {
+  let out = injectSiteMeta(html, req);
+  out = injectAssetVersion(out, getAssetVersion(rootDir));
+  return out;
+}
+
+function sendHtmlWithMeta(req, res, filePath, rootDir) {
   const html = fs.readFileSync(filePath, 'utf8');
-  res.type('html').send(injectSiteMeta(html, req));
+  res.type('html').send(prepareHtml(html, req, rootDir));
 }
 
 function createSiteMetaMiddleware(rootDir) {
@@ -76,12 +83,13 @@ function createSiteMetaMiddleware(rootDir) {
       filePath = path.join(rootDir, req.path.replace(/^\//, ''));
     }
     if (!filePath || !fs.existsSync(filePath)) return next();
-    return sendHtmlWithMeta(req, res, filePath);
+    return sendHtmlWithMeta(req, res, filePath, rootDir);
   };
 }
 
 module.exports = {
   injectSiteMeta,
+  prepareHtml,
   sendHtmlWithMeta,
   createSiteMetaMiddleware
 };
