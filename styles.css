@@ -16,7 +16,7 @@
   --color-border: #d8dfe8;
   --color-success: #2d6a4f;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-serif: 'Merriweather', Georgia, serif;
+  --font-serif: Georgia, 'Times New Roman', serif;
   --shadow-sm: 0 1px 3px rgba(15, 39, 64, 0.08);
   --shadow-md: 0 4px 16px rgba(15, 39, 64, 0.1);
   --shadow-lg: 0 8px 32px rgba(15, 39, 64, 0.14);
