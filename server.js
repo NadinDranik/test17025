@@ -23,6 +23,7 @@ const { registerPaymentRoutes } = require('./server/payment-routes');
 const paymentsDb = require('./server/payments-db');
 const { registerBlogRoutes } = require('./server/blog-routes');
 const { sendHtmlWithMeta, createSiteMetaMiddleware } = require('./server/site-meta');
+const { getAssetVersion, applyStaticCacheHeaders } = require('./server/asset-version');
 
 const app = express();
 app.disable('x-powered-by');
@@ -68,7 +69,8 @@ async function start() {
     res.json({
       ok: true,
       storage: 'sqlite',
-      dataDir: db.getDataDir()
+      dataDir: db.getDataDir(),
+      assetVersion: getAssetVersion(ROOT)
     });
   });
 
@@ -83,7 +85,7 @@ async function start() {
   registerPaymentRoutes(app, (msg) => broadcast(msg));
 
   app.get('/admin.html', requireAdminPage, (req, res) => {
-    sendHtmlWithMeta(req, res, path.join(ROOT, 'admin.html'));
+    sendHtmlWithMeta(req, res, path.join(ROOT, 'admin.html'), ROOT);
   });
 
   app.get('/site.webmanifest', (req, res) => {
@@ -93,17 +95,18 @@ async function start() {
 
   app.use(createSiteMetaMiddleware(ROOT));
 
+  app.use((req, res, next) => {
+    applyStaticCacheHeaders(req, res);
+    next();
+  });
+
   app.use(express.static(ROOT, {
     index: false,
     etag: true,
     lastModified: true,
     setHeaders(res, filePath) {
       if (filePath.endsWith('.html')) {
-        res.setHeader('Cache-Control', 'no-cache');
-        return;
-      }
-      if (/\.(css|js|png|webp|jpe?g|gif|svg|ico|woff2?|webmanifest)$/i.test(filePath)) {
-        res.setHeader('Cache-Control', 'public, max-age=604800');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
       }
     }
   }));
@@ -143,6 +146,7 @@ async function start() {
     console.log('  Порт:       ' + PORT);
     console.log('  База:       ' + path.join(db.getDataDir(), 'gost17025.db'));
     console.log('  Режим:      ' + (isProduction ? 'production' : 'development'));
+  console.log('  Версия CSS/JS: ' + getAssetVersion(ROOT));
     console.log('');
   });
 }
