@@ -10,9 +10,6 @@
   <link rel="stylesheet" href="css/visual-refresh.css">
   <link rel="stylesheet" href="css/home.css">
   <link rel="stylesheet" href="css/text-type.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Merriweather:wght@700;900&display=swap" rel="stylesheet">
 </head>
 <body class="page-home">
 
@@ -67,14 +64,18 @@
             </div>
           </div>
           <div class="home-hero__visual">
-            <img
-              src="images/home-hero.png"
-              alt="Специалист лаборатории работает с цифровым интерфейсом Гид PRO: ГОСТ ISO/IEC 17025, проверки компетентности, документы, ВЛК и управление рисками"
-              class="home-hero__illustration"
-              width="960"
-              height="540"
-              loading="eager"
-              decoding="async">
+            <picture>
+              <source srcset="images/home-hero.webp" type="image/webp">
+              <img
+                src="images/home-hero.png"
+                alt="Специалист лаборатории работает с цифровым интерфейсом Гид PRO: ГОСТ ISO/IEC 17025, проверки компетентности, документы, ВЛК и управление рисками"
+                class="home-hero__illustration"
+                width="960"
+                height="640"
+                loading="lazy"
+                fetchpriority="low"
+                decoding="async">
+            </picture>
           </div>
         </div>
       </section>
