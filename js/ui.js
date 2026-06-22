@@ -522,21 +522,18 @@ const UI = (function () {
     ).join('');
     pop.innerHTML = picker;
     pop.hidden = false;
-    const bubble = anchorBtn.closest('.msg__bubble');
     const isMobile = typeof window !== 'undefined'
       && window.matchMedia
       && window.matchMedia('(max-width: 992px)').matches;
-    if (isMobile && bubble) {
-      const rect = bubble.getBoundingClientRect();
-      const popW = pop.offsetWidth || 220;
-      const popH = pop.offsetHeight || 52;
-      pop.style.top = `${Math.max(8, rect.bottom - popH - 4)}px`;
-      pop.style.left = `${Math.max(8, Math.min(rect.right - popW - 4, window.innerWidth - popW - 8))}px`;
+    const rect = anchorBtn.getBoundingClientRect();
+    const popW = pop.offsetWidth || 220;
+    const popH = pop.offsetHeight || 52;
+    if (isMobile) {
+      pop.style.top = `${Math.max(8, rect.bottom + 4)}px`;
+      pop.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - popW - 8))}px`;
     } else {
-      const rect = anchorBtn.getBoundingClientRect();
-      const popHeight = pop.offsetHeight || 52;
-      pop.style.top = `${Math.max(8, rect.top - popHeight - 8)}px`;
-      pop.style.left = `${Math.min(Math.max(8, rect.left), window.innerWidth - 230)}px`;
+      pop.style.top = `${Math.max(8, rect.top - popH - 8)}px`;
+      pop.style.left = `${Math.min(Math.max(8, rect.left), window.innerWidth - popW - 8)}px`;
     }
     pop.dataset.chatId = chatId;
     pop._onUpdate = onUpdate;
@@ -722,11 +719,7 @@ const UI = (function () {
     const reactTrigger = (!isSystem && currentUser)
       ? `<button type="button" class="msg__react-trigger" data-action="react-picker" data-id="${msg.id}" title="Добавить реакцию" aria-label="Добавить реакцию">😊</button>`
       : '';
-    const bubbleFooter = !isSystem && currentUser ? `
-      <div class="msg__bubble-footer">
-        ${reactionsHtml || '<div class="msg__reactions msg__reactions--empty"></div>'}
-        ${reactTrigger}
-      </div>` : reactionsHtml;
+    const reactSlot = reactTrigger ? `<div class="msg__react-slot">${reactTrigger}</div>` : '';
 
     const authorHtml = isSystem || isOwn ? '' : `<span class="msg__author" style="color:${authorColor(authorName)}">${escapeAttr(authorName)}</span>`;
     const editedHtml = msg.editedAt ? '<span class="msg__edited">изменено</span>' : '';
@@ -738,20 +731,26 @@ const UI = (function () {
       ? `<div class="msg__reply"><span class="msg__reply-author">${escapeAttr(reply.authorName || reply.authorEmail)}</span><span class="msg__reply-text">${escapeHtml(replyLabel)}${replyLabel.length >= 80 ? '…' : ''}</span></div>`
       : '';
 
-    const bubbleInner = emojiOnly
-      ? `<div class="msg__emoji-only">${textHtml}${emojiFooterHtml}</div>`
-      : `<div class="msg__inner">${authorHtml}${replyHtml}<div class="msg__text-row">${textHtml}${footerHtml}</div>${filesHtml}${bubbleFooter}${actions}</div>`;
+    const bottomBar = !isSystem && (reactionsHtml || actions) ? `
+      <div class="msg__bubble-bottom">
+        ${reactionsHtml}
+        ${actions}
+      </div>` : '';
 
-    const extraBelow = emojiOnly ? `${bubbleFooter}${actions}` : '';
+    const bubbleInner = emojiOnly
+      ? `<div class="msg__emoji-only">${textHtml}${emojiFooterHtml}</div>${bottomBar}`
+      : `<div class="msg__inner">${authorHtml}${replyHtml}<div class="msg__text-row">${textHtml}${footerHtml}</div>${filesHtml}${bottomBar}</div>`;
 
     return `
       <article class="msg${isOwn ? ' msg--own' : ''}${msg.pinned ? ' msg--pinned' : ''}${welcomeClass}${emojiOnly ? ' msg--emoji-only' : ''}" data-id="${msg.id}">
         <div class="msg__layout">
           ${avatarHtml}
-          <div class="msg__bubble">
-            ${msg.pinned ? '<span class="msg__pin-label">📌 Закреплено</span>' : ''}
-            ${bubbleInner}
-            ${extraBelow}
+          <div class="msg__content">
+            <div class="msg__bubble">
+              ${msg.pinned ? '<span class="msg__pin-label">📌 Закреплено</span>' : ''}
+              ${bubbleInner}
+            </div>
+            ${reactSlot}
           </div>
         </div>
       </article>`;
