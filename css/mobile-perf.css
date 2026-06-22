@@ -9,16 +9,40 @@
 
   .home-hero__card,
   .home-hero__badge,
+  .home-hero__title,
+  .home-hero__intro,
+  .home-hero__subtitle,
+  .home-hero__lead,
+  .home-hero__actions,
+  .home-hero__visual,
+  .home-audience-card,
+  .home-benefit-card,
+  .home-task-card,
+  .home-tier-card,
+  .home-stage-card,
+  .home-flow,
+  .home-contacts,
   .m-card,
+  .m-page__title,
   .tg-chat-card,
   .account-card,
   .blog-card,
   .auth-panel,
+  .auth-card,
+  .chat-layout,
   .chat-compose,
   .header,
   .mobile-bottom-nav,
-  .notif-panel {
+  .notif-panel,
+  .page-admin .stat-card,
+  .page-admin .admin-header,
+  .page-admin .admin-tabs,
+  .page-admin .admin-panel,
+  .page-admin .admin-login {
     animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    visibility: visible !important;
     transition-duration: 0.15s !important;
   }
 
