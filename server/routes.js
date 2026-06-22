@@ -4,6 +4,7 @@ const db = require('./db');
 const { mergeStore } = require('./validate-store');
 const { expireSubscriptions } = require('./roles');
 const { buildAccountProfile, appendProHistory } = require('./account');
+const { activateProSubscription } = require('./subscriptions');
 const { filterMessagesForUser, getAdminInboxFromStore } = require('./dm');
 const {
   requireAuth,
@@ -35,8 +36,19 @@ function sanitizeStoreDataForUser(data, user) {
   };
 }
 
-function sanitizeStoreData(data) {
-  return sanitizeStoreDataForUser(data, { role: 'admin', id: 'admin' });
+function defaultNicknameFromEmail(emailNorm, userId) {
+  let nick = (emailNorm.split('@')[0] || 'user').replace(/[^a-zA-Zа-яА-ЯёЁ0-9_\-.]/g, '').slice(0, 26);
+  if (nick.length < 2) nick = 'user' + String(userId).slice(-4);
+  return nick;
+}
+
+function uniqueNickname(data, baseNick, userId) {
+  let nick = baseNick.slice(0, 30);
+  if (!isNicknameTaken(data, nick)) return nick;
+  const suffix = String(userId).slice(-4);
+  nick = (baseNick.slice(0, 30 - suffix.length) + suffix).slice(0, 30);
+  if (!isNicknameTaken(data, nick)) return nick;
+  return 'user' + String(userId).slice(-6);
 }
 
 function registerAuthRoutes(app) {
@@ -298,6 +310,73 @@ function registerAdminRoutes(app, broadcast) {
 
     const user = data.users.find(u => u.id === userId);
     res.json({ ok: true, user: sanitizeUser(user) });
+  });
+
+  router.post('/create-subscriber', async (req, res) => {
+    try {
+      const { email, password, nickname, days } = req.body || {};
+      const emailNorm = (email || '').trim().toLowerCase();
+      const d = Number(days) || 30;
+
+      if (!emailNorm || !password) {
+        return res.status(400).json({ error: 'Укажите email и пароль' });
+      }
+      if (password.length < 8) {
+        return res.status(400).json({ error: 'Пароль не менее 8 символов' });
+      }
+      if (emailNorm === db.ADMIN_EMAIL) {
+        return res.status(400).json({ error: 'Этот email зарезервирован' });
+      }
+
+      const store = db.getStore();
+      if (store.data.users.some(u => u.email.toLowerCase() === emailNorm)) {
+        return res.status(400).json({ error: 'Пользователь с таким email уже есть — выдайте PRO в списке ниже' });
+      }
+
+      const userId = uid();
+      const nickInput = normalizeNickname(nickname);
+      if (nickInput && (nickInput.length < 2 || nickInput.length > 30)) {
+        return res.status(400).json({ error: 'Ник от 2 до 30 символов' });
+      }
+      if (nickInput && isNicknameTaken(store.data, nickInput)) {
+        return res.status(400).json({ error: 'Этот ник уже занят' });
+      }
+
+      const nick = nickInput
+        ? nickInput
+        : uniqueNickname(store.data, defaultNicknameFromEmail(emailNorm, userId), userId);
+
+      const hashed = await hashPassword(password);
+      const now = new Date().toISOString();
+
+      const data = notifyAndSave(s => {
+        const user = {
+          id: userId,
+          email: emailNorm,
+          password: hashed,
+          nickname: nick,
+          role: 'user',
+          registeredAt: now,
+          proPaidAt: null,
+          proExpiresAt: null,
+          blocked: false,
+          lastActive: now,
+          consentAcceptedAt: now
+        };
+        s.users.push(user);
+        activateProSubscription(s, userId, d, {
+          source: 'админ',
+          note: 'Подписчик добавлен вручную администратором'
+        });
+        return s;
+      });
+
+      const user = data.users.find(u => u.id === userId);
+      res.json({ ok: true, user: sanitizeUser(user) });
+    } catch (err) {
+      console.error('Create subscriber error:', err);
+      res.status(500).json({ error: 'Не удалось создать подписчика' });
+    }
   });
 
   router.post('/extend-pro', (req, res) => {
