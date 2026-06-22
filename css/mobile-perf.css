@@ -1,0 +1,46 @@
+/* Мобильная производительность — отключаем тяжёлые эффекты на телефонах */
+@media (max-width: 992px) {
+  *,
+  *::before,
+  *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .home-hero__card,
+  .home-hero__badge,
+  .m-card,
+  .tg-chat-card,
+  .account-card,
+  .blog-card,
+  .auth-panel,
+  .chat-compose,
+  .header,
+  .mobile-bottom-nav,
+  .notif-panel {
+    animation: none !important;
+    transition-duration: 0.15s !important;
+  }
+
+  .tg-chat-card__glow,
+  .tg-chat-card__shine {
+    display: none !important;
+  }
+
+  .home-hero__card {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  }
+
+  .tg-chat-card {
+    box-shadow: 0 2px 8px rgba(15, 39, 64, 0.08) !important;
+  }
+
+  .mobile-bottom-nav {
+    box-shadow: 0 8px 24px rgba(15, 39, 64, 0.18) !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
