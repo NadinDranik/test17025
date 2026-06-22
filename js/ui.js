@@ -783,11 +783,11 @@ const UI = (function () {
         App.markChatRead(currentUser.id, chatId);
         refreshUnreadBadges();
       }
-      const hydrateLimit = 25;
+      const hydrateLimit = 15;
       const toHydrate = sorted.length > hydrateLimit ? sorted.slice(-hydrateLimit) : sorted;
       Promise.all([
         Promise.all(toHydrate.map(m => App.hydrateMessageFiles(m))),
-        App.prefetchAvatarUrls([...new Set(sorted.map(m => m.userId))])
+        App.prefetchAvatarUrls([...new Set(toHydrate.map(m => m.userId))])
       ]).then(([hydratedBatch, avatarUrls]) => {
         if (!container.isConnected) return;
         const hydratedMap = new Map(hydratedBatch.map(m => [m.id, m]));
