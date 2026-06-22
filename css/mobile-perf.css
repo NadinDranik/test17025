@@ -7,14 +7,30 @@
     -webkit-backdrop-filter: none !important;
   }
 
-  .home-hero__card,
-  .home-hero__badge,
-  .home-hero__title,
-  .home-hero__intro,
-  .home-hero__subtitle,
-  .home-hero__lead,
-  .home-hero__actions,
-  .home-hero__visual,
+  .page-chat::before,
+  .page-chat::after,
+  .page-chats-hub::before,
+  .page-chats-hub::after,
+  .page-pro::before,
+  .page-pro::after,
+  .page-pro-request::before,
+  .page-pro-request::after,
+  .page-account::before,
+  .page-account::after,
+  .page-login::before,
+  .page-login::after,
+  .page-legal::before,
+  .page-legal::after {
+    display: none !important;
+  }
+
+  .page-home .home-hero__title,
+  .page-home .home-hero__badge,
+  .page-home .home-hero__intro,
+  .page-home .home-hero__subtitle,
+  .page-home .home-hero__lead,
+  .page-home .home-hero__actions,
+  .page-home .home-hero__visual,
   .home-audience-card,
   .home-benefit-card,
   .home-task-card,

@@ -9,8 +9,8 @@ const App = (function () {
   let syncEnabled = false;
   let guestSyncMode = false;
   let serverAvailable = false;
-  let syncVersion = 0;
   let syncPollTimer = null;
+  let deferredSyncTimer = null;
   let syncSocket = null;
   let syncSocketTimer = null;
   let lastPushPromise = Promise.resolve();
@@ -19,6 +19,26 @@ const App = (function () {
   const ADMIN_EMAIL = 'admin@gost17025.pro';
   const API_OPTS = { credentials: 'include' };
   const FETCH_TIMEOUT_MS = 8000;
+  const SYNC_VER_KEY = 'gost17025_sync_ver';
+
+  function loadStoredSyncVersion() {
+    try {
+      const raw = localStorage.getItem(SYNC_VER_KEY);
+      const n = raw ? Number(raw) : 0;
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  function persistSyncVersion(version) {
+    if (!version) return;
+    try {
+      localStorage.setItem(SYNC_VER_KEY, String(version));
+    } catch { /* ignore */ }
+  }
+
+  let syncVersion = loadStoredSyncVersion();
 
   function isMobileClient() {
     return typeof window !== 'undefined'
@@ -573,9 +593,37 @@ const App = (function () {
     return null;
   }
 
+  function pageNeedsDataSync() {
+    if (typeof window === 'undefined') return true;
+    const page = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    return /^(chat|chats|admin-chat|pro|pro-request|admin|account|payment-success)\.html$/.test(page);
+  }
+
+  function scheduleDeferredDataSync() {
+    if (deferredSyncTimer || pageNeedsDataSync()) return;
+    const delay = isMobileClient() ? 20000 : 10000;
+    deferredSyncTimer = setTimeout(() => {
+      deferredSyncTimer = null;
+      if (!serverAvailable) return;
+      const task = _currentUser ? activateUserSync() : activateGuestSync();
+      task.catch(() => {});
+    }, delay);
+  }
+
   async function pullFromServer() {
     const url = guestSyncMode ? '/api/public/chats' : '/api/data';
-    const res = await fetchWithTimeout(url, { ...API_OPTS, cache: 'no-store' }, 12000);
+    const headers = {};
+    if (syncVersion) headers['If-None-Match'] = `"${syncVersion}"`;
+    const timeoutMs = isMobileClient() ? 8000 : 12000;
+    const res = await fetchWithTimeout(url, {
+      ...API_OPTS,
+      cache: 'no-store',
+      headers: { ...(API_OPTS.headers || {}), ...headers }
+    }, timeoutMs);
+
+    if (res.status === 304) {
+      return { version: syncVersion, unchanged: true };
+    }
     if (res.status === 401 && !guestSyncMode) {
       _currentUser = null;
       setSession(null);
@@ -587,21 +635,18 @@ const App = (function () {
     if (guestSyncMode) {
       if (payload.version !== syncVersion) {
         mergePublicPayload(payload);
-      } else {
-        mergePublicPayload(payload);
       }
       return payload;
     }
 
-    if (payload.version !== syncVersion && payload.data) {
-      syncVersion = payload.version || 0;
-      _dataCache = payload.data;
+    if (!payload.data) return payload;
+    const nextVersion = payload.version || 0;
+    _dataCache = payload.data;
+    if (nextVersion !== syncVersion) {
+      syncVersion = nextVersion;
+      persistSyncVersion(nextVersion);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload.data));
       window.dispatchEvent(new CustomEvent('gost-data-synced'));
-    } else if (payload.data) {
-      syncVersion = payload.version || 0;
-      _dataCache = payload.data;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload.data));
     }
     return payload;
   }
@@ -718,11 +763,18 @@ const App = (function () {
   function backgroundSync() {
     (async () => {
       try {
-        const healthMs = isMobileClient() ? 5000 : FETCH_TIMEOUT_MS;
+        const healthMs = isMobileClient() ? 4000 : FETCH_TIMEOUT_MS;
         const health = await fetchWithTimeout('/api/health', { cache: 'no-store' }, healthMs);
         if (!health.ok) throw new Error('API unavailable');
         serverAvailable = true;
         await fetchAuthMe();
+        window.dispatchEvent(new CustomEvent('gost-auth-updated'));
+
+        if (!pageNeedsDataSync()) {
+          scheduleDeferredDataSync();
+          return;
+        }
+
         const syncTask = _currentUser ? activateUserSync() : activateGuestSync();
         await syncTask.catch(() => {});
         expireSubscriptions();
@@ -732,8 +784,9 @@ const App = (function () {
         window.dispatchEvent(new CustomEvent('gost-auth-updated'));
       } catch {
         serverAvailable = false;
-        syncEnabled = false;
-        guestSyncMode = false;
+        if (localStorage.getItem(STORAGE_KEY)) {
+          scheduleDeferredDataSync();
+        }
       }
     })();
   }
@@ -746,7 +799,7 @@ const App = (function () {
 
   function startSyncPolling() {
     if (!syncEnabled || syncPollTimer) return;
-    const intervalMs = isMobileClient() ? 60000 : 30000;
+    const intervalMs = isMobileClient() ? 90000 : 45000;
     syncPollTimer = setInterval(() => {
       pullFromServer().catch(() => {});
     }, intervalMs);
@@ -878,6 +931,8 @@ const App = (function () {
   }
 
   function mergePublicPayload(payload) {
+    const nextVersion = payload.version || 0;
+    if (nextVersion === syncVersion) return false;
     const data = load();
     if (payload.messages?.free) {
       data.messages.free = payload.messages.free;
@@ -885,10 +940,12 @@ const App = (function () {
     if (payload.proTopics) {
       data.proTopics = payload.proTopics;
     }
-    syncVersion = payload.version || syncVersion;
+    syncVersion = nextVersion;
+    persistSyncVersion(nextVersion);
     _dataCache = data;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     window.dispatchEvent(new CustomEvent('gost-data-synced'));
+    return true;
   }
 
   function getData() {

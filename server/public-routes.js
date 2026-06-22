@@ -25,12 +25,28 @@ function publicProTopics(proTopics) {
     });
 }
 
+function publicMessages(messages) {
+  return (messages || []).map(m => ({
+    ...m,
+    files: (m.files || []).map(f => ({
+      id: f.id,
+      name: f.name,
+      size: f.size
+    }))
+  }));
+}
+
 function registerPublicRoutes(app, broadcast) {
   app.get('/api/public/chats', (req, res) => {
     const store = db.getStore();
+    const etag = `"${store.version}"`;
+    res.set('ETag', etag);
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
+    }
     res.json({
       version: store.version,
-      messages: { free: store.data.messages?.free || [] },
+      messages: { free: publicMessages(store.data.messages?.free) },
       proTopics: publicProTopics(store.data.proTopics)
     });
   });

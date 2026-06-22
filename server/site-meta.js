@@ -3,6 +3,8 @@ const path = require('path');
 const { getAssetVersion, injectAssetVersion } = require('./asset-version');
 
 const SITE_META_MARKER = '<!-- gost-site-icons -->';
+const htmlCache = new Map();
+const HTML_CACHE_MAX = 48;
 
 function publicBaseUrl(req) {
   const fromEnv = (process.env.SITE_PUBLIC_URL || '').replace(/\/$/, '');
@@ -64,8 +66,18 @@ function injectSiteMeta(html, req) {
 }
 
 function prepareHtml(html, req, rootDir) {
+  const version = getAssetVersion(rootDir);
+  const cacheKey = `${req.path}:${version}`;
+  const cached = htmlCache.get(cacheKey);
+  if (cached) return cached;
+
   let out = injectSiteMeta(html, req);
-  out = injectAssetVersion(out, getAssetVersion(rootDir));
+  out = injectAssetVersion(out, version);
+  if (htmlCache.size >= HTML_CACHE_MAX) {
+    const firstKey = htmlCache.keys().next().value;
+    if (firstKey) htmlCache.delete(firstKey);
+  }
+  htmlCache.set(cacheKey, out);
   return out;
 }
 

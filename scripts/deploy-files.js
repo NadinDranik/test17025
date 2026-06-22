@@ -19,12 +19,15 @@ function upload(sftp, rel) {
   return new Promise((resolve, reject) => {
     const local = path.join(ROOT, rel);
     const remote = APP_DIR + '/' + rel.replace(/\\/g, '/');
-    const rs = fs.createReadStream(local);
-    const ws = sftp.createWriteStream(remote);
-    ws.on('close', () => { console.log('OK', rel); resolve(); });
-    ws.on('error', reject);
-    rs.on('error', reject);
-    rs.pipe(ws);
+    const remoteDir = path.posix.dirname(remote);
+    sftp.mkdir(remoteDir, { mode: 0o755 }, () => {
+      const rs = fs.createReadStream(local);
+      const ws = sftp.createWriteStream(remote);
+      ws.on('close', () => { console.log('OK', rel); resolve(); });
+      ws.on('error', reject);
+      rs.on('error', reject);
+      rs.pipe(ws);
+    });
   });
 }
 
@@ -48,7 +51,16 @@ conn.on('ready', () => {
       if (files.some(f => f.replace(/\\/g, '/') === 'package.json')) {
         await exec(conn, `cd ${APP_DIR} && npm install --production`);
       }
-      await exec(conn, `cd ${APP_DIR} && V=$(git rev-parse --short HEAD 2>/dev/null || date +%Y%m%d%H%M) && echo "$V" > .asset-version && (grep -q '^ASSET_VERSION=' .env 2>/dev/null && sed -i "s|^ASSET_VERSION=.*|ASSET_VERSION=$V|" .env || echo "ASSET_VERSION=$V" >> .env) && echo "ASSET_VERSION=$V"`);
+      const assetTag = process.env.FORCE_ASSET_V
+        ? String(process.env.FORCE_ASSET_V).replace(/[^\w.-]/g, '').slice(0, 40)
+        : '';
+      const assetCmd = assetTag
+        ? `V=${assetTag}`
+        : 'V=$(git rev-parse --short HEAD 2>/dev/null || date +%Y%m%d%H%M)';
+      await exec(conn, `cd ${APP_DIR} && ${assetCmd} && echo "$V" > .asset-version && (grep -q '^ASSET_VERSION=' .env 2>/dev/null && sed -i "s|^ASSET_VERSION=.*|ASSET_VERSION=$V|" .env || echo "ASSET_VERSION=$V" >> .env) && echo "ASSET_VERSION=$V"`);
+      if (files.some(f => f.replace(/\\/g, '/').endsWith('nginx-gost17025.conf'))) {
+        await exec(conn, `cp ${APP_DIR}/deploy/nginx-gost17025.conf /etc/nginx/sites-enabled/gost17025 && nginx -t && systemctl reload nginx`);
+      }
       await exec(conn, 'pm2 restart gost17025 --update-env && sleep 2 && curl -sf http://127.0.0.1:3000/api/health');
       console.log('\nDeploy done');
       conn.end();

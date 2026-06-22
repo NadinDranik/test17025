@@ -80,7 +80,7 @@ function applyStaticCacheHeaders(req, res) {
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     return;
   }
-  res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
+  res.setHeader('Cache-Control', 'public, max-age=604800, must-revalidate');
 }
 
 module.exports = {

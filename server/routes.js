@@ -151,6 +151,11 @@ function registerDataRoutes(app, broadcast) {
     if (expireSubscriptions(store.data.users, store.data)) {
       db.saveStore(store.data);
     }
+    const etag = `"${store.version}"`;
+    res.set('ETag', etag);
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
+    }
     res.json({
       version: store.version,
       data: sanitizeStoreDataForUser(store.data, req.user)
