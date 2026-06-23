@@ -763,7 +763,7 @@ const App = (function () {
   function backgroundSync() {
     (async () => {
       try {
-        const healthMs = isMobileClient() ? 4000 : FETCH_TIMEOUT_MS;
+        const healthMs = isMobileClient() ? 8000 : FETCH_TIMEOUT_MS;
         const health = await fetchWithTimeout('/api/health', { cache: 'no-store' }, healthMs);
         if (!health.ok) throw new Error('API unavailable');
         serverAvailable = true;
@@ -787,6 +787,7 @@ const App = (function () {
         if (localStorage.getItem(STORAGE_KEY)) {
           scheduleDeferredDataSync();
         }
+        window.dispatchEvent(new CustomEvent('gost-auth-updated'));
       }
     })();
   }
