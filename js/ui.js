@@ -137,10 +137,14 @@ const UI = (function () {
   }
 
   function showSyncNotice() {
-    if (document.getElementById('sync-notice')) return;
+    document.getElementById('sync-notice')?.remove();
 
     const page = window.location.pathname.split('/').pop() || 'index.html';
     const onSyncPage = ['chat.html', 'pro.html', 'pro-request.html', 'admin-chat.html', 'admin.html'].includes(page);
+
+    if (App.isServerAvailable() && !App.isSyncEnabled()) {
+      return;
+    }
 
     if (App.isSyncEnabled()) {
       if (!onSyncPage) return;
@@ -999,7 +1003,6 @@ const UI = (function () {
 
 if (typeof App !== 'undefined' && App.ready) {
   App.ready.then(() => {
-    UI.showSyncNotice();
     UI.refreshUnreadBadges();
     window.addEventListener('gost-data-synced', () => UI.refreshUnreadBadges());
     window.addEventListener('gost-unread-changed', () => UI.refreshUnreadBadges());
