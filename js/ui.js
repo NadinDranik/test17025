@@ -674,7 +674,9 @@ const UI = (function () {
         const src = f.dataUrl || '';
         if (src && App.isImageExt(ext)) {
           return `<figure class="msg__file msg__file--img">
-            <img src="${src}" alt="${escapeAttr(f.name)}" loading="lazy">
+            <button type="button" class="msg__img-btn" data-action="view-image" aria-label="Открыть изображение: ${escapeAttr(f.name)}">
+              <img src="${src}" alt="${escapeAttr(f.name)}" loading="lazy">
+            </button>
             <figcaption>${escapeAttr(f.name)} · ${App.formatFileSize(f.size)}</figcaption>
           </figure>`;
         }
@@ -886,6 +888,49 @@ const UI = (function () {
     if (actionsEl) actionsEl.hidden = false;
     if (editEl) editEl.hidden = true;
   }
+
+  let chatImageViewerEl = null;
+
+  function closeChatImageViewer() {
+    if (!chatImageViewerEl) return;
+    chatImageViewerEl.hidden = true;
+    document.body.classList.remove('chat-image-viewer-open');
+    const img = chatImageViewerEl.querySelector('.chat-image-viewer__img');
+    if (img) {
+      img.removeAttribute('src');
+      img.alt = '';
+    }
+  }
+
+  function openChatImageViewer(src, alt) {
+    if (!src) return;
+    if (!chatImageViewerEl) {
+      chatImageViewerEl = document.createElement('div');
+      chatImageViewerEl.className = 'chat-image-viewer';
+      chatImageViewerEl.hidden = true;
+      chatImageViewerEl.innerHTML = `
+        <button type="button" class="chat-image-viewer__close" aria-label="Закрыть">&times;</button>
+        <img class="chat-image-viewer__img" alt="">
+      `;
+      chatImageViewerEl.addEventListener('click', e => {
+        if (e.target === chatImageViewerEl || e.target.closest('.chat-image-viewer__close')) {
+          closeChatImageViewer();
+        }
+      });
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && chatImageViewerEl && !chatImageViewerEl.hidden) {
+          closeChatImageViewer();
+        }
+      });
+      document.body.appendChild(chatImageViewerEl);
+    }
+    const img = chatImageViewerEl.querySelector('.chat-image-viewer__img');
+    img.src = src;
+    img.alt = alt || '';
+    chatImageViewerEl.hidden = false;
+    document.body.classList.add('chat-image-viewer-open');
+  }
+
   function bindMessageActions(container, chatIdOrFn, currentUser, onUpdate) {
     if (!window._msgReactionPopoverBound) {
       window._msgReactionPopoverBound = true;
@@ -909,10 +954,20 @@ const UI = (function () {
     container.addEventListener('click', async e => {
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
+      const action = btn.dataset.action;
+
+      if (action === 'view-image') {
+        if (typeof Mobile !== 'undefined' && !Mobile.isMobile()) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const img = btn.tagName === 'IMG' ? btn : btn.querySelector('img');
+        openChatImageViewer(img?.src || img?.currentSrc || '', img?.alt || '');
+        return;
+      }
+
       const chatId = typeof chatIdOrFn === 'function' ? chatIdOrFn() : chatIdOrFn;
       if (!chatId) return;
       const id = btn.dataset.id;
-      const action = btn.dataset.action;
       const msgs = App.getMessages(chatId);
       const msg = msgs.find(m => m.id === id);
       const user = App.getCurrentUser();
