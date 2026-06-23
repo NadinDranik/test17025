@@ -175,7 +175,7 @@
 /* --- Пузыри сообщений --- */
 .msg {
   width: fit-content;
-  max-width: min(82vw, 340px);
+  max-width: min(88%, 480px);
 }
 
 .msg__layout {
@@ -1127,7 +1127,20 @@
   }
 
   .msg {
-    max-width: min(88vw, 300px);
+    max-width: min(68%, 540px);
+  }
+
+  .msg--own {
+    max-width: min(82%, 720px);
+  }
+
+  .msg__bubble {
+    padding: 8px 14px 9px 14px;
+  }
+
+  .msg__text {
+    font-size: 0.975rem;
+    line-height: 1.42;
   }
 
   .msg--own .msg__bubble {
@@ -1257,21 +1270,21 @@
   }
 
   .msg {
-    max-width: min(90vw, 280px);
+    max-width: min(96vw, 420px);
   }
 
   .msg__bubble {
     position: relative;
-    padding: 3px 7px 4px 8px;
-    border-radius: 11px;
+    padding: 12px 14px 13px 14px;
+    border-radius: 14px;
   }
 
   .page-chat .msg__bubble .msg__text,
   .page-pro .msg__bubble .msg__text,
   .page-admin-chat .msg__bubble .msg__text,
   .page-pro-request .msg__bubble .msg__text {
-    font-size: 1.125rem !important;
-    line-height: 1.48 !important;
+    font-size: 1.2rem !important;
+    line-height: 1.5 !important;
   }
 
   .page-chat .msg__bubble .msg__link,
@@ -1285,40 +1298,40 @@
   }
 
   .chat-form__bar {
-    gap: 6px;
+    gap: 4px;
   }
 
   .chat-form__attach {
-    flex: 0 0 40px;
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
   }
 
   .chat-form__attach-icon {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
   }
 
   .chat-form__send {
-    flex: 0 0 40px !important;
-    width: 40px !important;
-    height: 40px !important;
-    min-width: 40px !important;
-    min-height: 40px !important;
+    flex: 0 0 34px !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
   }
 
   .chat-form__send-icon {
-    width: 19px;
-    height: 19px;
+    width: 17px;
+    height: 17px;
   }
 
   .chat-form__input {
     flex: 1 1 auto;
     min-width: 0;
-    min-height: 60px;
-    max-height: 180px;
-    padding: 12px 16px;
-    line-height: 1.4;
+    min-height: 48px;
+    max-height: 120px;
+    padding: 10px 14px;
+    line-height: 1.35;
   }
 
   .msg-avatar {
