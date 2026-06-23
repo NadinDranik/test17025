@@ -24,6 +24,7 @@ const paymentsDb = require('./server/payments-db');
 const { registerBlogRoutes } = require('./server/blog-routes');
 const { sendHtmlWithMeta, createSiteMetaMiddleware } = require('./server/site-meta');
 const { getAssetVersion, applyStaticCacheHeaders } = require('./server/asset-version');
+const { SqliteSessionStore } = require('./server/session-store');
 
 const app = express();
 app.disable('x-powered-by');
@@ -51,8 +52,13 @@ async function start() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
+  const sessionStore = isProduction
+    ? new SqliteSessionStore(path.join(ROOT, 'data', 'sessions.db'))
+    : undefined;
+
   app.use(session({
     secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
