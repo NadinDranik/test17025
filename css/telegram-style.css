@@ -509,6 +509,7 @@
   margin-top: 2px;
 }
 
+.msg__file--img .msg__img-btn,
 .msg__file--img img,
 .msg__file--video video {
   border-radius: 8px;
@@ -1284,38 +1285,40 @@
   }
 
   .chat-form__bar {
-    gap: 4px;
+    gap: 6px;
   }
 
   .chat-form__attach {
-    flex: 0 0 34px;
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
   }
 
   .chat-form__attach-icon {
-    font-size: 1.05rem;
+    font-size: 1.15rem;
   }
 
   .chat-form__send {
-    flex: 0 0 34px !important;
-    width: 34px !important;
-    height: 34px !important;
-    min-width: 34px !important;
-    min-height: 34px !important;
+    flex: 0 0 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
   }
 
   .chat-form__send-icon {
-    width: 17px;
-    height: 17px;
+    width: 19px;
+    height: 19px;
   }
 
   .chat-form__input {
     flex: 1 1 auto;
     min-width: 0;
-    min-height: 48px;
-    padding: 10px 12px;
+    min-height: 60px;
+    max-height: 180px;
+    padding: 12px 16px;
+    line-height: 1.4;
   }
 
   .msg-avatar {
