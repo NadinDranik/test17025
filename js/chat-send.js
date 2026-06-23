@@ -19,9 +19,13 @@ const ChatSend = (function () {
     const submitBtn = form.querySelector('[type="submit"]');
 
     if (textEl) {
+      const maxInputHeight = () => {
+        const fromCss = parseInt(getComputedStyle(textEl).maxHeight, 10);
+        return Number.isFinite(fromCss) && fromCss > 0 ? fromCss : 128;
+      };
       const resize = () => {
         textEl.style.height = 'auto';
-        textEl.style.height = Math.min(textEl.scrollHeight, 128) + 'px';
+        textEl.style.height = Math.min(textEl.scrollHeight, maxInputHeight()) + 'px';
       };
       textEl.addEventListener('input', resize);
       resize();
