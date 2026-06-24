@@ -1598,6 +1598,7 @@ body.logged-in-home #user-dashboard .m-card:nth-child(3) { animation-delay: 0.1s
   .page-home .home-hero__title,
   .page-home .home-hero__badge,
   .page-home .home-hero__intro,
+  .page-home .home-hero__card,
   .page-home .home-hero__subtitle,
   .page-home .home-hero__lead,
   .page-home .home-hero__actions,
