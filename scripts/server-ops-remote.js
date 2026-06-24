@@ -120,7 +120,7 @@ touch /var/log/gost17025-health.log
 
 echo ""
 echo "=== CRON ==="
-{ crontab -l 2>/dev/null || true; } | grep -v gost17025 | { cat; echo '0 3 * * * /usr/local/bin/gost17025-backup >> /var/log/gost17025-backup.log 2>&1'; echo '*/5 * * * * /usr/local/bin/gost17025-health'; } | crontab -
+{ crontab -l 2>/dev/null || true; } | grep -v gost17025 | { cat; echo '0 3 * * * /usr/local/bin/gost17025-backup >> /var/log/gost17025-backup.log 2>&1'; echo '*/2 * * * * /usr/local/bin/gost17025-health'; } | crontab -
 crontab -l 2>/dev/null | grep gost17025 || true
 
 echo ""
