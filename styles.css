@@ -2395,6 +2395,100 @@ body.chat-image-viewer-open {
   .page-chats-hub .m-cards--compact {
     gap: 10px;
   }
+
+  /* Фиксированный макет чата: без прокрутки страницы, скролл — список чатов и сообщения */
+  .page-chat,
+  .page-pro {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .page-chat .header,
+  .page-pro .header {
+    flex-shrink: 0;
+  }
+
+  .page-chat .chat-layout,
+  .page-pro .chat-layout {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    padding: 16px 0;
+    overflow: hidden;
+  }
+
+  .page-chat .chat-layout__inner,
+  .page-pro .chat-layout__inner {
+    height: 100%;
+    min-height: 0;
+    align-items: stretch;
+    overflow: hidden;
+  }
+
+  .page-chat .chat-sidebar,
+  .page-pro .pro-topics-panel {
+    position: static;
+    top: auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  .page-chat .chat-rail {
+    flex-shrink: 0;
+  }
+
+  .page-chat .desktop-chats-nav,
+  .page-pro .pro-topics-panel .desktop-chats-nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page-chat .chat-sidebar__body,
+  .page-pro .pro-topics-panel .pro-sidebar-tools {
+    flex-shrink: 0;
+  }
+
+  .page-chat .chat-main,
+  .page-pro .chat-main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  .page-chat .chat-main__header,
+  .page-pro .chat-main__header {
+    flex-shrink: 0;
+  }
+
+  .page-chat .chat-messages,
+  .page-pro .chat-messages,
+  .page-pro .chat-empty--center {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page-chat .chat-compose,
+  .page-pro .chat-compose,
+  .page-chat .chat-guest-notice {
+    flex-shrink: 0;
+  }
 }
 
 .topic-list {
