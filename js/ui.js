@@ -762,6 +762,81 @@ const UI = (function () {
       </article>`;
   }
 
+  function messageHasFiles(msg) {
+    return !!(msg.files && msg.files.length);
+  }
+
+  function messageFilesHydrated(msg) {
+    return messageHasFiles(msg) && msg.files.every(f => f.dataUrl);
+  }
+
+  function buildMobileHydrateList(sorted, hydrateLimit) {
+    const map = new Map();
+    sorted.forEach(m => {
+      if (messageHasFiles(m)) map.set(m.id, m);
+    });
+    const recent = sorted.length > hydrateLimit ? sorted.slice(-hydrateLimit) : sorted;
+    recent.forEach(m => map.set(m.id, m));
+    return [...map.values()];
+  }
+
+  async function hydrateMessagesBatched(messages, batchSize) {
+    const size = batchSize || 6;
+    const hydrated = [];
+    for (let i = 0; i < messages.length; i += size) {
+      const batch = messages.slice(i, i + size);
+      const part = await Promise.all(batch.map(m => App.hydrateMessageFiles(m)));
+      hydrated.push(...part);
+    }
+    return hydrated;
+  }
+
+  function setupLazyFileHydration(container, sorted, currentUser, chatId, avatarUrls) {
+    if (container._fileHydrateObserver) {
+      container._fileHydrateObserver.disconnect();
+      container._fileHydrateObserver = null;
+    }
+    const queue = new Set();
+    let loading = false;
+    const run = async () => {
+      if (loading || !queue.size) return;
+      loading = true;
+      const ids = [...queue];
+      queue.clear();
+      for (const id of ids) {
+        const msg = sorted.find(m => m.id === id);
+        if (!msg || messageFilesHydrated(msg)) continue;
+        const hydrated = await App.hydrateMessageFiles(msg);
+        Object.assign(msg, hydrated);
+        const el = container.querySelector('.msg[data-id="' + id + '"]');
+        if (!el || !el.isConnected) continue;
+        const patch = document.createElement('div');
+        patch.innerHTML = renderMessage(msg, currentUser, chatId, sorted, avatarUrls || {});
+        const next = patch.firstElementChild;
+        if (next) el.replaceWith(next);
+      }
+      loading = false;
+      if (queue.size) run();
+    };
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const id = entry.target.dataset.id;
+        const msg = sorted.find(m => m.id === id);
+        if (msg && messageHasFiles(msg) && !messageFilesHydrated(msg)) {
+          queue.add(id);
+        }
+      });
+      run();
+    }, { root: container, rootMargin: '160px', threshold: 0.01 });
+    sorted.forEach(m => {
+      if (!messageHasFiles(m)) return;
+      const el = container.querySelector('.msg[data-id="' + m.id + '"]');
+      if (el) observer.observe(el);
+    });
+    container._fileHydrateObserver = observer;
+  }
+
   async function renderMessages(container, msgs, currentUser, chatId, emptyText) {
     updatePinnedBar(msgs);
     if (!msgs.length) {
@@ -799,17 +874,25 @@ const UI = (function () {
         refreshUnreadBadges();
       }
       const hydrateLimit = 15;
-      const toHydrate = sorted.length > hydrateLimit ? sorted.slice(-hydrateLimit) : sorted;
+      const toHydrate = buildMobileHydrateList(sorted, hydrateLimit);
+      const scrollTop = container.scrollTop;
+      const scrollHeight = container.scrollHeight;
+      const atBottom = scrollHeight - scrollTop - container.clientHeight < 48;
       Promise.all([
-        Promise.all(toHydrate.map(m => App.hydrateMessageFiles(m))),
+        hydrateMessagesBatched(toHydrate, 6),
         App.prefetchAvatarUrls([...new Set(toHydrate.map(m => m.userId))])
       ]).then(([hydratedBatch, avatarUrls]) => {
         if (!container.isConnected) return;
         const hydratedMap = new Map(hydratedBatch.map(m => [m.id, m]));
         const merged = sorted.map(m => hydratedMap.get(m.id) || m);
         container.innerHTML = renderList(merged, avatarUrls);
-        container.scrollTop = container.scrollHeight;
+        if (atBottom) {
+          container.scrollTop = container.scrollHeight;
+        } else {
+          container.scrollTop = scrollTop;
+        }
         setupMessageViewTracking(container, chatId, currentUser);
+        setupLazyFileHydration(container, merged, currentUser, chatId, avatarUrls);
       }).catch(() => {});
       return;
     }
