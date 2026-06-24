@@ -1906,6 +1906,7 @@ const App = (function () {
 
   async function hydrateMessageFiles(msg) {
     if (!msg.files || !msg.files.length) return msg;
+    if (msg.files.every(f => f.dataUrl)) return msg;
     const files = await Promise.all(msg.files.map(async f => {
       const dataUrl = await resolveFileData(f);
       return { ...f, dataUrl: dataUrl || '' };
