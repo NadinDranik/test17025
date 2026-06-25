@@ -760,12 +760,25 @@ const App = (function () {
     migrateUsers();
   }
 
+  async function pingServerHealth() {
+    const healthMs = isMobileClient() ? 12000 : FETCH_TIMEOUT_MS;
+    const attempts = isMobileClient() ? 2 : 1;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const health = await fetchWithTimeout('/api/health', { cache: 'no-store' }, healthMs);
+        if (health.ok) return true;
+      } catch { /* retry on slow mobile networks (Safari) */ }
+      if (i < attempts - 1) {
+        await new Promise(r => setTimeout(r, 1500));
+      }
+    }
+    return false;
+  }
+
   function backgroundSync() {
     (async () => {
       try {
-        const healthMs = isMobileClient() ? 8000 : FETCH_TIMEOUT_MS;
-        const health = await fetchWithTimeout('/api/health', { cache: 'no-store' }, healthMs);
-        if (!health.ok) throw new Error('API unavailable');
+        if (!(await pingServerHealth())) throw new Error('API unavailable');
         serverAvailable = true;
         await fetchAuthMe();
         window.dispatchEvent(new CustomEvent('gost-auth-updated'));
@@ -1034,7 +1047,7 @@ const App = (function () {
       _currentUser = data.user;
       setSession(data.user.id);
       serverAvailable = true;
-      await activateUserSync();
+      activateUserSync().catch(() => {});
       return { ok: true, user: data.user };
     } catch {
       return { ok: false, error: 'Сервер недоступен' };
@@ -1055,7 +1068,7 @@ const App = (function () {
       setSession(data.user.id);
       expireSubscriptions();
       serverAvailable = true;
-      await activateUserSync();
+      activateUserSync().catch(() => {});
       touchActivity(data.user.id);
       return { ok: true, user: data.user };
     } catch {
